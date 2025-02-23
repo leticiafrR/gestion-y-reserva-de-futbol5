@@ -4,11 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record TaskCreateDTO(
-        @NotBlank
-        @Size(min = 1, max = 100)
-        String title,
-
-        @Size(min = 1, max = 100)
-        String description
+        @NotBlank @Size(min = 1, max = 100) String title,
+        @Size(min = 1, max = 100) String description
 ) {
 }

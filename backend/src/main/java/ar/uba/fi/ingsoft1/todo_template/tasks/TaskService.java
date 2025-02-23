@@ -11,7 +11,7 @@ class TaskService {
 
     List<TaskDTO> getTasks(Pageable pageable) {
         return tasks.values().stream()
-                .sorted()
+                .sorted(Comparator.comparing(TaskDTO::title))
                 .skip(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .toList();
