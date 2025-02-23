@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/tasks")
@@ -37,7 +36,9 @@ class TaskRestController {
     @GetMapping(produces = "application/json")
     @Operation(summary = "Get a list of tasks")
     @ResponseStatus(HttpStatus.OK)
-    List<TaskDTO> getTasks(@Valid @ParameterObject Pageable pageable) throws MethodArgumentNotValidException {
+    Page<TaskDTO> getTasks(
+            @Valid @ParameterObject Pageable pageable
+    ) throws MethodArgumentNotValidException {
         return taskService.getTasks(pageable);
     }
 
@@ -45,14 +46,18 @@ class TaskRestController {
     @Operation(summary = "Get a task by its id")
     @ResponseStatus(HttpStatus.OK)
     @ApiResponse(responseCode = "404", description = "Task not found", content = @Content)
-    ResponseEntity<TaskDTO> getTask(@Valid @PathVariable @Positive long id) throws MethodArgumentNotValidException {
+    ResponseEntity<TaskDTO> getTask(
+            @Valid @PathVariable @Positive long id
+    ) throws MethodArgumentNotValidException {
         return ResponseEntity.of(taskService.getTask(id));
     }
 
     @PostMapping(produces = "application/json")
     @Operation(summary = "Create a new task")
     @ResponseStatus(HttpStatus.CREATED)
-    TaskDTO createTask(@Valid @RequestBody TaskCreateDTO taskCreate) throws MethodArgumentNotValidException {
+    TaskDTO createTask(
+            @Valid @RequestBody TaskCreateDTO taskCreate
+    ) throws MethodArgumentNotValidException {
         return taskService.createTask(taskCreate);
     }
 }

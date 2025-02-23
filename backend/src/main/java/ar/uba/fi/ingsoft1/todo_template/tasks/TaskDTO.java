@@ -17,4 +17,7 @@ record TaskDTO(
         @Size(min = 1, max = 100)
         String description
 ) {
+        TaskDTO(Task task) {
+                this(task.getId(), task.getTitle(), task.getDescription());
+        }
 }

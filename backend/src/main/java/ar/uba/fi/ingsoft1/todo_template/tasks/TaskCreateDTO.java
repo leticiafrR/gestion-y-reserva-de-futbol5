@@ -7,4 +7,7 @@ public record TaskCreateDTO(
         @NotBlank @Size(min = 1, max = 100) String title,
         @Size(min = 1, max = 100) String description
 ) {
+    public Task asTask() {
+        return new Task(title, description);
+    }
 }

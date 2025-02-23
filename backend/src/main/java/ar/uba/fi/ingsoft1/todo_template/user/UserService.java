@@ -2,6 +2,7 @@ package ar.uba.fi.ingsoft1.todo_template.user;
 
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,6 +20,7 @@ class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
+    @Autowired
     UserService(JwtService jwtService, PasswordEncoder passwordEncoder, UserRepository userRepository) {
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
