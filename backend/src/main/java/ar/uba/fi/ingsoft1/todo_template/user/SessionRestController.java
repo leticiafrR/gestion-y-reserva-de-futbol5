@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/session")
-@Tag(name = "Sessions")
+@Tag(name = "2 - Sessions")
 class SessionRestController {
 
     private final UserService userService;
