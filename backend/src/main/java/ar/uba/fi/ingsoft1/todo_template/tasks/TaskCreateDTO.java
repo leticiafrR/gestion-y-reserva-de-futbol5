@@ -8,6 +8,10 @@ public record TaskCreateDTO(
         @Size(min = 1, max = 100) String description
 ) {
     public Task asTask() {
-        return new Task(title, description);
+        return new Task(null, title, description);
+    }
+
+    public Task asTask(long id) {
+        return new Task(id, title, description);
     }
 }

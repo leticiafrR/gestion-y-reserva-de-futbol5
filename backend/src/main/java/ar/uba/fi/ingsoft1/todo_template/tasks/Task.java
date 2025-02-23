@@ -18,7 +18,8 @@ public class Task {
     @Column
     private String description;
 
-    Task(String title, String description) {
+    Task(Long id, String title, String description) {
+        this.id = id;
         this.title = title;
         this.description = description;
     }

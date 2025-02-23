@@ -26,4 +26,16 @@ class TaskService {
     TaskDTO createTask(TaskCreateDTO taskCreate) {
         return new TaskDTO(taskRepository.save(taskCreate.asTask()));
     }
+
+    Optional<TaskDTO> updateTask(long id, TaskCreateDTO taskCreate) {
+        if (!taskRepository.existsById(id)) {
+            return Optional.empty();
+        }
+        var saved = taskRepository.save(taskCreate.asTask(id));
+        return Optional.of(new TaskDTO(saved));
+    }
+
+    void deleteTask(long id) {
+        taskRepository.deleteById(id);
+    }
 }
