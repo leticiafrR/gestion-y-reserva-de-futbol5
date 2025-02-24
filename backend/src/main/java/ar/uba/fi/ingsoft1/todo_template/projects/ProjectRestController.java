@@ -1,6 +1,5 @@
-package ar.uba.fi.ingsoft1.todo_template.tasks;
+package ar.uba.fi.ingsoft1.todo_template.projects;
 
-import ar.uba.fi.ingsoft1.todo_template.common.exception.ItemNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,62 +24,62 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/tasks")
-@Tag(name = "Tasks")
-class TaskRestController {
+@RequestMapping("/projects")
+@Tag(name = "Projects")
+public class ProjectRestController {
 
-    private final TaskService taskService;
+    private final ProjectService projectService;
 
     @Autowired
-    TaskRestController(TaskService taskService) {
-        this.taskService = taskService;
+    ProjectRestController(ProjectService projectService) {
+        this.projectService = projectService;
     }
 
     @GetMapping(produces = "application/json")
-    @Operation(summary = "Get a list of tasks")
+    @Operation(summary = "Get a list of projects")
     @ResponseStatus(HttpStatus.OK)
-    Page<TaskDTO> getTasks(
+    Page<ProjectDTO> getProjects(
             @Valid @ParameterObject Pageable pageable
     ) throws MethodArgumentNotValidException {
-        return taskService.getTasks(pageable);
+        return projectService.getProjects(pageable);
     }
 
     @GetMapping(value = "/{id}", produces = "application/json")
-    @Operation(summary = "Get a task by its id")
+    @Operation(summary = "Get a project by its id")
     @ResponseStatus(HttpStatus.OK)
-    @ApiResponse(responseCode = "404", description = "Task not found", content = @Content)
-    TaskDTO getTask(
+    @ApiResponse(responseCode = "404", description = "Project not found", content = @Content)
+    ResponseEntity<ProjectDTO> getProject(
             @Valid @PathVariable @Positive long id
-    ) throws MethodArgumentNotValidException, ItemNotFoundException {
-        return taskService.getTask(id);
+    ) throws MethodArgumentNotValidException {
+        return ResponseEntity.of(projectService.getProject(id));
     }
 
     @PostMapping(produces = "application/json")
-    @Operation(summary = "Create a new task")
+    @Operation(summary = "Create a new project")
     @ResponseStatus(HttpStatus.CREATED)
-    TaskDTO createTask(
-            @Valid @RequestBody TaskCreateDTO taskCreate
-    ) throws MethodArgumentNotValidException, ItemNotFoundException {
-        return taskService.createTask(taskCreate);
+    ProjectDTO createProject(
+            @Valid @RequestBody ProjectCreateDTO projectCreate
+    ) throws MethodArgumentNotValidException {
+        return projectService.createProject(projectCreate);
     }
 
     @PutMapping(value = "/{id}", produces = "application/json")
-    @Operation(summary = "Update a task")
+    @Operation(summary = "Update a project")
     @ResponseStatus(HttpStatus.OK)
-    @ApiResponse(responseCode = "404", description = "Task not found", content = @Content)
-    ResponseEntity<TaskDTO> putTask(
+    @ApiResponse(responseCode = "404", description = "Project not found", content = @Content)
+    ResponseEntity<ProjectDTO> putProject(
             @Valid @PathVariable @Positive long id,
-            @Valid @RequestBody TaskCreateDTO taskCreate
-    ) throws MethodArgumentNotValidException, ItemNotFoundException {
-        return ResponseEntity.of(taskService.updateTask(id, taskCreate));
+            @Valid @RequestBody ProjectCreateDTO projectCreate
+    ) throws MethodArgumentNotValidException {
+        return ResponseEntity.of(projectService.updateProject(id, projectCreate));
     }
 
     @DeleteMapping(value = "/{id}")
-    @Operation(summary = "Delete a task")
+    @Operation(summary = "Delete a project")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void deleteTask(
+    void deleteProject(
             @Valid @PathVariable @Positive long id
     ) throws MethodArgumentNotValidException {
-        taskService.deleteTask(id);
+        projectService.deleteProject(id);
     }
 }
