@@ -1,10 +1,28 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { QueryClientProvider, useMutation } from "@tanstack/react-query";
 
-function App() {
-  const [count, setCount] = useState(0)
+import reactLogo from "@/assets/react.svg";
+import { BASE_API_URL, appQueryClient } from "@/config";
+
+import viteLogo from "/vite.svg";
+
+function Content() {
+  const { mutate, data } = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(BASE_API_URL + "/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          username: "testuser",
+          password: "12345678",
+        }),
+      });
+
+      return await response.json();
+    },
+  });
 
   return (
     <>
@@ -17,19 +35,16 @@ function App() {
         </a>
       </div>
       <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <button onClick={() => mutate()}>Create test user</button>
+      <pre>{JSON.stringify(data, null, 4)}</pre>
     </>
-  )
+  );
 }
 
-export default App
+export function App() {
+  return (
+    <QueryClientProvider client={appQueryClient}>
+      <Content />
+    </QueryClientProvider>
+  );
+}
