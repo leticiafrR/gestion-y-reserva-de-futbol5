@@ -19,9 +19,11 @@ export const CommonLayout = ({ children }: React.PropsWithChildren) => {
 const LoggedOutLinks = () => {
   return (
     <>
-      <li>Log in</li>
       <li>
-        <Link href="/sign-up">Sign Up</Link>
+        <Link href="/login">Log in</Link>
+      </li>
+      <li>
+        <Link href="/signup">Sign Up</Link>
       </li>
     </>
   );

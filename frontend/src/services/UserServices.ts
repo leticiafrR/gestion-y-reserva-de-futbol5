@@ -1,15 +1,32 @@
+import { useMutation } from "@tanstack/react-query";
+
 import { BASE_API_URL } from "@/config/app-query-client";
 import { LoginRequest, LoginResponseSchema } from "@/models/Login";
+import { useToken } from "@/services/TokenContext";
 
-export async function login(data: LoginRequest) {
-  return auth("/session", data);
+export function useLogin() {
+  const [, setToken] = useToken();
+
+  return useMutation({
+    mutationFn: async (req: LoginRequest) => {
+      const tokenData = await auth("/session", req);
+      setToken({ state: "LOGGED_IN", ...tokenData });
+    },
+  });
 }
 
-export async function signup(data: LoginRequest) {
-  return auth("/users", data);
+export function useSignup() {
+  const [, setToken] = useToken();
+
+  return useMutation({
+    mutationFn: async (req: LoginRequest) => {
+      const tokenData = await auth("/users", req);
+      setToken({ state: "LOGGED_IN", ...tokenData });
+    },
+  });
 }
 
-export async function auth(endpoint: string, data: LoginRequest) {
+async function auth(endpoint: string, data: LoginRequest) {
   const response = await fetch(BASE_API_URL + endpoint, {
     method: "POST",
     headers: {

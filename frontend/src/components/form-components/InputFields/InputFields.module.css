@@ -1,0 +1,11 @@
+.input {
+  margin-left: 1rem;
+}
+
+.label {
+}
+
+.dataContainer {
+  display: flex;
+  flex-direction: column;
+}
