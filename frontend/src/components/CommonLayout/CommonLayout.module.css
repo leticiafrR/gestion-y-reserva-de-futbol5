@@ -22,5 +22,5 @@
   display: flex;
   flex-direction: column;
   align-items: start;
-  padding: 2rem;
+  padding: 0 2rem;
 }
