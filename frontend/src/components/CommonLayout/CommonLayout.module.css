@@ -1,0 +1,26 @@
+.mainLayout {
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  display: flex;
+  flex-direction: row;
+  list-style: none;
+
+  align-items: center;
+  justify-content: end;
+}
+
+.topBar > * {
+  margin: 0 1rem;
+}
+
+.body {
+  flex: 1 0 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 2rem;
+}

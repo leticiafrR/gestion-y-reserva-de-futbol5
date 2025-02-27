@@ -1,3 +1,4 @@
+import { CommonLayout } from "@/components/CommonLayout/CommonLayout";
 import { useToken } from "@/services/TokenContext";
 import { signup } from "@/services/UserServices";
 
@@ -17,7 +18,7 @@ export const SignupScreen = () => {
   }
 
   return (
-    <>
+    <CommonLayout>
       <h1>Sign Up</h1>
       <form style={{ display: "flex", flexDirection: "column" }} onSubmit={onSubmit}>
         {fields.map((field) => (
@@ -28,6 +29,6 @@ export const SignupScreen = () => {
         ))}
         <button>Sign Up</button>
       </form>
-    </>
+    </CommonLayout>
   );
 };
