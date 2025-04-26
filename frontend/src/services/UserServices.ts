@@ -9,7 +9,7 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: async (req: LoginRequest) => {
-      const tokenData = await auth("/session", req);
+      const tokenData = await auth("/sessions", req);
       setToken({ state: "LOGGED_IN", ...tokenData });
     },
   });
