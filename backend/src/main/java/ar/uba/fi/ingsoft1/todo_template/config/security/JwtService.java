@@ -20,8 +20,8 @@ public class JwtService {
 
     @Autowired
     JwtService(
-            @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration}") Long expiration
+            @Value("${jwt.access.secret}") String secret,
+            @Value("${jwt.access.expiration}") Long expiration
     ) {
         this.secret = secret;
         this.expiration = expiration;

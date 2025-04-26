@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -37,6 +38,18 @@ class SessionRestController {
     ) throws MethodArgumentNotValidException {
         return userService
                 .loginUser(data)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+    }
+
+    @PutMapping(produces = "application/json")
+    @Operation(summary = "Refresh a session")
+    @ResponseStatus(HttpStatus.OK)
+    @ApiResponse(responseCode = "401", description = "Invalid refresh token supplied", content = @Content)
+    public TokenDTO refresh(
+            @Valid @NonNull @RequestBody RefreshDTO data
+    ) throws MethodArgumentNotValidException {
+        return userService
+                .refresh(data)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
     }
 }
