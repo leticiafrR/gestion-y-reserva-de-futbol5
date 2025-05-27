@@ -1,5 +1,7 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
+import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
+import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import ar.uba.fi.ingsoft1.todo_template.dto.PaginatedResponse;
 import ar.uba.fi.ingsoft1.todo_template.dto.UserProfileDTO;
 import ar.uba.fi.ingsoft1.todo_template.dto.UserSearchResultDTO;
@@ -21,6 +23,12 @@ import java.util.List;
 @RequestMapping("/users")
 @Tag(name = "1 - Usuarios", description = "Endpoints de gestión de usuarios")
 public class UserRestController {
+        private final JwtService jwtService;
+
+        public UserRestController(JwtService jwtService) {
+                this.jwtService = jwtService;
+        }
+
         @PostMapping("/register")
         @Operation(summary = "Registrar usuario", description = "Crea una nueva cuenta de usuario")
         @ApiResponses(value = {
@@ -29,9 +37,13 @@ public class UserRestController {
         })
         public ResponseEntity<TokenDTO> register(
                         @Parameter(description = "Datos de registro del usuario") @Valid @RequestBody UserProfileDTO userData) {
-                // Implementación dummy
+
+                JwtUserDetails userDetails = new JwtUserDetails(userData.userId(), userData.gender());
+                String token = jwtService.createToken(userDetails);
+
                 return ResponseEntity.status(HttpStatus.CREATED)
-                                .body(new TokenDTO("nuevo_token_acceso", "nuevo_token_actualizacion"));
+                                .body(new TokenDTO(token, "nuevo_token_actualizacion")); // por el momento el token
+                                                                                         // refresh es de juguete
         }
 
         @PostMapping("/token")
