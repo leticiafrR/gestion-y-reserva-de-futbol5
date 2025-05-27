@@ -8,24 +8,17 @@ import java.time.LocalDate;
 
 @Schema(description = "User profile information")
 public record UserProfileDTO(
-    @Schema(description = "User's unique identifier")
-    @NotBlank String userId,
-    
-    @Schema(description = "User's email address")
-    @NotBlank @Email String email,
-    
-    @Schema(description = "User's first name")
-    @NotBlank String name,
-    
-    @Schema(description = "User's last name")
-    @NotBlank String lastName,
-    
-    @Schema(description = "URL to user's profile picture")
-    String profilePicture,
-    
-    @Schema(description = "User's birth date")
-    @NotNull LocalDate birthDate,
-    
-    @Schema(description = "User's gender")
-    @NotBlank String gender
-) {} 
+        @Schema(description = "User's unique identifier") @NotBlank(message = "User ID cannot be blank") String userId,
+
+        @Schema(description = "User's email address") @NotBlank(message = "User email cannot be blank") @Email String email,
+
+        @Schema(description = "User's first name") @NotBlank(message = "User name cannot be blank") String name,
+
+        @Schema(description = "User's last name") @NotBlank(message = "User last name cannot be blank") String lastName,
+
+        @Schema(description = "URL to user's profile picture") String profilePicture,
+
+        @Schema(description = "User's birth date") @NotNull LocalDate birthDate,
+
+        @Schema(description = "User's gender") @NotBlank(message = "User gender cannot be blank") String gender) {
+}
