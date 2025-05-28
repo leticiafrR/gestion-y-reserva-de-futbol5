@@ -20,7 +20,7 @@
 
 a {
   font-weight: 500;
-  color: #202027;
+  color: #2b2b2b;
   text-decoration: inherit;
 }
 a:hover {
@@ -66,7 +66,7 @@ ul {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #0e0078;
+    color: #ff0000;
     background-color: #ffffff;
   }
   a:hover {

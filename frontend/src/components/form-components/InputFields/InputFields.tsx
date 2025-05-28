@@ -19,7 +19,7 @@ const FieldWithType = ({ label, type }: { label: string; type: string }) => {
   const errorMessage = hasError ? field.state.meta.errors[0].message : "";
 
   return (
-    <>
+    <div className={styles.fieldContainer}>
       <label htmlFor={id} className={styles.label}>
         {label}
       </label>
@@ -35,6 +35,6 @@ const FieldWithType = ({ label, type }: { label: string; type: string }) => {
           onChange={(e) => field.handleChange(e.target.value)}
         />
       </div>
-    </>
+    </div>
   );
 };

@@ -1,6 +1,5 @@
 .form {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }

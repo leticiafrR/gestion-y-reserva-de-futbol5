@@ -37,3 +37,9 @@
   flex-direction: column;
   gap: 0.25rem;
 }
+
+.fieldContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
