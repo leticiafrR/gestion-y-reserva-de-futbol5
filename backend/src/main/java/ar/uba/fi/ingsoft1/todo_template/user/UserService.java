@@ -47,13 +47,17 @@ class UserService implements UserDetailsService {
     }
 
     Optional<TokenDTO> createUser(UserCreateDTO data) {
-        if (userRepository.findByUsername(data.username()).isPresent() || userRepository.findByEmail(data.email()).isPresent()) {
-            return loginUser(data);
-        } else {
-            var user = data.asUser(passwordEncoder::encode);
-            userRepository.save(user);
-            return Optional.of(generateTokens(user));
+        if (userRepository.findByUsername(data.username()).isPresent()) {
+            throw new IllegalArgumentException("Username already registered");
         }
+
+        if (userRepository.findByEmail(data.email()).isPresent()) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        var user = data.asUser(passwordEncoder::encode);
+        userRepository.save(user);
+        return Optional.of(generateTokens(user));
     }
 
     Optional<TokenDTO> loginUser(UserCredentials data) {

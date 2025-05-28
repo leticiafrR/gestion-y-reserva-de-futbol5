@@ -33,7 +33,25 @@ public class User implements UserDetails, UserCredentials {
     @Column(nullable = false)
     private String role;
 
-    public User() {}
+    @Column(nullable = false)
+    private String gender;
+
+    @Column(nullable = false)
+    private String age;
+
+    @Column(nullable = false)
+    private String address;
+
+    public User(String username, String password, String email, String gender, String age, String address) {
+        this.username = username;
+        this.password = password;
+        this.age = age;
+        this.gender = gender;
+        this.address = address;
+        this.email = email;
+        this.role = "USER";
+        this.address = address;
+    }
 
     public User(String username, String email, String password) {
         this.username = username;
