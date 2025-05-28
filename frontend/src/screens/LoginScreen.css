@@ -80,8 +80,8 @@ label {
 /* Submit button */
 .login-container button[type="submit"] {
   width: 100%;
-  background-color: #c8df1d;
-  color: #1a1a1a;
+  background-color: #566c59;
+  color: #ffffff;
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: var(--radius-md);
@@ -93,7 +93,7 @@ label {
 }
 
 .login-container button[type="submit"]:hover {
-  background-color: #afb512;
+  background-color: #3a483b;
   transform: translateY(-1px);
 }
 
