@@ -1,7 +1,7 @@
 import React from "react";
 
 import { ErrorContainer } from "@/components/form-components/ErrorContainer/ErrorContainer";
-import { SubmitButton } from "@/components/form-components/SubmitButton/SubmitButton";
+import { GenericButton } from "@/components/form-components/GenericButton/GenericButton";
 import { useFormContext } from "@/config/form-context";
 
 import styles from "./FormContainer.module.css";
@@ -20,7 +20,11 @@ export const FormContainer = ({ extraError, children }: React.PropsWithChildren<
     >
       {children}
       {extraError && <ErrorContainer errors={[extraError]} />}
-      <SubmitButton />
+      <GenericButton 
+        type="submit"
+        label="Submit"
+        variant="primary"
+      />
     </form>
   );
 };
