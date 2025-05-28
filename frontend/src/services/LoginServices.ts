@@ -19,6 +19,11 @@ export function useLogin() {
 }
 
 async function login(data: LoginRequest) {
+  // Mock incorrect credentials check
+  if (data.username === "test" && data.password === "wrong") {
+    throw new Error("Usuario o contraseña incorrectos");
+  }
+
   // Mock successful login response
   return {
     accessToken: "dummy-access-token-123",

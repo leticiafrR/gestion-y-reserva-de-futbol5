@@ -4,6 +4,7 @@
   --border-color: #e2e8f0;
   --border-focus: #2b71a3;
   --error-color: #ff6b6b;
+  --error-bg: #fff5f5;
   --background-white: #ffffff;
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --radius-md: 8px;
@@ -116,6 +117,31 @@ form {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+/* Error message banner */
+.error-banner {
+  background-color: var(--error-bg);
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--error-color);
+  font-weight: 500;
+}
+
+.error-banner::before {
+  content: "⚠️";
+  font-size: 1.25rem;
+}
+
+.error-banner p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.4;
 }
 
 /* Responsive adjustments */

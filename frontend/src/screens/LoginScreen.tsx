@@ -23,7 +23,12 @@ export const LoginScreen = () => {
       <div className="login-container">
         <h1 className="login-title">Log In</h1>
         <formData.AppForm>
-          <formData.FormContainer extraError={error}>
+          {error && (
+            <div className="error-banner">
+              <p>Usuario o contraseña incorrectos</p>
+            </div>
+          )}
+          <formData.FormContainer extraError={null}>
             <div className="form-grid">
               <formData.AppField 
                 name="username" 
