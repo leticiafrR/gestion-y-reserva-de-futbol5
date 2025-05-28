@@ -1,7 +1,10 @@
+// @ts-nocheck - Mocked for development
 import { useMutation } from "@tanstack/react-query";
 
-import { BASE_API_URL } from "@/config/app-query-client";
-import { LoginRequest, LoginResponseSchema } from "@/models/Login";
+// @ts-expect-error - Mocked for development
+// import { BASE_API_URL } from "@/config/app-query-client";
+// @ts-expect-error - Mocked for development
+import { LoginRequest } from "@/models/Login";
 import { useToken } from "@/services/TokenContext";
 
 export function useLogin() {
@@ -16,6 +19,13 @@ export function useLogin() {
 }
 
 async function login(data: LoginRequest) {
+  // Mock successful login response
+  return {
+    accessToken: "dummy-access-token-123",
+    refreshToken: "dummy-refresh-token-456"
+  };
+
+  /*
   const response = await fetch(BASE_API_URL + "/sessions", {
     method: "POST",
     headers: {
@@ -30,4 +40,5 @@ async function login(data: LoginRequest) {
   } else {
     throw new Error(`Login failed with status ${response.status}: ${await response.text()}`);
   }
+  */
 } 
