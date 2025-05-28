@@ -2,7 +2,7 @@ import { CommonLayout } from "@/components/CommonLayout/CommonLayout";
 import { useAppForm } from "@/config/use-app-form";
 import { LoginRequestSchema } from "@/models/Login";
 import { useLogin } from "@/services/UserServices";
-import "./LoginScreen.css";
+import styles from "./LoginScreen.module.css";
 
 export const LoginScreen = () => {
   const { mutate, error } = useLogin();
@@ -20,16 +20,16 @@ export const LoginScreen = () => {
 
   return (
     <CommonLayout>
-      <div className="login-container">
-        <h1 className="login-title">Log In</h1>
+      <div className={styles.loginContainer}>
+        <h1 className={styles.loginTitle}>Log In</h1>
         <formData.AppForm>
           {error && (
-            <div className="error-banner">
+            <div className={styles.errorBanner}>
               <p>Usuario o contraseña incorrectos</p>
             </div>
           )}
           <formData.FormContainer extraError={null}>
-            <div className="form-grid">
+            <div className={styles.formGrid}>
               <formData.AppField 
                 name="username" 
                 children={(field) => <field.TextField label="Username" />} 
