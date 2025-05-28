@@ -1,5 +1,4 @@
-:root {
-  --primary-color: #df0be6;
+.signup-container {
   --primary-hover: #794a7a;
   --primary-light: #a4a4a4;
   --text-primary: #ffffff;
@@ -10,17 +9,7 @@
   --background-white: #ffffff;
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --radius-md: 8px;
-}
 
-/* Base styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-/* Main container */
-.signup-container {
   width: 90%;
   max-width: 800px;
   margin: 0 auto;
@@ -28,6 +17,13 @@
   background: var(--background-white);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 /* Title styling */

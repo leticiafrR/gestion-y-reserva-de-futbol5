@@ -1,5 +1,4 @@
-:root {
-  --primary-color: #df0be6;
+.login-container {
   --primary-hover: #794a7a;
   --primary-light: #a4a4a4;
   --text-primary: #ffffff;
@@ -10,6 +9,14 @@
   --background-white: #ffffff;
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --radius-md: 8px;
+
+  width: 90%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: var(--background-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
 }
 
 /* Base styles */
@@ -29,17 +36,6 @@ a {
 
 a:hover {
   color: var(--primary-hover);
-}
-
-/* Main container */
-.login-container {
-  width: 90%;
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 1.5rem;
-  background: var(--background-white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
 }
 
 /* Title styling */
