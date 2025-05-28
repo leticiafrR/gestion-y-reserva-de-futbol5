@@ -1,7 +1,13 @@
 import { z } from "zod";
 
 export const SignupRequestSchema = z.object({
-  username: z.string().min(1, "Username must not be empty"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  photo: z.union([z.string().url(), z.literal("")]).optional(),
+  age: z.number().min(18, "Must be at least 18 years old"),
+  gender: z.enum(["male", "female", "other"]),
+  zone: z.string().min(1, "Zone is required"),
   password: z.string().min(1, "Password must not be empty"),
 });
 
