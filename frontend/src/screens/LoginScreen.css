@@ -1,11 +1,11 @@
 :root {
-  --primary-color: #315536;
-  --primary-hover: #4a7a4f;
+  --primary-color: #df0be6;
+  --primary-hover: #794a7a;
   --primary-light: #a4a4a4;
   --text-primary: #ffffff;
   --text-secondary: #ffffff;
   --border-color: #e2e8f0;
-  --border-focus: #315536;
+  --border-focus: #2b71a3;
   --error-color: #ff6b6b;
   --background-white: #ffffff;
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -29,19 +29,6 @@ a {
 
 a:hover {
   color: var(--primary-hover);
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.4;
-  color: var(--text-primary);
-  background: #315536;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  margin: 0;
 }
 
 /* Main container */

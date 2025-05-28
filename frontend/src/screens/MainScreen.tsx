@@ -1,10 +1,11 @@
 import { CommonLayout } from "@/components/CommonLayout/CommonLayout";
-import { UnderConstruction } from "@/components/UnderConstruction/UnderConstruction";
 
 export const MainScreen = () => {
   return (
     <CommonLayout>
-      <UnderConstruction />
+      <div className="welcome-container">
+        <h1>¡HOLA!</h1>
+      </div>
     </CommonLayout>
-  );
-};
+  )
+}
