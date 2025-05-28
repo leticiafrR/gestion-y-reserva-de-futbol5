@@ -11,11 +11,20 @@ export const Navigation = () => {
     case "LOGGED_IN":
       return (
         <Switch>
-          <Route path="/">
+          <Route path="/main">
             <MainScreen />
           </Route>
+          <Route path="/create-field">
+            <MainScreen /> {/* Temporarily using MainScreen, we'll create proper screens later */}
+          </Route>
+          <Route path="/search-field">
+            <MainScreen /> {/* Temporarily using MainScreen, we'll create proper screens later */}
+          </Route>
+          <Route path="/">
+            <Redirect href="/main" />
+          </Route>
           <Route>
-            <Redirect href="/" />
+            <Redirect href="/main" />
           </Route>
         </Switch>
       );
@@ -29,7 +38,7 @@ export const Navigation = () => {
             <SignupScreen />
           </Route>
           <Route>
-            <Redirect href="/signup" />
+            <Redirect href="/login" />
           </Route>
         </Switch>
       );
