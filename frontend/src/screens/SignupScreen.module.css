@@ -1,4 +1,4 @@
-.signup-container {
+.signupContainer {
   --primary-hover: #794a7a;
   --primary-light: #a4a4a4;
   --border-color: #e2e8f0;
@@ -25,7 +25,7 @@
 }
 
 /* Title styling */
-.signup-title {
+.signupTitle {
   text-align: center;
   color: var(--primary-color);
   margin-bottom: 2rem; /* antes 1.5rem */
@@ -34,13 +34,13 @@
 }
 
 /* Form grid */
-.form-grid {
+.formGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.25rem; /* antes 1rem */
 }
 
-.full-width {
+.fullWidth {
   grid-column: 1 / -1;
 }
 
@@ -83,7 +83,7 @@ select {
 
 
 /* Error messages */
-.error-message {
+.errorMessage {
   color: var(--error-color);
   font-size: 0.9rem; /* antes 0.8rem */
   margin-top: 0.25rem;
@@ -97,7 +97,7 @@ form {
 }
 
 /* Submit button */
-.signup-container button[type="submit"] {
+.signupContainer button[type="submit"] {
   width: 100%;
   background-color: #566c59;
   color: #ffffff;
@@ -111,12 +111,12 @@ form {
   transition: all 0.2s;
 }
 
-.signup-container button[type="submit"]:hover {
+.signupContainer button[type="submit"]:hover {
   background-color: #3a483b;
   transform: translateY(-1px);
 }
 
-.signup-container button[type="submit"]:disabled {
+.signupContainer button[type="submit"]:disabled {
   background-color: #e2e8f0;
   color: #94a3b8;
   cursor: not-allowed;
@@ -125,15 +125,15 @@ form {
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-  .form-grid {
+  .formGrid {
     grid-template-columns: 1fr;
   }
 
-  .signup-container {
+  .signupContainer {
     padding: 1rem;
   }
 
-  .signup-title {
+  .signupTitle {
     font-size: 1.5rem;
     margin-bottom: 1rem;
   }
