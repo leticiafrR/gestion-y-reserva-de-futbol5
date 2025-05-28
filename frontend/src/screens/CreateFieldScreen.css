@@ -4,7 +4,9 @@
   --border-color: #e2e8f0;
   --border-focus: #2b71a3;
   --error-color: #ff6b6b;
+  --error-bg: #fff5f5;
   --success-color: #48bb78;
+  --success-bg: #f0fff4;
   --background-white: #ffffff;
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --radius-md: 8px;
@@ -97,10 +99,69 @@ input[type="checkbox"] {
   min-height: 100px;
 }
 
+/* Error message banner */
+.error-banner {
+  background-color: var(--error-bg);
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--error-color);
+  font-weight: 500;
+}
+
+.error-banner::before {
+  content: "⚠️";
+  font-size: 1.25rem;
+}
+
+.error-banner p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* Regular field error messages */
 .error-message {
   color: var(--error-color);
   font-size: 0.9rem;
   margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-message::before {
+  content: "•";
+  font-size: 1.2rem;
+}
+
+/* Success message banner */
+.success-banner {
+  background-color: var(--success-bg);
+  border: 1px solid var(--success-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--success-color);
+  font-weight: 500;
+}
+
+.success-banner::before {
+  content: "✅";
+  font-size: 1.25rem;
+}
+
+.success-banner p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.4;
 }
 
 @media (max-width: 640px) {

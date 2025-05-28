@@ -15,6 +15,11 @@ export function useCreateField() {
 }
 
 async function createField(data: CreateFieldRequest) {
+  // Mock duplicate field name check
+  if (data.name.toLowerCase() === "cancha central") {
+    throw new Error("Ya existe una cancha con ese nombre");
+  }
+
   // Mock successful field creation response
   return { success: true };
 

@@ -5,7 +5,7 @@ import { useCreateField } from "@/services/CreateFieldServices";
 import "./CreateFieldScreen.css";
 
 export const CreateFieldScreen = () => {
-  const { mutate, error } = useCreateField();
+  const { mutate, error, isSuccess } = useCreateField();
 
   const formData = useAppForm({
     defaultValues: {
@@ -21,7 +21,13 @@ export const CreateFieldScreen = () => {
     validators: {
       onSubmit: CreateFieldRequestSchema as any,
     },
-    onSubmit: async ({ value }) => mutate(value),
+    onSubmit: async ({ value }) => {
+      await mutate(value);
+      if (!error) {
+        // Reset form after successful submission
+        formData.reset();
+      }
+    },
   });
 
   return (
@@ -29,7 +35,17 @@ export const CreateFieldScreen = () => {
       <div className="create-field-container">
         <h1 className="create-field-title">Crear Nueva Cancha</h1>
         <formData.AppForm>
-          <formData.FormContainer extraError={error}>
+          {error && (
+            <div className="error-banner">
+              <p>{error.message}</p>
+            </div>
+          )}
+          {isSuccess && (
+            <div className="success-banner">
+              <p>¡La cancha se creó exitosamente!</p>
+            </div>
+          )}
+          <formData.FormContainer extraError={null}>
             <div className="form-grid">
               <div className="full-width">
                 <formData.AppField 
