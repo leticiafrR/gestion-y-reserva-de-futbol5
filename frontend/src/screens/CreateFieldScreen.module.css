@@ -1,4 +1,4 @@
-.create-field-container {
+.createFieldContainer {
   --primary-hover: #794a7a;
   --primary-light: #a4a4a4;
   --border-color: #e2e8f0;
@@ -20,7 +20,7 @@
   box-shadow: var(--shadow-md);
 }
 
-.create-field-title {
+.createFieldTitle {
   text-align: center;
   color: var(--text-primary);
   margin-bottom: 2rem;
@@ -28,13 +28,13 @@
   font-weight: 600;
 }
 
-.form-grid {
+.formGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.25rem;
 }
 
-.full-width {
+.fullWidth {
   grid-column: 1 / -1;
 }
 
@@ -66,7 +66,7 @@ label {
   font-weight: 500;
 }
 
-.form-select {
+.formSelect {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -75,13 +75,13 @@ label {
   padding-right: 2.5rem;
 }
 
-.checkbox-group {
+.checkboxGroup {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.checkbox-label {
+.checkboxLabel {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -94,13 +94,13 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 
-.form-textarea {
+.formTextarea {
   resize: vertical;
   min-height: 100px;
 }
 
 /* Error message banner */
-.error-banner {
+.errorBanner {
   background-color: var(--error-bg);
   border: 1px solid var(--error-color);
   border-radius: var(--radius-md);
@@ -113,19 +113,19 @@ input[type="checkbox"] {
   font-weight: 500;
 }
 
-.error-banner::before {
+.errorBanner::before {
   content: "⚠️";
   font-size: 1.25rem;
 }
 
-.error-banner p {
+.errorBanner p {
   margin: 0;
   font-size: 1rem;
   line-height: 1.4;
 }
 
 /* Regular field error messages */
-.error-message {
+.errorMessage {
   color: var(--error-color);
   font-size: 0.9rem;
   margin-top: 0.25rem;
@@ -134,13 +134,13 @@ input[type="checkbox"] {
   gap: 0.5rem;
 }
 
-.error-message::before {
+.errorMessage::before {
   content: "•";
   font-size: 1.2rem;
 }
 
 /* Success message banner */
-.success-banner {
+.successBanner {
   background-color: var(--success-bg);
   border: 1px solid var(--success-color);
   border-radius: var(--radius-md);
@@ -153,28 +153,28 @@ input[type="checkbox"] {
   font-weight: 500;
 }
 
-.success-banner::before {
+.successBanner::before {
   content: "✅";
   font-size: 1.25rem;
 }
 
-.success-banner p {
+.successBanner p {
   margin: 0;
   font-size: 1rem;
   line-height: 1.4;
 }
 
 @media (max-width: 640px) {
-  .form-grid {
+  .formGrid {
     grid-template-columns: 1fr;
   }
 
-  .create-field-container {
+  .createFieldContainer {
     padding: 1.5rem;
     margin: 1rem auto;
   }
 
-  .create-field-title {
+  .createFieldTitle {
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
   }

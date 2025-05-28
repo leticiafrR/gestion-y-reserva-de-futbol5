@@ -2,7 +2,7 @@ import { CommonLayout } from "@/components/CommonLayout/CommonLayout";
 import { useAppForm } from "@/config/use-app-form";
 import { CreateFieldRequestSchema } from "@/models/CreateField";
 import { useCreateField } from "@/services/CreateFieldServices";
-import "./CreateFieldScreen.css";
+import styles from "./CreateFieldScreen.module.css";
 
 export const CreateFieldScreen = () => {
   const { mutate, error, isSuccess } = useCreateField();
@@ -32,22 +32,22 @@ export const CreateFieldScreen = () => {
 
   return (
     <CommonLayout>
-      <div className="create-field-container">
-        <h1 className="create-field-title">Crear Nueva Cancha</h1>
+      <div className={styles.createFieldContainer}>
+        <h1 className={styles.createFieldTitle}>Crear Nueva Cancha</h1>
         <formData.AppForm>
           {error && (
-            <div className="error-banner">
+            <div className={styles.errorBanner}>
               <p>{error.message}</p>
             </div>
           )}
           {isSuccess && (
-            <div className="success-banner">
+            <div className={styles.successBanner}>
               <p>¡La cancha se creó exitosamente!</p>
             </div>
           )}
           <formData.FormContainer extraError={null}>
-            <div className="form-grid">
-              <div className="full-width">
+            <div className={styles.formGrid}>
+              <div className={styles.fullWidth}>
                 <formData.AppField 
                   name="name" 
                   children={(field) => <field.TextField label="Nombre de la cancha" />} 
@@ -62,7 +62,7 @@ export const CreateFieldScreen = () => {
                     <select 
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value as "natural" | "sintetico")}
-                      className="form-select"
+                      className={styles.formSelect}
                     >
                       <option value="sintetico">Sintético</option>
                       <option value="natural">Natural</option>
@@ -74,8 +74,8 @@ export const CreateFieldScreen = () => {
               <formData.AppField 
                 name="hasLighting" 
                 children={(field) => (
-                  <div className="checkbox-group">
-                    <label className="checkbox-label">
+                  <div className={styles.checkboxGroup}>
+                    <label className={styles.checkboxLabel}>
                       <input
                         type="checkbox"
                         checked={field.state.value}
@@ -87,21 +87,21 @@ export const CreateFieldScreen = () => {
                 )} 
               />
 
-              <div className="full-width">
+              <div className={styles.fullWidth}>
                 <formData.AppField 
                   name="location.area" 
                   children={(field) => <field.TextField label="Área" />} 
                 />
               </div>
 
-              <div className="full-width">
+              <div className={styles.fullWidth}>
                 <formData.AppField 
                   name="location.address" 
                   children={(field) => <field.TextField label="Dirección" />} 
                 />
               </div>
 
-              <div className="full-width">
+              <div className={styles.fullWidth}>
                 <formData.AppField 
                   name="photos" 
                   children={(field) => (
@@ -112,7 +112,7 @@ export const CreateFieldScreen = () => {
                         onChange={(e) => field.handleChange(e.target.value.split("\n").filter(Boolean))}
                         placeholder="Ingrese URLs de fotos, una por línea"
                         rows={3}
-                        className="form-textarea"
+                        className={styles.formTextarea}
                       />
                     </div>
                   )} 
