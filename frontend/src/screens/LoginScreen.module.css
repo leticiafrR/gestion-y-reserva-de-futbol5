@@ -22,7 +22,7 @@
 
 .loginTitle {
   text-align: center;
-  color: var(--primary-color, #333);
+  color: var(--primary-color, #002fff);
   margin-bottom: 1.5rem;
   font-size: 1.75rem;
   font-weight: 600;

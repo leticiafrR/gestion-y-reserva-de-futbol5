@@ -97,6 +97,7 @@ input[type="checkbox"] {
 .formTextarea {
   resize: vertical;
   min-height: 100px;
+  color: var(--text-primary);
 }
 
 /* Error message banner */

@@ -6,6 +6,7 @@
   font-size: 1.05rem;
   transition: all 0.2s;
   background-color: var(--background-white, #ffffff);
+  color: var(--text-primary);
 }
 
 .input:focus {
