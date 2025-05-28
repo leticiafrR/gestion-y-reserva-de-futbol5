@@ -66,7 +66,7 @@ ul {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #827aca;
+    color: #0e0078;
     background-color: #ffffff;
   }
   a:hover {
