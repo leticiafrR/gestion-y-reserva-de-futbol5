@@ -3,6 +3,7 @@ import { Redirect, Route, Switch } from "wouter";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { MainScreen } from "@/screens/MainScreen";
 import { SignupScreen } from "@/screens/SignupScreen";
+import { CreateFieldScreen } from "@/screens/CreateFieldScreen"
 import { useToken } from "@/services/TokenContext";
 
 export const Navigation = () => {
@@ -15,7 +16,7 @@ export const Navigation = () => {
             <MainScreen />
           </Route>
           <Route path="/create-field">
-            <MainScreen /> {/* Temporarily using MainScreen, we'll create proper screens later */}
+            <CreateFieldScreen /> {/* Temporarily using MainScreen, we'll create proper screens later */}
           </Route>
           <Route path="/search-field">
             <MainScreen /> {/* Temporarily using MainScreen, we'll create proper screens later */}
