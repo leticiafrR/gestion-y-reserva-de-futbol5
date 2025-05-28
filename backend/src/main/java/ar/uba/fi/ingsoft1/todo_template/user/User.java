@@ -24,6 +24,9 @@ public class User implements UserDetails, UserCredentials {
     @Column(unique = true, nullable = false)
     private String username;
 
+    @Column(unique = true, nullable = false)
+    private String email;
+
     @Column(nullable = false)
     private String password;
 
@@ -32,9 +35,10 @@ public class User implements UserDetails, UserCredentials {
 
     public User() {}
 
-    public User(String username, String password) {
+    public User(String username, String email, String password) {
         this.username = username;
         this.password = password;
+        this.email = email;
         this.role = "USER";
     }
 
@@ -61,6 +65,8 @@ public class User implements UserDetails, UserCredentials {
     public String getRole() {
         return role;
     }
+
+    public String getEmail() {return email;}
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

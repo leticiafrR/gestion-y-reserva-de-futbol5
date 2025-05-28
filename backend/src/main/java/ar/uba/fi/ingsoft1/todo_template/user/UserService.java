@@ -47,7 +47,7 @@ class UserService implements UserDetailsService {
     }
 
     Optional<TokenDTO> createUser(UserCreateDTO data) {
-        if (userRepository.findByUsername(data.username()).isPresent()) {
+        if (userRepository.findByUsername(data.username()).isPresent() || userRepository.findByEmail(data.email()).isPresent()) {
             return loginUser(data);
         } else {
             var user = data.asUser(passwordEncoder::encode);
