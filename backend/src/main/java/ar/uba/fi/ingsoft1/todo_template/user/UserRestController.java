@@ -6,6 +6,7 @@ import ar.uba.fi.ingsoft1.todo_template.dto.PaginatedResponse;
 import ar.uba.fi.ingsoft1.todo_template.dto.UserProfileDTO;
 import ar.uba.fi.ingsoft1.todo_template.dto.UserSearchResultDTO;
 import ar.uba.fi.ingsoft1.todo_template.user.TokenDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,9 +25,11 @@ import java.util.List;
 @Tag(name = "1 - Usuarios", description = "Endpoints de gestión de usuarios")
 public class UserRestController {
         private final JwtService jwtService;
+        private final EmailVerificationService emailVerificationService;
 
-        public UserRestController(JwtService jwtService) {
+        public UserRestController(JwtService jwtService, EmailVerificationService emailVerificationService) {
                 this.jwtService = jwtService;
+                this.emailVerificationService = emailVerificationService;
         }
 
         @PostMapping("/register")
@@ -212,5 +215,20 @@ public class UserRestController {
                                                 "femenino"));
                 var pagination = new PaginatedResponse.PaginationInfo(page, limit, 2, 1);
                 return ResponseEntity.ok(new PaginatedResponse<>(results, pagination));
+        }
+
+        @GetMapping("/verify")
+        @Operation(summary = "Verificar email", description = "Verifica el email del usuario usando el token enviado")
+        @ApiResponses(value = {
+                @ApiResponse(responseCode = "200", description = "Email verificado exitosamente"),
+                @ApiResponse(responseCode = "400", description = "Token inválido o expirado")
+        })
+        public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+                boolean verified = emailVerificationService.verifyEmail(token);
+                if (verified) {
+                        return ResponseEntity.ok("Email verificado exitosamente");
+                } else {
+                        return ResponseEntity.badRequest().body("Token inválido o expirado");
+                }
         }
 }

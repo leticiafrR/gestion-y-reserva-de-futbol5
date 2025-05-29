@@ -42,6 +42,9 @@ public class User implements UserDetails, UserCredentials {
     @Column(nullable = false)
     private String address;
 
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
     public User(String username, String password, String email, String gender, String age, String address) {
         this.username = username;
         this.password = password;
@@ -85,6 +88,14 @@ public class User implements UserDetails, UserCredentials {
     }
 
     public String getEmail() {return email;}
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

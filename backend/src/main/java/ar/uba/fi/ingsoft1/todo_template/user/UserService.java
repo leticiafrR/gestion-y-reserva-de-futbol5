@@ -4,6 +4,7 @@ import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshToken;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshTokenService;
+import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -12,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.Optional;
 
 @Service
@@ -22,18 +24,21 @@ class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
+    private final EmailVerificationService emailVerificationService;
 
     @Autowired
     UserService(
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
             UserRepository userRepository,
-            RefreshTokenService refreshTokenService
+            RefreshTokenService refreshTokenService,
+            EmailVerificationService emailVerificationService
     ) {
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.refreshTokenService = refreshTokenService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Override
@@ -46,7 +51,7 @@ class UserService implements UserDetailsService {
                 });
     }
 
-    Optional<TokenDTO> createUser(UserCreateDTO data) {
+    Optional<TokenDTO> createUser(UserCreateDTO data) throws IOException {
         if (userRepository.findByUsername(data.username()).isPresent()) {
             throw new IllegalArgumentException("Username already registered");
         }
@@ -57,6 +62,8 @@ class UserService implements UserDetailsService {
 
         var user = data.asUser(passwordEncoder::encode);
         userRepository.save(user);
+
+        emailVerificationService.sendVerificationEmail(user);
         return Optional.of(generateTokens(user));
     }
 
