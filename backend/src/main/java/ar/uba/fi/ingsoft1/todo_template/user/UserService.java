@@ -71,6 +71,8 @@ class UserService implements UserDetailsService {
         Optional<User> maybeUser = userRepository.findByUsername(data.username());
         return maybeUser
                 .filter(user -> passwordEncoder.matches(data.password(), user.getPassword()))
+                .filter(User::isEmailVerified)
+                .filter(User::isActive)
                 .map(this::generateTokens);
     }
 
