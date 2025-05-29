@@ -45,6 +45,9 @@ public class User implements UserDetails, UserCredentials {
     @Column(nullable = false)
     private boolean emailVerified = false;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     public User(String username, String password, String email, String gender, String age, String address) {
         this.username = username;
         this.password = password;
@@ -54,13 +57,6 @@ public class User implements UserDetails, UserCredentials {
         this.email = email;
         this.role = "USER";
         this.address = address;
-    }
-
-    public User(String username, String email, String password) {
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.role = "USER";
     }
 
     @Override
@@ -96,6 +92,9 @@ public class User implements UserDetails, UserCredentials {
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
     }
+
+    public boolean isActive() {return active;}
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
