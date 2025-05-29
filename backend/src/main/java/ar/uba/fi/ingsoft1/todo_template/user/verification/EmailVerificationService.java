@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -32,7 +31,7 @@ public class EmailVerificationService {
         this.tokenExpirationHours = tokenExpirationHours;
     }
 
-    public void sendVerificationEmail(User user) throws IOException {
+    public void sendVerificationEmail(User user) {
         String token = generateVerificationToken();
         Instant expiryDate = Instant.now().plus(tokenExpirationHours, ChronoUnit.HOURS);
 

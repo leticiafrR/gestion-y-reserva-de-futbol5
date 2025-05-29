@@ -13,7 +13,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.util.Optional;
 
 @Service
@@ -51,7 +50,7 @@ class UserService implements UserDetailsService {
                 });
     }
 
-    Optional<TokenDTO> createUser(UserCreateDTO data) throws IOException {
+    Optional<TokenDTO> createUser(UserCreateDTO data) {
         if (userRepository.findByUsername(data.username()).isPresent()) {
             throw new IllegalArgumentException("Username already registered");
         }
