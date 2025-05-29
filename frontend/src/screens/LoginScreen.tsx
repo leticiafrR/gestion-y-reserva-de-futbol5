@@ -9,7 +9,7 @@ export const LoginScreen = () => {
 
   const formData = useAppForm({
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
     validators: {
@@ -25,14 +25,14 @@ export const LoginScreen = () => {
         <formData.AppForm>
           {error && (
             <div className={styles.errorBanner}>
-              <p>Usuario o contraseña incorrectos</p>
+              <p>Email o contraseña incorrectos</p>
             </div>
           )}
           <formData.FormContainer extraError={null}>
             <div className={styles.formGrid}>
               <formData.AppField 
-                name="username" 
-                children={(field) => <field.TextField label="Username" />} 
+                name="email" 
+                children={(field) => <field.TextField label="Email" />} 
               />
               <formData.AppField 
                 name="password" 
