@@ -1,4 +1,6 @@
-import React, { Dispatch, useContext, useState } from "react";
+import React, { Dispatch, useContext, useState, useEffect } from "react";
+
+const TOKEN_KEY = "authToken";
 
 type TokenContextData =
   | {
@@ -13,7 +15,21 @@ type TokenContextData =
 const TokenContext = React.createContext<[TokenContextData, Dispatch<TokenContextData>] | null>(null);
 
 export const TokenProvider = ({ children }: React.PropsWithChildren) => {
-  const [state, setState] = useState<TokenContextData>({ state: "LOGGED_OUT" });
+  // Lee el token de localStorage al iniciar
+  const [state, setState] = useState<TokenContextData>(() => {
+    const stored = localStorage.getItem(TOKEN_KEY);
+    return stored ? JSON.parse(stored) : { state: "LOGGED_OUT" };
+  });
+
+  // Guarda el token en localStorage cuando cambia
+  useEffect(() => {
+    if (state.state === "LOGGED_IN") {
+      localStorage.setItem(TOKEN_KEY, JSON.stringify(state));
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  }, [state]);
+
   return <TokenContext.Provider value={[state, setState]}>{children}</TokenContext.Provider>;
 };
 

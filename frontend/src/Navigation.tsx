@@ -5,9 +5,11 @@ import { MainScreen } from "@/screens/MainScreen";
 import { SignupScreen } from "@/screens/SignupScreen";
 import { CreateFieldScreen } from "@/screens/CreateFieldScreen"
 import { useToken } from "@/services/TokenContext";
+import { FieldManagementScreen } from "@/screens/FieldManagementScreen";
 
 export const Navigation = () => {
   const [tokenState] = useToken();
+  console.log("tokenState", tokenState); // <-- agrega esto
   switch (tokenState.state) {
     case "LOGGED_IN":
       return (
@@ -18,8 +20,8 @@ export const Navigation = () => {
           <Route path="/create-field">
             <CreateFieldScreen /> {/* Temporarily using MainScreen, we'll create proper screens later */}
           </Route>
-          <Route path="/search-field">
-            <MainScreen /> {/* Temporarily using MainScreen, we'll create proper screens later */}
+          <Route path="/canchas">
+            <FieldManagementScreen />
           </Route>
           <Route path="/">
             <Redirect href="/main" />

@@ -1,13 +1,72 @@
 import { CommonLayout } from "@/components/CommonLayout/CommonLayout";
 import { useAppForm } from "@/config/use-app-form";
-import { SignupRequestSchema} from "@/models/Signup";
+import { SignupRequestSchema } from "@/models/Signup";
 import { useSignup } from "@/services/SignupServices";
 import styles from "./SignupScreen.module.css";
 import { useId } from "react";
 import inputStyles from "@/components/form-components/InputFields/InputFields.module.css";
 
+type FieldComponentProps = {
+  field: any;
+};
+
+const AgeField = ({ field }: FieldComponentProps) => {
+  const id = useId();
+  return (
+    <div className={inputStyles.fieldContainer}>
+      <label htmlFor={id} className={inputStyles.label}>
+        Age
+      </label>
+      <div className={inputStyles.dataContainer}>
+        <input
+          id={id}
+          name={field.name}
+          type="number"
+          value={field.state.value}
+          className={`${inputStyles.input} ${
+            field.state.meta.errors.length > 0 ? inputStyles.error : ""
+          }`}
+          placeholder={
+            field.state.meta.errors.length > 0
+              ? field.state.meta.errors[0].message
+              : ""
+          }
+          onBlur={field.handleBlur}
+          onChange={(e) => field.handleChange(parseInt(e.target.value) || 0)}
+        />
+      </div>
+    </div>
+  );
+};
+
+const GenderField = ({ field }: FieldComponentProps) => {
+  const id = useId();
+  return (
+    <div className={inputStyles.fieldContainer}>
+      <label htmlFor={id} className={inputStyles.label}>
+        Gender
+      </label>
+      <div className={inputStyles.dataContainer}>
+        <select
+          id={id}
+          value={field.state.value}
+          onChange={(e) =>
+            field.handleChange(e.target.value as "male" | "female" | "other")
+          }
+          className={inputStyles.input}
+        >
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+  );
+};
+
 export const SignupScreen = () => {
-  const { mutate, error} = useSignup();
+  console.log("SignupScreen mounted");
+  const { mutate, error } = useSignup();
 
   const formData = useAppForm({
     defaultValues: {
@@ -33,86 +92,46 @@ export const SignupScreen = () => {
         <formData.AppForm>
           <formData.FormContainer extraError={error}>
             <div className={styles.formGrid}>
-              <formData.AppField 
-                name="firstName" 
-                children={(field) => <field.TextField label="First Name" />} 
+              <formData.AppField
+                name="firstName"
+                children={(field) => <field.TextField label="First Name" />}
               />
-              <formData.AppField 
-                name="lastName" 
-                children={(field) => <field.TextField label="Last Name" />} 
+              <formData.AppField
+                name="lastName"
+                children={(field) => <field.TextField label="Last Name" />}
               />
               <div className={styles.fullWidth}>
-                <formData.AppField 
-                  name="email" 
-                  children={(field) => <field.TextField label="Email" />} 
+                <formData.AppField
+                  name="email"
+                  children={(field) => <field.TextField label="Email" />}
                 />
               </div>
               <div className={styles.fullWidth}>
-                <formData.AppField 
-                  name="photo" 
-                  children={(field) => <field.TextField label="Photo URL (optional)" />} 
+                <formData.AppField
+                  name="photo"
+                  children={(field) => (
+                    <field.TextField label="Photo URL (optional)" />
+                  )}
                 />
               </div>
-              <formData.AppField 
-                name="age" 
-                children={(field) => {
-                  const id = useId();
-                  return (
-                    <div className={inputStyles.fieldContainer}>
-                      <label htmlFor={id} className={inputStyles.label}>
-                        Age
-                      </label>
-                      <div className={inputStyles.dataContainer}>
-                        <input
-                          id={id}
-                          name={field.name}
-                          type="number"
-                          value={field.state.value}
-                          className={`${inputStyles.input} ${field.state.meta.errors.length > 0 ? inputStyles.error : ""}`}
-                          placeholder={field.state.meta.errors.length > 0 ? field.state.meta.errors[0].message : ""}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                    </div>
-                  );
-                }}
+              <formData.AppField
+                name="age"
+                children={(field) => <AgeField field={field} />}
               />
-              <formData.AppField 
-                name="gender" 
-                children={(field) => {
-                  const id = useId();
-                  return (
-                    <div className={inputStyles.fieldContainer}>
-                      <label htmlFor={id} className={inputStyles.label}>
-                        Gender
-                      </label>
-                      <div className={inputStyles.dataContainer}>
-                        <select 
-                          id={id}
-                          value={field.state.value}
-                          onChange={(e) => field.handleChange(e.target.value as "male" | "female" | "other")}
-                          className={inputStyles.input}
-                        >
-                          <option value="male">Male</option>
-                          <option value="female">Female</option>
-                          <option value="other">Other</option>
-                        </select>
-                      </div>
-                    </div>
-                  );
-                }} 
+              <formData.AppField
+                name="gender"
+                children={(field) => <GenderField field={field} />}
               />
               <div className={styles.fullWidth}>
-                <formData.AppField 
-                  name="zone" 
-                  children={(field) => <field.TextField label="Zone" />} 
+                <formData.AppField
+                  name="zone"
+                  children={(field) => <field.TextField label="Zone" />}
                 />
               </div>
               <div className={styles.fullWidth}>
-                <formData.AppField 
-                  name="password" 
-                  children={(field) => <field.PasswordField label="Password" />} 
+                <formData.AppField
+                  name="password"
+                  children={(field) => <field.PasswordField label="Password" />}
                 />
               </div>
             </div>
