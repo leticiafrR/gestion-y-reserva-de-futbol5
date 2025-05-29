@@ -137,6 +137,11 @@ export const SignupScreen = () => {
             </div>
           </formData.FormContainer>
         </formData.AppForm>
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button type="button" style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer" }} onClick={() => window.location.href = "/login"}>
+            ¿Ya tienes cuenta? Inicia sesión
+          </button>
+        </div>
       </div>
     </CommonLayout>
   );

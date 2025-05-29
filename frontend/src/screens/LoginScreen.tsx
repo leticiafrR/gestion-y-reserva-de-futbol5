@@ -41,6 +41,11 @@ export const LoginScreen = () => {
             </div>
           </formData.FormContainer>
         </formData.AppForm>
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button type="button" style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer" }} onClick={() => window.location.href = "/signup"}>
+            ¿No tienes cuenta? Regístrate
+          </button>
+        </div>
       </div>
     </CommonLayout>
   );
