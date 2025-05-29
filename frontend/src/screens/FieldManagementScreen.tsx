@@ -164,7 +164,7 @@ export const FieldManagementScreen = () => {
                 navigate("/main")
               }}
             >
-              Volver al Dashboard
+              Volver a Inicio
             </button>
           </div>
         </div>
