@@ -31,8 +31,7 @@ class UserService implements UserDetailsService {
             PasswordEncoder passwordEncoder,
             UserRepository userRepository,
             RefreshTokenService refreshTokenService,
-            EmailVerificationService emailVerificationService
-    ) {
+            EmailVerificationService emailVerificationService) {
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
@@ -51,7 +50,7 @@ class UserService implements UserDetailsService {
     }
 
     Optional<TokenDTO> createUser(UserCreateDTO data) {
-        if (userRepository.findByUsername(data.username()).isPresent()) {
+        if (userRepository.findByUsername(data.username()).isPresent()) {// TODO: aun no se handlea el error
             throw new IllegalArgumentException("Username already registered");
         }
 
@@ -84,8 +83,8 @@ class UserService implements UserDetailsService {
     private TokenDTO generateTokens(User user) {
         String accessToken = jwtService.createToken(new JwtUserDetails(
                 user.getUsername(),
-                user.getRole()
-        ));
+                user.getRole()));
+
         RefreshToken refreshToken = refreshTokenService.createFor(user);
         return new TokenDTO(accessToken, refreshToken.value());
     }
