@@ -4,12 +4,20 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -18,14 +26,8 @@ import java.util.List;
 public class User implements UserDetails, UserCredentials {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(unique = true, nullable = false)
-    private String username;
-
-    @Column(unique = true, nullable = false)
-    private String email;
 
     @Column(nullable = false)
     private String password;
@@ -33,30 +35,37 @@ public class User implements UserDetails, UserCredentials {
     @Column(nullable = false)
     private String role;
 
+    @Column(unique = true, nullable = false)
+    private String username;
+
+    @Column(unique = true, nullable = false)
+    @Email
+    private String email;
+
     @Column(nullable = false)
     private String gender;
 
     @Column(nullable = false)
-    private String age;
+    private Integer age;// TODO: must be a birthdate
 
     @Column(nullable = false)
     private String address;
 
-    @Column(nullable = false)
-    private boolean emailVerified = false;
+    @Column(name = "is_email_verified", nullable = false, columnDefinition = "boolean default false")
+    private Boolean emailVerified = false;
 
     @Column(nullable = false)
-    private boolean active = true;
+    private Boolean active = true;
 
-    public User(String username, String password, String email, String gender, String age, String address) {
+    public User(String username, String email, String password, String role, String gender, String age,
+            String address) {
         this.username = username;
         this.password = password;
-        this.age = age;
+        this.age = Integer.parseInt(age);
         this.gender = gender;
         this.address = address;
         this.email = email;
-        this.role = "USER";
-        this.address = address;
+        this.role = role;
     }
 
     @Override
@@ -83,7 +92,9 @@ public class User implements UserDetails, UserCredentials {
         return role;
     }
 
-    public String getEmail() {return email;}
+    public String getEmail() {
+        return email;
+    }
 
     public boolean isEmailVerified() {
         return emailVerified;
@@ -93,8 +104,9 @@ public class User implements UserDetails, UserCredentials {
         this.emailVerified = emailVerified;
     }
 
-    public boolean isActive() {return active;}
-
+    public boolean isActive() {
+        return active;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
