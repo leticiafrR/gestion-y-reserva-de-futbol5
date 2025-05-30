@@ -6,7 +6,7 @@ import ar.uba.fi.ingsoft1.todo_template.dto.PaginatedResponse;
 import ar.uba.fi.ingsoft1.todo_template.dto.UserProfileDTO;
 import ar.uba.fi.ingsoft1.todo_template.dto.UserSearchResultDTO;
 import ar.uba.fi.ingsoft1.todo_template.user.TokenDTO;
-import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
+// import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,17 +19,16 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
 @Tag(name = "1 - Usuarios", description = "Endpoints de gestión de usuarios")
 public class UserRestController {
-        private final JwtService jwtService;
-        private final EmailVerificationService emailVerificationService;
+        private UserService userService;
 
-        public UserRestController(JwtService jwtService, EmailVerificationService emailVerificationService) {
-                this.jwtService = jwtService;
-                this.emailVerificationService = emailVerificationService;
+        public UserRestController(UserService userService) {
+                this.userService = userService;
         }
 
         @PostMapping("/register")
@@ -39,14 +38,14 @@ public class UserRestController {
                         @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
         })
         public ResponseEntity<TokenDTO> register(
-                        @Parameter(description = "Datos de registro del usuario") @Valid @RequestBody UserProfileDTO userData) {
+                        @Parameter(description = "Datos de registro del usuario") @Valid @RequestBody UserCreateDTO userData) {
 
-                JwtUserDetails userDetails = new JwtUserDetails(userData.userId(), userData.gender());
-                String token = jwtService.createToken(userDetails);
+                Optional<TokenDTO> tokenOpt = userService.createUser(userData);
 
-                return ResponseEntity.status(HttpStatus.CREATED)
-                                .body(new TokenDTO(token, "nuevo_token_actualizacion")); // por el momento el token
-                                                                                         // refresh es de juguete
+                if (tokenOpt.isPresent()) {
+                        return ResponseEntity.status(HttpStatus.CREATED).body(tokenOpt.get());
+                }
+                return ResponseEntity.badRequest().build();
         }
 
         @PostMapping("/token")
@@ -121,114 +120,151 @@ public class UserRestController {
                 return ResponseEntity.noContent().build();
         }
 
-        @GetMapping("/search")
-        @Operation(summary = "Buscar usuarios", description = "Busca usuarios por nombre, apellido o email")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Búsqueda completada exitosamente")
-        })
-        public ResponseEntity<PaginatedResponse<UserSearchResultDTO>> searchUsers(
-                        @Parameter(description = "Término de búsqueda") @RequestParam String query,
-                        @Parameter(description = "Número de página (comienza en 1)") @RequestParam(defaultValue = "1") int page,
-                        @Parameter(description = "Resultados por página") @RequestParam(defaultValue = "10") int limit) {
-                // Implementación dummy
-                var results = List.of(
-                                new UserSearchResultDTO("usuario1", "Juan", "Pérez", "https://ejemplo.com/1.jpg",
-                                                "masculino"),
-                                new UserSearchResultDTO("usuario2", "María", "González", "https://ejemplo.com/2.jpg",
-                                                "femenino"));
-                var pagination = new PaginatedResponse.PaginationInfo(page, limit, 2, 1);
-                return ResponseEntity.ok(new PaginatedResponse<>(results, pagination));
-        }
+        // @GetMapping("/search")
+        // @Operation(summary = "Buscar usuarios", description = "Busca usuarios por
+        // nombre, apellido o email")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Búsqueda completada
+        // exitosamente")
+        // })
+        // public ResponseEntity<PaginatedResponse<UserSearchResultDTO>> searchUsers(
+        // @Parameter(description = "Término de búsqueda") @RequestParam String query,
+        // @Parameter(description = "Número de página (comienza en 1)")
+        // @RequestParam(defaultValue = "1") int page,
+        // @Parameter(description = "Resultados por página") @RequestParam(defaultValue
+        // = "10") int limit) {
+        // // Implementación dummy
+        // var results = List.of(
+        // new UserSearchResultDTO("usuario1", "Juan", "Pérez",
+        // "https://ejemplo.com/1.jpg",
+        // "masculino"),
+        // new UserSearchResultDTO("usuario2", "María", "González",
+        // "https://ejemplo.com/2.jpg",
+        // "femenino"));
+        // var pagination = new PaginatedResponse.PaginationInfo(page, limit, 2, 1);
+        // return ResponseEntity.ok(new PaginatedResponse<>(results, pagination));
+        // }
 
-        @PostMapping("/follow_requests/{targetUserId}")
-        @Operation(summary = "Enviar solicitud de seguimiento", description = "Envía una solicitud de seguimiento a otro usuario")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "201", description = "Solicitud enviada exitosamente"),
-                        @ApiResponse(responseCode = "400", description = "Solicitud inválida"),
-                        @ApiResponse(responseCode = "404", description = "Usuario objetivo no encontrado")
-        })
-        public ResponseEntity<Void> sendFollowRequest(
-                        @Parameter(description = "ID del usuario objetivo") @PathVariable String targetUserId) {
-                // Implementación dummy
-                return ResponseEntity.status(HttpStatus.CREATED).build();
-        }
+        // @PostMapping("/follow_requests/{targetUserId}")
+        // @Operation(summary = "Enviar solicitud de seguimiento", description = "Envía
+        // una solicitud de seguimiento a otro usuario")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "201", description = "Solicitud enviada
+        // exitosamente"),
+        // @ApiResponse(responseCode = "400", description = "Solicitud inválida"),
+        // @ApiResponse(responseCode = "404", description = "Usuario objetivo no
+        // encontrado")
+        // })
+        // public ResponseEntity<Void> sendFollowRequest(
+        // @Parameter(description = "ID del usuario objetivo") @PathVariable String
+        // targetUserId) {
+        // // Implementación dummy
+        // return ResponseEntity.status(HttpStatus.CREATED).build();
+        // }
 
-        @PostMapping("/me/follow_requests/{requestId}/accept")
-        @Operation(summary = "Aceptar solicitud de seguimiento", description = "Acepta una solicitud de seguimiento recibida")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Solicitud aceptada exitosamente"),
-                        @ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
-        })
-        public ResponseEntity<Void> acceptFollowRequest(
-                        @Parameter(description = "ID de la solicitud") @PathVariable String requestId) {
-                // Implementación dummy
-                return ResponseEntity.ok().build();
-        }
+        // @PostMapping("/me/follow_requests/{requestId}/accept")
+        // @Operation(summary = "Aceptar solicitud de seguimiento", description =
+        // "Acepta una solicitud de seguimiento recibida")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Solicitud aceptada
+        // exitosamente"),
+        // @ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
+        // })
+        // public ResponseEntity<Void> acceptFollowRequest(
+        // @Parameter(description = "ID de la solicitud") @PathVariable String
+        // requestId) {
+        // // Implementación dummy
+        // return ResponseEntity.ok().build();
+        // }
 
-        @PostMapping("/me/follow_requests/{requestId}/reject")
-        @Operation(summary = "Rechazar solicitud de seguimiento", description = "Rechaza una solicitud de seguimiento recibida")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Solicitud rechazada exitosamente"),
-                        @ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
-        })
-        public ResponseEntity<Void> rejectFollowRequest(
-                        @Parameter(description = "ID de la solicitud") @PathVariable String requestId) {
-                // Implementación dummy
-                return ResponseEntity.ok().build();
-        }
+        // @PostMapping("/me/follow_requests/{requestId}/reject")
+        // @Operation(summary = "Rechazar solicitud de seguimiento", description =
+        // "Rechaza una solicitud de seguimiento recibida")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Solicitud rechazada
+        // exitosamente"),
+        // @ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
+        // })
+        // public ResponseEntity<Void> rejectFollowRequest(
+        // @Parameter(description = "ID de la solicitud") @PathVariable String
+        // requestId) {
+        // // Implementación dummy
+        // return ResponseEntity.ok().build();
+        // }
 
-        @GetMapping("/{targetUserId}/followed")
-        @Operation(summary = "Obtener usuarios seguidos", description = "Obtiene la lista de usuarios seguidos por un usuario específico")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente"),
-                        @ApiResponse(responseCode = "404", description = "Usuario objetivo no encontrado")
-        })
-        public ResponseEntity<PaginatedResponse<UserSearchResultDTO>> getFollowedUsers(
-                        @Parameter(description = "ID del usuario objetivo") @PathVariable String targetUserId,
-                        @Parameter(description = "Número de página (comienza en 1)") @RequestParam(defaultValue = "1") int page,
-                        @Parameter(description = "Resultados por página") @RequestParam(defaultValue = "10") int limit) {
-                // Implementación dummy
-                var results = List.of(
-                                new UserSearchResultDTO("usuario1", "Juan", "Pérez", "https://ejemplo.com/1.jpg",
-                                                "masculino"),
-                                new UserSearchResultDTO("usuario2", "María", "González", "https://ejemplo.com/2.jpg",
-                                                "femenino"));
-                var pagination = new PaginatedResponse.PaginationInfo(page, limit, 2, 1);
-                return ResponseEntity.ok(new PaginatedResponse<>(results, pagination));
-        }
+        // @GetMapping("/{targetUserId}/followed")
+        // @Operation(summary = "Obtener usuarios seguidos", description = "Obtiene la
+        // lista de usuarios seguidos por un usuario específico")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Lista obtenida
+        // exitosamente"),
+        // @ApiResponse(responseCode = "404", description = "Usuario objetivo no
+        // encontrado")
+        // })
+        // public ResponseEntity<PaginatedResponse<UserSearchResultDTO>>
+        // getFollowedUsers(
+        // @Parameter(description = "ID del usuario objetivo") @PathVariable String
+        // targetUserId,
+        // @Parameter(description = "Número de página (comienza en 1)")
+        // @RequestParam(defaultValue = "1") int page,
+        // @Parameter(description = "Resultados por página") @RequestParam(defaultValue
+        // = "10") int limit) {
+        // // Implementación dummy
+        // var results = List.of(
+        // new UserSearchResultDTO("usuario1", "Juan", "Pérez",
+        // "https://ejemplo.com/1.jpg",
+        // "masculino"),
+        // new UserSearchResultDTO("usuario2", "María", "González",
+        // "https://ejemplo.com/2.jpg",
+        // "femenino"));
+        // var pagination = new PaginatedResponse.PaginationInfo(page, limit, 2, 1);
+        // return ResponseEntity.ok(new PaginatedResponse<>(results, pagination));
+        // }
 
-        @GetMapping("/{targetUserId}/followers")
-        @Operation(summary = "Obtener seguidores", description = "Obtiene la lista de usuarios que siguen a un usuario específico")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente"),
-                        @ApiResponse(responseCode = "404", description = "Usuario objetivo no encontrado")
-        })
-        public ResponseEntity<PaginatedResponse<UserSearchResultDTO>> getFollowers(
-                        @Parameter(description = "ID del usuario objetivo") @PathVariable String targetUserId,
-                        @Parameter(description = "Número de página (comienza en 1)") @RequestParam(defaultValue = "1") int page,
-                        @Parameter(description = "Resultados por página") @RequestParam(defaultValue = "10") int limit) {
-                // Implementación dummy
-                var results = List.of(
-                                new UserSearchResultDTO("usuario1", "Juan", "Pérez", "https://ejemplo.com/1.jpg",
-                                                "masculino"),
-                                new UserSearchResultDTO("usuario2", "María", "González", "https://ejemplo.com/2.jpg",
-                                                "femenino"));
-                var pagination = new PaginatedResponse.PaginationInfo(page, limit, 2, 1);
-                return ResponseEntity.ok(new PaginatedResponse<>(results, pagination));
-        }
+        // @GetMapping("/{targetUserId}/followers")
+        // @Operation(summary = "Obtener seguidores", description = "Obtiene la lista de
+        // usuarios que siguen a un usuario específico")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Lista obtenida
+        // exitosamente"),
+        // @ApiResponse(responseCode = "404", description = "Usuario objetivo no
+        // encontrado")
+        // })
 
-        @GetMapping("/verify")
-        @Operation(summary = "Verificar email", description = "Verifica el email del usuario usando el token enviado")
-        @ApiResponses(value = {
-                @ApiResponse(responseCode = "200", description = "Email verificado exitosamente"),
-                @ApiResponse(responseCode = "400", description = "Token inválido o expirado")
-        })
-        public ResponseEntity<String> verifyEmail(@RequestParam String token) {
-                boolean verified = emailVerificationService.verifyEmail(token);
-                if (verified) {
-                        return ResponseEntity.ok("Email verificado exitosamente");
-                } else {
-                        return ResponseEntity.badRequest().body("Token inválido o expirado");
-                }
-        }
+        // public ResponseEntity<PaginatedResponse<UserSearchResultDTO>> getFollowers(
+        // @Parameter(description = "ID del usuario objetivo") @PathVariable String
+        // targetUserId,
+        // @Parameter(description = "Número de página (comienza en 1)")
+        // @RequestParam(defaultValue = "1") int page,
+        // @Parameter(description = "Resultados por página") @RequestParam(defaultValue
+        // = "10") int limit) {
+        // // Implementación dummy
+        // var results = List.of(
+        // new UserSearchResultDTO("usuario1", "Juan", "Pérez",
+        // "https://ejemplo.com/1.jpg",
+        // "masculino"),
+        // new UserSearchResultDTO("usuario2", "María", "González",
+        // "https://ejemplo.com/2.jpg",
+        // "femenino"));
+        // var pagination = new PaginatedResponse.PaginationInfo(page, limit, 2, 1);
+        // return ResponseEntity.ok(new PaginatedResponse<>(results, pagination));
+        // }
+
+        // @GetMapping("/verify")
+        // @Operation(summary = "Verificar email", description = "Verifica el email del
+        // usuario usando el token enviado")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Email verificado
+        // exitosamente"),
+        // @ApiResponse(responseCode = "400", description = "Token inválido o expirado")
+        // })
+
+        // public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        // boolean verified = emailVerificationService.verifyEmail(token);
+        // if (verified) {
+        // return ResponseEntity.ok("Email verificado exitosamente");
+        // } else {
+        // return ResponseEntity.badRequest().body("Token inválido o expirado");
+        // }
+        // }
 }
