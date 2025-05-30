@@ -50,4 +50,9 @@ public class GlobalControllerExceptionHandler {
                 ex.getClass().getCanonicalName() + " " + ex.getMessage(),
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    // // DTO para errores personalizados
+    // public record ErrorDTO(String code, String message) {
+    // }<- TODO: hacer que se maneje las excepciones del programa
+
 }
