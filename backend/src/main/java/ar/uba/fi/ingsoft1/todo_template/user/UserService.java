@@ -4,6 +4,8 @@ import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshToken;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshTokenService;
+import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateEmailException;
+import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
 import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,7 +19,7 @@ import java.util.Optional;
 
 @Service
 @Transactional
-class UserService implements UserDetailsService {
+public class UserService implements UserDetailsService {
 
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
@@ -49,20 +51,12 @@ class UserService implements UserDetailsService {
                 });
     }
 
-    Optional<TokenDTO> createUser(UserCreateDTO data) {
-        if (userRepository.findByUsername(data.username()).isPresent()) {// TODO: aun no se handlea el error
-            throw new IllegalArgumentException("Username already registered");
-        }
-
-        if (userRepository.findByEmail(data.email()).isPresent()) {
-            throw new IllegalArgumentException("Email already registered");
-        }
-
+    TokenDTO createUser(UserCreateDTO data) {
+        checkUnicValuesToCreateUser(data);
         var user = data.asUser(passwordEncoder::encode);
         userRepository.save(user);
-
         emailVerificationService.sendVerificationEmail(user);
-        return Optional.of(generateTokens(user));
+        return generateTokens(user);
     }
 
     Optional<TokenDTO> loginUser(UserCredentials data) {
@@ -87,5 +81,15 @@ class UserService implements UserDetailsService {
 
         RefreshToken refreshToken = refreshTokenService.createFor(user);
         return new TokenDTO(accessToken, refreshToken.value());
+    }
+
+    private void checkUnicValuesToCreateUser(UserCreateDTO data) {
+        if (userRepository.existsByUsername(data.username())) {
+            throw new DuplicateUsernameException(data.username());
+        }
+
+        if (userRepository.existsByEmail(data.email())) {
+            throw new DuplicateEmailException(data.email());
+        }
     }
 }
