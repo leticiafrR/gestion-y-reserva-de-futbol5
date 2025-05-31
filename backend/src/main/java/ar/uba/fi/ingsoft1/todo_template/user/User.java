@@ -50,6 +50,9 @@ public class User implements UserDetails, UserCredentials {
     @Column(nullable = false)
     private Boolean active = true;
 
+    public User() {
+    }
+
     public User(String username, String email, String password, String role, String gender, String age,
             String address) {
         this.username = username;
