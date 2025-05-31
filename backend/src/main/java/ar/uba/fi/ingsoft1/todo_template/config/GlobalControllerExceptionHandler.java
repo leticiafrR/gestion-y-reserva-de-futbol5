@@ -1,6 +1,8 @@
 package ar.uba.fi.ingsoft1.todo_template.config;
 
 import ar.uba.fi.ingsoft1.todo_template.common.exception.ItemNotFoundException;
+import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateEmailException;
+import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,16 +21,22 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalControllerExceptionHandler {
 
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<UnicValueIsDuplicateResponse> handleDuplicateEmail(DuplicateEmailException ex) {
+        return new ResponseEntity<>(new UnicValueIsDuplicateResponse("email", ex.getMessage()), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(DuplicateUsernameException.class)
+    public ResponseEntity<UnicValueIsDuplicateResponse> handleDuplicateUsername(DuplicateUsernameException ex) {
+        return new ResponseEntity<>(new UnicValueIsDuplicateResponse("username", ex.getMessage()), HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(
-            MethodArgumentNotValidException ex) {
-
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
-
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             errors.put(error.getField(), error.getDefaultMessage());
         }
-
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
@@ -51,8 +59,7 @@ public class GlobalControllerExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // // DTO para errores personalizados
-    // public record ErrorDTO(String code, String message) {
-    // }<- TODO: hacer que se maneje las excepciones del programa
+    public record UnicValueIsDuplicateResponse(String field, String error_description) {
+    }
 
 }
