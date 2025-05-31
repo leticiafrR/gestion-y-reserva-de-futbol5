@@ -9,6 +9,7 @@ export const SignupRequestSchema = z.object({
   gender: z.enum(["male", "female", "other"]),
   zone: z.string().min(1, "Zone is required"),
   password: z.string().min(1, "Password must not be empty"),
+  userType: z.enum(["owner", "user"], { required_error: "User type is required" }),
 });
 
 export type SignupRequest = z.infer<typeof SignupRequestSchema>; 
