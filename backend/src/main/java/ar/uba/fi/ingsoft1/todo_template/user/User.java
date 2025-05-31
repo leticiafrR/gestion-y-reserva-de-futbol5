@@ -1,24 +1,17 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
+import java.time.Year;
 import java.util.Collection;
 import java.util.List;
 
@@ -46,7 +39,7 @@ public class User implements UserDetails, UserCredentials {
     private String gender;
 
     @Column(nullable = false)
-    private Integer age;// TODO: must be a birthdate
+    private Integer birthYear;
 
     @Column(nullable = false)
     private String address;
@@ -61,11 +54,17 @@ public class User implements UserDetails, UserCredentials {
             String address) {
         this.username = username;
         this.password = password;
-        this.age = Integer.parseInt(age);
+        this.birthYear = BirthYearFromStringAge(age);
         this.gender = gender;
         this.address = address;
         this.email = email;
         this.role = role;
+    }
+
+    private Integer BirthYearFromStringAge(String age) {
+        int ageValue = Integer.parseInt(age);
+        int currentYear = Year.now().getValue();
+        return currentYear - ageValue;
     }
 
     @Override
