@@ -1,53 +1,65 @@
 package ar.uba.fi.ingsoft1.todo_template.user.verification;
 
 import ar.uba.fi.ingsoft1.todo_template.user.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.UnableToSendMessageException;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
+import java.util.Locale;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
+import org.springframework.context.MessageSource;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Service
 public class EmailService {
-
-    // private static final Logger logger =
-    // LoggerFactory.getLogger(EmailService.class);
-
-    private final JavaMailSender mailSender;
-    private final String fromAddress;
+    @Autowired
+    private JavaMailSender mailSender;
 
     @Autowired
-    public EmailService(JavaMailSender mailSender,
-            @Value("${spring.mail.username}") String fromAddress) {
-        this.mailSender = mailSender;
-        this.fromAddress = fromAddress;
-    }
-    // public void sendVerificationEmail(User user, String token) {
-    // String verificationUrl = "http://localhost:30002/users/verify?token=" +
-    // token;
+    private TemplateEngine templateEngine;
 
-    // // logger.info("Simulated email sent to: {}", user.getEmail());
-    // // logger.info("Verification URL: {}", verificationUrl);
-    // // logger.info("Email content: Welcome to Fútbol 5! Please verify your
-    // // account.");
-    // //
-    // }
+    @Autowired
+    private MessageSource messageSource;
 
-    public void sendVerificationEmail(User user, String token) {
+    @Value("${spring.mail.username}")
+    private String fromAddress;
+
+    public void sendVerificationEmail(User user, String token, Locale locale) {
         String to = user.getEmail();
-        String subject = "Fútbol 5 - Email Verification";
-        String verificationUrl = "http://localhost:30002/users/verify?token=" + token;
-        String content = "Welcome to Fútbol 5! Please verify your account by clicking the link below:\n\n"
-                + verificationUrl;
+        String subject = messageSource.getMessage("mail.subject.verification", null, locale);
+        String htmlContent = getHtmlContent(locale, token);
+        try {
+            sendMessage(to, subject, htmlContent);
+        } catch (MessagingException e) {
+            throw new UnableToSendMessageException(to);
+        }
+    }
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(content);
-        message.setFrom(fromAddress);
-
+    private void sendMessage(String to, String subject, String htmlContent) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(htmlContent, true);
+        helper.setFrom(fromAddress);
         mailSender.send(message);
+    }
+
+    private String getHtmlContent(Locale locale, String token) {
+        String title = messageSource.getMessage("mail.template.title", null, locale);
+        String body = messageSource.getMessage("mail.template.body", null, locale);
+        String url = messageSource.getMessage("mail.verification.url", null, locale) + token;
+
+        Context context = new Context(locale);
+        context.setVariable("title", title);
+        context.setVariable("body", body);
+        context.setVariable("url", url);
+        return templateEngine.process("verification-email.html", context);
     }
 }
