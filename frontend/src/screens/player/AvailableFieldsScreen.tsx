@@ -9,6 +9,7 @@ export const AvailableFieldsScreen = () => {
   const [search, setSearch] = useState("");
   const [grassType, setGrassType] = useState("");
   const [onlyWithLighting, setOnlyWithLighting] = useState(false);
+  const [onlyRoofed, setOnlyRoofed] = useState(false); // Nuevo estado
 
   // Obtener tipos de césped únicos para el filtro
   const grassTypes = Array.from(new Set(fields?.map(f => f.grassType) ?? []));
@@ -18,7 +19,8 @@ export const AvailableFieldsScreen = () => {
     const matchesName = field.name.toLowerCase().includes(search.toLowerCase());
     const matchesGrass = grassType ? field.grassType === grassType : true;
     const matchesLighting = onlyWithLighting ? field.lighting : true;
-    return matchesName && matchesGrass && matchesLighting;
+    const matchesRoofed = onlyRoofed ? field.roofed : true; // Nuevo filtro
+    return matchesName && matchesGrass && matchesLighting && matchesRoofed;
   });
 
   if (isLoading) return <div style={{ textAlign: "center", marginTop: "2rem" }}>Cargando canchas...</div>;
@@ -77,6 +79,15 @@ export const AvailableFieldsScreen = () => {
           />
           Solo con iluminación
         </label>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1rem" }}>
+          <input
+            type="checkbox"
+            checked={onlyRoofed}
+            onChange={e => setOnlyRoofed(e.target.checked)}
+            style={{ width: 18, height: 18 }}
+          />
+          Solo techadas
+        </label>
       </div>
       <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
         {filteredFields.length === 0 && (
@@ -116,6 +127,12 @@ export const AvailableFieldsScreen = () => {
               <b>Iluminación:</b>{" "}
               <span style={{ color: field.lighting ? "#38a169" : "#e53e3e", fontWeight: 600 }}>
                 {field.lighting ? "Sí" : "No"}
+              </span>
+            </p>
+            <p style={{ margin: "0.2rem 0" }}>
+              <b>Techada:</b>{" "}
+              <span style={{ color: field.roofed ? "#38a169" : "#e53e3e", fontWeight: 600 }}>
+                {field.roofed ? "Sí" : "No"}
               </span>
             </p>
           </div>

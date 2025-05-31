@@ -9,6 +9,7 @@ export interface Field {
   address: string;
   photoUrl: string;
   active: boolean;
+  roofed: boolean; 
 }
 
 export function useAvailableFields() {
@@ -21,10 +22,11 @@ export function useAvailableFields() {
 async function getAvailableFields(): Promise<Field[]> {
   // Mock data for development
   return [
-    {
+{
       name: "Cancha Central",
       grassType: "Sintético",
       lighting: true,
+      roofed: true, // <-- NUEVO
       zone: "Norte",
       address: "Av. Siempreviva 742",
       photoUrl: "https://example.com/cancha-central.jpg",
@@ -34,15 +36,17 @@ async function getAvailableFields(): Promise<Field[]> {
       name: "Cancha Auxiliar",
       grassType: "Natural",
       lighting: false,
+      roofed: false, // <-- NUEVO
       zone: "Sur",
       address: "Calle Falsa 123",
       photoUrl: "https://example.com/cancha-auxiliar.jpg",
       active: true
     },
-      {
+    {
       name: "Cancha Oeste",
       grassType: "Sintético",
       lighting: true,
+      roofed: false,
       zone: "Oeste",
       address: "Boulevard 456",
       photoUrl: "https://example.com/cancha-auxiliar.jpg",
@@ -52,6 +56,7 @@ async function getAvailableFields(): Promise<Field[]> {
       name: "Cancha Sur",
       grassType: "Natural",
       lighting: true,
+      roofed: true,
       zone: "Sur",
       address: "Ruta 8 km 12",
       photoUrl: "https://example.com/cancha-auxiliar.jpg",
@@ -61,6 +66,7 @@ async function getAvailableFields(): Promise<Field[]> {
       name: "Cancha Norte",
       grassType: "Sintético",
       lighting: false,
+      roofed: true,
       zone: "Norte",
       address: "Av. Libertad 999",
       photoUrl: "https://example.com/cancha-auxiliar.jpg",
@@ -70,6 +76,7 @@ async function getAvailableFields(): Promise<Field[]> {
       name: "Cancha Este",
       grassType: "Sintético",
       lighting: true,
+      roofed: true,
       zone: "Este",
       address: "Camino Real 321",
       photoUrl: "https://example.com/cancha-auxiliar.jpg",
