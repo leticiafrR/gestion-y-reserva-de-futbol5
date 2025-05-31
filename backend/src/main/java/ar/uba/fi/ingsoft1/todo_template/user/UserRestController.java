@@ -1,14 +1,11 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
-import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
-import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
-import ar.uba.fi.ingsoft1.todo_template.dto.PaginatedResponse;
+import ar.uba.fi.ingsoft1.todo_template.config.GlobalControllerExceptionHandler.UnicValueIsDuplicateResponse;
 import ar.uba.fi.ingsoft1.todo_template.dto.UserProfileDTO;
-import ar.uba.fi.ingsoft1.todo_template.dto.UserSearchResultDTO;
-import ar.uba.fi.ingsoft1.todo_template.user.TokenDTO;
-// import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,8 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
@@ -32,20 +27,16 @@ public class UserRestController {
         }
 
         @PostMapping("/register")
-        @Operation(summary = "Registrar usuario", description = "Crea una nueva cuenta de usuario")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente"),
-                        @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
-        })
+        @Operation(summary = "Register user", description = "Create a new user account")
+        @ApiResponse(responseCode = "201", description = "User created successfully", content = @Content(schema = @Schema(implementation = TokenDTO.class), mediaType = "application/json"))
+        @ApiResponse(responseCode = "409", description = "Some unic field is already registered", content = @Content(schema = @Schema(implementation = UnicValueIsDuplicateResponse.class), mediaType = "application/json"))
+        @ApiResponse(responseCode = "400", description = "Validation errors. The body is a JSON with dynamic keys corresponding to the form fields, for example: { \"username\": \"The username cannot be empty to register a user.\" }", content = @Content(mediaType = "application/json"))
         public ResponseEntity<TokenDTO> register(
-                        @Parameter(description = "Datos de registro del usuario") @Valid @RequestBody UserCreateDTO userData) {
+                        @Parameter(description = "User registration data") @Valid @RequestBody UserCreateDTO userData) {
 
-                Optional<TokenDTO> tokenOpt = userService.createUser(userData);
+                TokenDTO token = userService.createUser(userData);
+                return ResponseEntity.status(HttpStatus.CREATED).body(token);
 
-                if (tokenOpt.isPresent()) {
-                        return ResponseEntity.status(HttpStatus.CREATED).body(tokenOpt.get());
-                }
-                return ResponseEntity.badRequest().build();
         }
 
         @PostMapping("/token")
