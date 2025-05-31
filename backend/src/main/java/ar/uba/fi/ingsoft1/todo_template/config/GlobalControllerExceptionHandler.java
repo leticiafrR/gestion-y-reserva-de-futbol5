@@ -3,6 +3,8 @@ package ar.uba.fi.ingsoft1.todo_template.config;
 import ar.uba.fi.ingsoft1.todo_template.common.exception.ItemNotFoundException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateEmailException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
+import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InvalidTokenException;
+import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.UnableToSendMessageException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,13 +24,23 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalControllerExceptionHandler {
 
     @ExceptionHandler(DuplicateEmailException.class)
-    public ResponseEntity<UnicValueIsDuplicateResponse> handleDuplicateEmail(DuplicateEmailException ex) {
-        return new ResponseEntity<>(new UnicValueIsDuplicateResponse("email", ex.getMessage()), HttpStatus.CONFLICT);
+    public ResponseEntity<IncorrectValueResponse> handleDuplicateEmail(DuplicateEmailException ex) {
+        return new ResponseEntity<>(new IncorrectValueResponse("email", ex.getMessage()), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(DuplicateUsernameException.class)
-    public ResponseEntity<UnicValueIsDuplicateResponse> handleDuplicateUsername(DuplicateUsernameException ex) {
-        return new ResponseEntity<>(new UnicValueIsDuplicateResponse("username", ex.getMessage()), HttpStatus.CONFLICT);
+    public ResponseEntity<IncorrectValueResponse> handleDuplicateUsername(DuplicateUsernameException ex) {
+        return new ResponseEntity<>(new IncorrectValueResponse("username", ex.getMessage()), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(UnableToSendMessageException.class)
+    public ResponseEntity<IncorrectValueResponse> handleUnableToSendEmail(UnableToSendMessageException ex) {
+        return new ResponseEntity<>(new IncorrectValueResponse("username", ex.getMessage()), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<String> handleUnableToSendEmail(InvalidTokenException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -59,7 +71,7 @@ public class GlobalControllerExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    public record UnicValueIsDuplicateResponse(String field, String error_description) {
+    public record IncorrectValueResponse(String field, String error_description) {
     }
 
 }
