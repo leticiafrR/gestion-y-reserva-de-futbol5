@@ -42,7 +42,13 @@ public class User implements UserDetails, UserCredentials {
     private Integer birthYear;
 
     @Column(nullable = false)
-    private String address;
+    private String zone;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
+    private String last_name;
 
     @Column(name = "is_email_verified", nullable = false, columnDefinition = "boolean default false")
     private Boolean emailVerified = false;
@@ -54,14 +60,16 @@ public class User implements UserDetails, UserCredentials {
     }
 
     public User(String username, String email, String password, String role, String gender, String age,
-            String address) {
+            String zone, String name, String last_name) {
         this.username = username;
         this.password = password;
         this.birthYear = BirthYearFromStringAge(age);
         this.gender = gender;
-        this.address = address;
+        this.zone = zone;
         this.email = email;
         this.role = role;
+        this.name = name;
+        this.last_name = last_name;
     }
 
     private Integer BirthYearFromStringAge(String age) {
