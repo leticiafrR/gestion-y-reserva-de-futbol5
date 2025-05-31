@@ -7,6 +7,7 @@ import { useToken } from "@/services/TokenContext";
 import { FieldManagementScreen } from "@/screens/field-admin/FieldManagementScreen";
 import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
+import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
 
 function AdminRoutes() {
   return (
@@ -35,6 +36,9 @@ function PlayerRoutes() {
     <Switch>
       <Route path="/main">
         <PlayerMainScreen />
+      </Route>
+      <Route path="/available-fields">
+        <AvailableFieldsScreen />
       </Route>
       <Route path="/">
         <Redirect href="/main" />
