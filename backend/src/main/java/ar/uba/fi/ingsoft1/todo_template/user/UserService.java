@@ -41,6 +41,14 @@ public class UserService implements UserDetailsService {
         this.emailVerificationService = emailVerificationService;
     }
 
+    public void verifyUserByEmail(String token) {
+        Optional<User> maybeUser = emailVerificationService.verifyUserByEmail(token);
+        if (!maybeUser.isEmpty()) {
+            maybeUser.get().setEmailVerified(true);
+            userRepository.save(maybeUser.get());
+        }
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository
