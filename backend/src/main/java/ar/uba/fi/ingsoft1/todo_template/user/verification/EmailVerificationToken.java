@@ -19,18 +19,23 @@ public class EmailVerificationToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    public User getUser() {
+        return user;
+    }
+
     @Column(nullable = false)
     private Instant expiryDate;
 
     @Column(nullable = false)
     private boolean verified = false;
 
-    public EmailVerificationToken() {}
-
     public EmailVerificationToken(String token, User user, Instant expiryDate) {
         this.token = token;
         this.user = user;
         this.expiryDate = expiryDate;
+    }
+
+    public EmailVerificationToken() {
     }
 
     public Long getId() {
@@ -39,10 +44,6 @@ public class EmailVerificationToken {
 
     public String getToken() {
         return token;
-    }
-
-    public User getUser() {
-        return user;
     }
 
     public Instant getExpiryDate() {
