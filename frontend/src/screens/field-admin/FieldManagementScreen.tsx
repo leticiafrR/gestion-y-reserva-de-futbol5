@@ -9,6 +9,8 @@ import { useGetOwnerFields, useCreateField } from "@/services/CreateFieldService
 import type { Field } from "@/models/Field"
 import { useQueryClient } from "@tanstack/react-query"
 import { useDeleteField } from "@/services/CreateFieldServices";
+import { useUpdateField } from "@/services/CreateFieldServices";
+
 
 export const FieldManagementScreen = () => {
   const [activeTab, setActiveTab] = useState<"list" | "map">("list")
@@ -34,12 +36,19 @@ export const FieldManagementScreen = () => {
     }
   }
 
-  const handleEditField = (fieldData: Omit<Field, "id">) => {
-    // TODO: Implement edit mutation
-    console.log("Edit field:", fieldData)
-    setShowEditModal(false)
-    setSelectedField(null)
-  }
+  const updateFieldMutation = useUpdateField();
+
+  const handleEditField = async (fieldData: Omit<Field, "id">) => {
+    if (!selectedField) return;
+    try {
+      await updateFieldMutation.mutateAsync({ id: selectedField.id, updates: fieldData });
+      setShowEditModal(false);
+      setSelectedField(null);
+    } catch (error) {
+      console.error("Error updating field:", error);
+      // Handle error (show toast, etc)
+    }
+  };
 
   const deleteFieldMutation = useDeleteField();
   const handleDeleteField = async (fieldId: string) => {

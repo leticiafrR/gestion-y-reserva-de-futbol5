@@ -126,3 +126,40 @@ async function deleteField(fieldId: string) {
 }
 */
 }
+
+export function useUpdateField() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { id: string; updates: Omit<Field, "id"> }) => updateField(data.id, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["owner-fields"] });
+    },
+  });
+}
+
+async function updateField(fieldId: string, updates: Omit<Field, "id">) {
+  // Mock update
+  mockFields = mockFields.map(f =>
+    f.id === fieldId ? { ...f, ...updates } : f
+  );
+  return { success: true };
+
+  /*
+  // Real API example:
+  const response = await fetch(`${BASE_API_URL}/fields/${fieldId}`, {
+    method: "PUT",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      // Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (response.ok) {
+    return response.json();
+  } else {
+    throw new Error(`Field update failed with status ${response.status}: ${await response.text()}`);
+  }
+  */
+}
