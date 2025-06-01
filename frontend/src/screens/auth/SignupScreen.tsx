@@ -208,7 +208,7 @@ const PhotoField = ({ field }: FieldComponentProps) => {
 const ZoneField = ({ field }: FieldComponentProps) => {
   const id = useId();
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    googleMapsApiKey: "AIzaSyAV-7--jx2dP-MyDxVrhcSYlNnY8KNb8g8",
     libraries: ["places"],
   });
 
