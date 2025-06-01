@@ -5,22 +5,10 @@ import type React from "react"
 import { useState } from "react"
 import { Plus, Edit, Trash2, MapPin, Users, DollarSign, X } from "lucide-react"
 import { navigate } from "wouter/use-browser-location"
-
-interface Field {
-  id: string
-  name: string
-  type: string
-  description: string
-  pricePerHour: number
-  capacity: number
-  grassType: "natural" | "synthetic"
-  address: string
-  latitude: number
-  longitude: number
-  isCovered: boolean
-  isAvailable: boolean
-  status: "available" | "occupied" | "maintenance"
-}
+import { useGetOwnerFields, useCreateField } from "@/services/CreateFieldServices"
+import type { Field } from "@/models/Field"
+import { useQueryClient } from "@tanstack/react-query"
+import { useDeleteField } from "@/services/CreateFieldServices";
 
 export const FieldManagementScreen = () => {
   const [activeTab, setActiveTab] = useState<"list" | "map">("list")
@@ -30,61 +18,40 @@ export const FieldManagementScreen = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [fieldToDeleteId, setFieldToDeleteId] = useState<string | null>(null)
 
-  const [fields, setFields] = useState<Field[]>([
-    {
-      id: "1",
-      name: "Cancha Central",
-      type: "FUTBOL 11",
-      description: "Cancha principal con césped sintético de alta calidad",
-      pricePerHour: 80,
-      capacity: 22,
-      grassType: "synthetic",
-      address: "Av. Principal 123, Ciudad",
-      latitude: -34.6037,
-      longitude: -58.3816,
-      isCovered: false,
-      isAvailable: true,
-      status: "available",
-    },
-    {
-      id: "2",
-      name: "Cancha Norte",
-      type: "FUTBOL 7",
-      description: "Cancha techada ideal para días de lluvia",
-      pricePerHour: 50,
-      capacity: 14,
-      grassType: "synthetic",
-      address: "Calle Norte 456, Ciudad",
-      latitude: -34.5937,
-      longitude: -58.3716,
-      isCovered: true,
-      isAvailable: true,
-      status: "available",
-    },
-  ])
+  const queryClient = useQueryClient()
+  const { data: fields = [], isLoading } = useGetOwnerFields()
+  const createFieldMutation = useCreateField()
 
-  const handleCreateField = (fieldData: Omit<Field, "id">) => {
-    const newField: Field = {
-      ...fieldData,
-      id: Date.now().toString(),
+  const handleCreateField = async (fieldData: Omit<Field, "id" | "status" | "isAvailable">) => {
+    try {
+      await createFieldMutation.mutateAsync(fieldData)
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ["owner-fields"] })
+      setShowCreateModal(false)
+    } catch (error) {
+      console.error("Error creating field:", error)
+      // Handle error (show toast, etc)
     }
-    setFields([...fields, newField])
-    setShowCreateModal(false)
   }
 
   const handleEditField = (fieldData: Omit<Field, "id">) => {
-    if (selectedField) {
-      setFields(fields.map((field) => (field.id === selectedField.id ? { ...field, ...fieldData } : field)))
-      setShowEditModal(false)
-      setSelectedField(null)
-    }
+    // TODO: Implement edit mutation
+    console.log("Edit field:", fieldData)
+    setShowEditModal(false)
+    setSelectedField(null)
   }
 
-  const handleDeleteField = (fieldId: string) => {
-    setFields(fields.filter((field) => field.id !== fieldId))
-    setFieldToDeleteId(null)
-    setShowDeleteModal(false)
-  }
+  const deleteFieldMutation = useDeleteField();
+  const handleDeleteField = async (fieldId: string) => {
+    try {
+      await deleteFieldMutation.mutateAsync(fieldId);
+      setFieldToDeleteId(null);
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error("Error deleting field:", error);
+      // Handle error (show toast, etc)
+    }
+  };
 
   console.log("FieldManagementScreen mounted")
 
@@ -227,120 +194,126 @@ export const FieldManagementScreen = () => {
               gap: "20px",
             }}
           >
-            {fields.map((field) => (
-              <div
-                key={field.id}
-                style={{
-                  backgroundColor: "white",
-                  borderRadius: "8px",
-                  border: "1px solid #e9ecef",
-                  padding: "20px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              >
+            {isLoading ? (
+              <div>Cargando canchas...</div>
+            ) : fields.length === 0 ? (
+              <div>No hay canchas registradas</div>
+            ) : (
+              fields.map((field) => (
                 <div
+                  key={field.id}
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: "12px",
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    border: "1px solid #e9ecef",
+                    padding: "20px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                   }}
                 >
-                  <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#212529", margin: 0 }}>{field.name}</h3>
-                  <span
-                    style={{
-                      padding: "4px 8px",
-                      backgroundColor: "#212529",
-                      color: "white",
-                      borderRadius: "4px",
-                      fontSize: "11px",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Disponible
-                  </span>
-                </div>
-
-                <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.address}</p>
-                <p style={{ color: "#495057", fontSize: "14px", margin: "0 0 16px 0", lineHeight: "1.4" }}>
-                  {field.description}
-                </p>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "12px",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Users size={14} color="#6c757d" />
-                    <span style={{ fontSize: "14px", color: "#495057" }}>{field.type}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <DollarSign size={14} color="#6c757d" />
-                    <span style={{ fontSize: "14px", color: "#495057" }}>${field.pricePerHour}/hora</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <MapPin size={14} color="#6c757d" />
-                    <span style={{ fontSize: "14px", color: "#495057" }}>
-                      {field.grassType === "synthetic" ? "Sintético" : "Natural"}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ fontSize: "14px", color: "#495057" }}>
-                      {field.isCovered ? "Techada" : "Al aire libre"}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button
-                    onClick={() => {
-                      setSelectedField(field)
-                      setShowEditModal(true)
-                    }}
+                  <div
                     style={{
                       display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "8px 12px",
-                      backgroundColor: "transparent",
-                      color: "#495057",
-                      border: "1px solid #dee2e6",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "14px",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: "12px",
                     }}
                   >
-                    <Edit size={14} />
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => {
-                      setFieldToDeleteId(field.id)
-                      setShowDeleteModal(true)
-                    }}
+                    <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#212529", margin: 0 }}>{field.name}</h3>
+                    <span
+                      style={{
+                        padding: "4px 8px",
+                        backgroundColor: "#212529",
+                        color: "white",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Disponible
+                    </span>
+                  </div>
+
+                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.address}</p>
+                  <p style={{ color: "#495057", fontSize: "14px", margin: "0 0 16px 0", lineHeight: "1.4" }}>
+                    {field.description}
+                  </p>
+
+                  <div
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "8px 12px",
-                      backgroundColor: "#dc3545",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "14px",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "12px",
+                      marginBottom: "16px",
                     }}
                   >
-                    <Trash2 size={14} />
-                    Eliminar
-                  </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Users size={14} color="#6c757d" />
+                      <span style={{ fontSize: "14px", color: "#495057" }}>{field.type}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <DollarSign size={14} color="#6c757d" />
+                      <span style={{ fontSize: "14px", color: "#495057" }}>${field.pricePerHour}/hora</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <MapPin size={14} color="#6c757d" />
+                      <span style={{ fontSize: "14px", color: "#495057" }}>
+                        {field.grassType === "synthetic" ? "Sintético" : "Natural"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontSize: "14px", color: "#495057" }}>
+                        {field.isCovered ? "Techada" : "Al aire libre"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => {
+                        setSelectedField(field)
+                        setShowEditModal(true)
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "8px 12px",
+                        backgroundColor: "transparent",
+                        color: "#495057",
+                        border: "1px solid #dee2e6",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                      }}
+                    >
+                      <Edit size={14} />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFieldToDeleteId(field.id)
+                        setShowDeleteModal(true)
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "8px 12px",
+                        backgroundColor: "#dc3545",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         ) : (
           <div>
@@ -472,7 +445,7 @@ const CreateFieldModal = ({
   onSubmit,
 }: {
   onClose: () => void
-  onSubmit: (field: Omit<Field, "id">) => void
+  onSubmit: (field: Omit<Field, "id" | "status" | "isAvailable">) => void
 }) => {
   const [formData, setFormData] = useState({
     name: "",
@@ -480,13 +453,12 @@ const CreateFieldModal = ({
     description: "",
     pricePerHour: 0,
     capacity: 0,
-    grassType: "synthetic" as "natural" | "synthetic",
+    grassType: "synthetic" as "synthetic" | "natural",
     address: "",
     latitude: 0,
     longitude: 0,
     isCovered: false,
-    isAvailable: true,
-    status: "available" as "available" | "occupied" | "maintenance",
+    hasLighting: false,
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -711,7 +683,7 @@ const CreateFieldModal = ({
               </label>
               <select
                 value={formData.grassType}
-                onChange={(e) => setFormData({ ...formData, grassType: e.target.value as "natural" | "synthetic" })}
+                onChange={(e) => setFormData({ ...formData, grassType: e.target.value as "synthetic" | "natural" })}
                 style={{
                   width: "100%",
                   padding: "10px 12px",
@@ -825,15 +797,6 @@ const CreateFieldModal = ({
               />
               <span style={{ fontSize: "14px", color: "#495057" }}>Cancha techada</span>
             </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={formData.isAvailable}
-                onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
-                style={{ width: "16px", height: "16px" }}
-              />
-              <span style={{ fontSize: "14px", color: "#495057" }}>Disponible para reservas</span>
-            </label>
           </div>
 
           <div
@@ -907,6 +870,7 @@ const EditFieldModal = ({
     isCovered: field.isCovered,
     isAvailable: field.isAvailable,
     status: field.status,
+    hasLighting: field.hasLighting,
   })
 
   const handleSubmit = (e: React.FormEvent) => {
