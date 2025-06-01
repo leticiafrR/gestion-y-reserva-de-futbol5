@@ -44,7 +44,7 @@ let mockFields: Field[] = [
   },
   {
     id: "2",
-    name: "Cancha Norte",
+    name: "Cancha No  NORTE",
     type: "FUTBOL 7",
     description: "Cancha techada ideal para días de lluvia",
     pricePerHour: 50,
@@ -91,4 +91,38 @@ async function createField(data: Omit<Field, "id">) {
     throw new Error(`Field creation failed with status ${response.status}: ${await response.text()}`);
   }
   */
+}
+
+export function useDeleteField() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (fieldId: string) => deleteField(fieldId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["owner-fields"] });
+    },
+  });
+}
+
+async function deleteField(fieldId: string) {
+  // Remove the field from the mock database
+  mockFields = mockFields.filter(f => f.id !== fieldId);
+  return { success: true };
+
+  /*
+  const response = await fetch(`${BASE_API_URL}/fields/${fieldId}`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      // Authorization: `Bearer ${accessToken}`, 
+    },
+  });
+
+  if (response.ok) {
+    return { success: true };
+  } else {
+    throw new Error(`Field deletion failed with status ${response.status}: ${await response.text()}`);
+  }
+}
+*/
 }
