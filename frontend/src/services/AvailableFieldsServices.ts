@@ -20,7 +20,7 @@ async function getAvailableFields(): Promise<Field[]> {
       roofing: true,
       location: "Av. Siempreviva 742",
       area: "Norte",
-      photos: ["https://example.com/cancha-central.jpg"],
+      photos: ["https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8"],
       description: "Cancha principal con las mejores instalaciones",
       price: 54
     },
@@ -32,7 +32,7 @@ async function getAvailableFields(): Promise<Field[]> {
       roofing: false,
       location: "Calle Falsa 123",
       area: "Sur",
-      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      photos: ["https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d"],
       description: "Cancha con césped natural ideal para partidos amistosos",
       price: 60
     },
@@ -44,7 +44,7 @@ async function getAvailableFields(): Promise<Field[]> {
       roofing: false,
       location: "Boulevard 456",
       area: "Oeste",
-      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      photos: ["https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8"],
       description: "Cancha con iluminación perfecta para partidos nocturnos",
       price: 75
     },
@@ -56,7 +56,7 @@ async function getAvailableFields(): Promise<Field[]> {
       roofing: true,
       location: "Ruta 8 km 12",
       area: "Sur",
-      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      photos: ["https://images.unsplash.com/photo-1461896836934-ffe607ba8211"],
       description: "Cancha techada con césped natural de primera calidad",
       price: 85
     },
@@ -68,7 +68,7 @@ async function getAvailableFields(): Promise<Field[]> {
       roofing: true,
       location: "Av. Libertad 999",
       area: "Norte",
-      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      photos: ["https://wallpapers.com/images/featured-full/imagenes-de-perritos-o5kux3u31f8r6zqg.jpg"],
       description: "Cancha techada ideal para días lluviosos",
       price: 70
     },
@@ -80,7 +80,7 @@ async function getAvailableFields(): Promise<Field[]> {
       roofing: true,
       location: "Camino Real 321",
       area: "Este",
-      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      photos: ["https://images.unsplash.com/photo-1474494819794-90f9664b530d"],
       description: "Cancha completa con todas las comodidades",
       price: 80
     }
