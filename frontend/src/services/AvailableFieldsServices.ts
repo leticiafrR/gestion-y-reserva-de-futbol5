@@ -1,16 +1,6 @@
 // @ts-nocheck - Mocked for development
 import { useQuery } from "@tanstack/react-query";
-
-export interface Field {
-  name: string;
-  grassType: string;
-  lighting: boolean;
-  zone: string;
-  address: string;
-  photoUrl: string;
-  active: boolean;
-  roofed: boolean; 
-}
+import type { Field } from "@/models/Field";
 
 export function useAvailableFields() {
   return useQuery({
@@ -22,65 +12,77 @@ export function useAvailableFields() {
 async function getAvailableFields(): Promise<Field[]> {
   // Mock data for development
   return [
-{
+    {
+      id: "1",
       name: "Cancha Central",
-      grassType: "Sintético",
+      grass: "sintetico",
       lighting: true,
-      roofed: true, // <-- NUEVO
-      zone: "Norte",
-      address: "Av. Siempreviva 742",
-      photoUrl: "https://example.com/cancha-central.jpg",
-      active: true
+      roofing: true,
+      location: "Av. Siempreviva 742",
+      area: "Norte",
+      photos: ["https://example.com/cancha-central.jpg"],
+      description: "Cancha principal con las mejores instalaciones",
+      price: 80
     },
     {
+      id: "2",
       name: "Cancha Auxiliar",
-      grassType: "Natural",
+      grass: "natural",
       lighting: false,
-      roofed: false, // <-- NUEVO
-      zone: "Sur",
-      address: "Calle Falsa 123",
-      photoUrl: "https://example.com/cancha-auxiliar.jpg",
-      active: true
+      roofing: false,
+      location: "Calle Falsa 123",
+      area: "Sur",
+      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      description: "Cancha con césped natural ideal para partidos amistosos",
+      price: 60
     },
     {
+      id: "3",
       name: "Cancha Oeste",
-      grassType: "Sintético",
+      grass: "sintetico",
       lighting: true,
-      roofed: false,
-      zone: "Oeste",
-      address: "Boulevard 456",
-      photoUrl: "https://example.com/cancha-auxiliar.jpg",
-      active: true
+      roofing: false,
+      location: "Boulevard 456",
+      area: "Oeste",
+      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      description: "Cancha con iluminación perfecta para partidos nocturnos",
+      price: 75
     },
     {
+      id: "4",
       name: "Cancha Sur",
-      grassType: "Natural",
+      grass: "natural",
       lighting: true,
-      roofed: true,
-      zone: "Sur",
-      address: "Ruta 8 km 12",
-      photoUrl: "https://example.com/cancha-auxiliar.jpg",
-      active: true
+      roofing: true,
+      location: "Ruta 8 km 12",
+      area: "Sur",
+      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      description: "Cancha techada con césped natural de primera calidad",
+      price: 85
     },
     {
+      id: "5",
       name: "Cancha Norte",
-      grassType: "Sintético",
+      grass: "sintetico",
       lighting: false,
-      roofed: true,
-      zone: "Norte",
-      address: "Av. Libertad 999",
-      photoUrl: "https://example.com/cancha-auxiliar.jpg",
-      active: true
+      roofing: true,
+      location: "Av. Libertad 999",
+      area: "Norte",
+      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      description: "Cancha techada ideal para días lluviosos",
+      price: 70
     },
     {
+      id: "6",
       name: "Cancha Este",
-      grassType: "Sintético",
+      grass: "sintetico",
       lighting: true,
-      roofed: true,
-      zone: "Este",
-      address: "Camino Real 321",
-      photoUrl: "https://example.com/cancha-auxiliar.jpg",
-      active: true
+      roofing: true,
+      location: "Camino Real 321",
+      area: "Este",
+      photos: ["https://example.com/cancha-auxiliar.jpg"],
+      description: "Cancha completa con todas las comodidades",
+      price: 80
     }
   ];
 
