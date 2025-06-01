@@ -38,6 +38,12 @@ export const PlayerMainScreen = () => {
         >
           Ver Torneos
         </Button>
+        <Button
+          className="w-full"
+          onClick={() => setLocation("/teams")}
+        >
+          Equipos
+        </Button>
       </div>
     </div>
   );

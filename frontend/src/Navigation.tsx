@@ -36,6 +36,9 @@ function PlayerRoutes() {
       <Route path="/available-fields">
         <AvailableFieldsScreen />
       </Route>
+      <Route path="/teams">
+        <AvailableFieldsScreen />
+      </Route>
       <Route path="/">
         <Redirect href="/main" />
       </Route>
