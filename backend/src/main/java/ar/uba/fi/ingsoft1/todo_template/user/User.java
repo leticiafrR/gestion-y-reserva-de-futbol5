@@ -29,11 +29,8 @@ public class User implements UserDetails, UserCredentials {
     private String role;
 
     @Column(unique = true, nullable = false)
-    private String username;
-
-    @Column(unique = true, nullable = false)
     @Email
-    private String email;
+    private String username;
 
     @Column(nullable = false)
     private String gender;
@@ -42,7 +39,13 @@ public class User implements UserDetails, UserCredentials {
     private Integer birthYear;
 
     @Column(nullable = false)
-    private String address;
+    private String zone;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
+    private String last_name;
 
     @Column(name = "is_email_verified", nullable = false, columnDefinition = "boolean default false")
     private Boolean emailVerified = false;
@@ -53,15 +56,16 @@ public class User implements UserDetails, UserCredentials {
     public User() {
     }
 
-    public User(String username, String email, String password, String role, String gender, String age,
-            String address) {
+    public User(String username, String password, String role, String gender, String age,
+            String zone, String name, String last_name) {
         this.username = username;
         this.password = password;
         this.birthYear = BirthYearFromStringAge(age);
         this.gender = gender;
-        this.address = address;
-        this.email = email;
+        this.zone = zone;
         this.role = role;
+        this.name = name;
+        this.last_name = last_name;
     }
 
     private Integer BirthYearFromStringAge(String age) {
@@ -92,10 +96,6 @@ public class User implements UserDetails, UserCredentials {
 
     public String getRole() {
         return role;
-    }
-
-    public String getEmail() {
-        return email;
     }
 
     public boolean isEmailVerified() {

@@ -4,9 +4,7 @@ import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.UnableToSendMessageException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-
 import java.util.Locale;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -31,7 +29,7 @@ public class EmailService {
     private String fromAddress;
 
     public void sendVerificationEmail(User user, String token, Locale locale) {
-        String to = user.getEmail();
+        String to = user.getUsername();
         String subject = messageSource.getMessage("mail.subject.verification", null, locale);
         String htmlContent = getHtmlContent(locale, token);
         try {

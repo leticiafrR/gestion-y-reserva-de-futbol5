@@ -4,16 +4,19 @@ import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshToken;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshTokenService;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateEmailException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
+import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnverifiedAccountException;
+import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InavlidCredentialsException;
 import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -67,13 +70,27 @@ public class UserService implements UserDetailsService {
         return generateTokens(user);
     }
 
-    Optional<TokenDTO> loginUser(UserCredentials data) {
-        Optional<User> maybeUser = userRepository.findByUsername(data.username());
-        return maybeUser
+    // Optional<User> matchCredential(UserCredentials data) {
+    // Optional<User> maybeUser = userRepository.findByUsername(data.username());
+    // return maybeUser
+    // .filter(user -> passwordEncoder.matches(data.password(), user.getPassword()))
+    // .filter(User::isEmailVerified)
+    // .filter(User::isActive)
+    // .map(this::generateTokens);
+    // }
+
+    public User matchCredentials(UserCredentials data) {
+        return userRepository.findByUsername(data.username())
                 .filter(user -> passwordEncoder.matches(data.password(), user.getPassword()))
-                .filter(User::isEmailVerified)
-                .filter(User::isActive)
-                .map(this::generateTokens);
+                .orElseThrow(() -> new InavlidCredentialsException());
+    }
+
+    public TokenDTO loginUser(UserCredentials data) {
+        User user = matchCredentials(data);
+        if (!user.isEmailVerified() || !user.isActive()) {
+            throw new InactiveOrUnverifiedAccountException();
+        }
+        return generateTokens(user);
     }
 
     Optional<TokenDTO> refresh(RefreshDTO data) {
@@ -96,8 +113,5 @@ public class UserService implements UserDetailsService {
             throw new DuplicateUsernameException(data.username());
         }
 
-        if (userRepository.existsByEmail(data.email())) {
-            throw new DuplicateEmailException(data.email());
-        }
     }
 }
