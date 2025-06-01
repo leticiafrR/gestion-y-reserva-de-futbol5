@@ -22,7 +22,7 @@ async function getAvailableFields(): Promise<Field[]> {
       area: "Norte",
       photos: ["https://example.com/cancha-central.jpg"],
       description: "Cancha principal con las mejores instalaciones",
-      price: 80
+      price: 54
     },
     {
       id: "2",

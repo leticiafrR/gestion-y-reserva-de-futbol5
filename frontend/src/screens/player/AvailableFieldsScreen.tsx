@@ -11,9 +11,14 @@ export const AvailableFieldsScreen = () => {
   const [grassType, setGrassType] = useState("");
   const [onlyWithLighting, setOnlyWithLighting] = useState(false);
   const [onlyRoofed, setOnlyRoofed] = useState(false);
+  const [maxPrice, setMaxPrice] = useState<number>(100);
 
   // Obtener tipos de césped únicos para el filtro
   const grassTypes = Array.from(new Set(fields?.map(f => f.grass) ?? []));
+
+  // Obtener rango de precios para los límites del slider
+  const prices = fields?.map(f => f.price ?? 0) ?? [];
+  const maxAvailablePrice = prices.length > 0 ? Math.max(...prices) : 100;
 
   // Filtrado de canchas
   const filteredFields = (fields ?? []).filter((field: Field) => {
@@ -21,7 +26,9 @@ export const AvailableFieldsScreen = () => {
     const matchesGrass = grassType ? field.grass === grassType : true;
     const matchesLighting = onlyWithLighting ? field.lighting : true;
     const matchesRoofed = onlyRoofed ? field.roofing : true;
-    return matchesName && matchesGrass && matchesLighting && matchesRoofed;
+    const fieldPrice = field.price ?? 0;
+    const matchesMaxPrice = fieldPrice <= maxPrice;
+    return matchesName && matchesGrass && matchesLighting && matchesRoofed && matchesMaxPrice;
   });
 
   if (isLoading) return <div style={{ textAlign: "center", marginTop: "2rem" }}>Cargando canchas...</div>;
@@ -94,6 +101,51 @@ export const AvailableFieldsScreen = () => {
             <option key={type} value={type}>{type === "natural" ? "Natural" : "Sintético"}</option>
           ))}
         </select>
+        <div style={{ 
+          display: "flex", 
+          flexDirection: "column",
+          gap: "0.5rem",
+          minWidth: 200,
+          width: "100%",
+          maxWidth: 300
+        }}>
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            color: "#4a5568",
+            fontSize: "0.875rem"
+          }}>
+            <span>Precio máximo: ${maxPrice}</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={Math.max(maxAvailablePrice, maxPrice)}
+            value={maxPrice}
+            onChange={e => setMaxPrice(Number(e.target.value))}
+            style={{
+              width: "100%",
+              appearance: "none",
+              height: "6px",
+              borderRadius: "5px",
+              background: "#e2e8f0",
+              outline: "none",
+              accentColor: "#3b82f6",
+              padding: 0,
+              margin: 0
+            }}
+          />
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "0.75rem",
+            color: "#718096"
+          }}>
+            <span>$0</span>
+            <span>${Math.max(maxAvailablePrice, maxPrice)}</span>
+          </div>
+        </div>
         <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1rem" }}>
           <input
             type="checkbox"
