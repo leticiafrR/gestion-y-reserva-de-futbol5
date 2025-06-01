@@ -17,7 +17,7 @@ export const MainScreen = () => {
         <header style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '4px' }}>⚽ Dashboard - FutbolManager</h1>
+              <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '4px' }}>⚽ Menu Principal - Administracion de Canchas</h1>
               <p style={{ color: '#4b5563' }}>Gestión de Canchas de Fútbol</p>
             </div>
             <button style={{ 

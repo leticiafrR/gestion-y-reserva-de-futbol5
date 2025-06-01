@@ -5,22 +5,12 @@ import type React from "react"
 import { useState } from "react"
 import { Plus, Edit, Trash2, MapPin, Users, DollarSign, X } from "lucide-react"
 import { navigate } from "wouter/use-browser-location"
+import { useGetOwnerFields, useCreateField } from "@/services/CreateFieldServices"
+import type { Field } from "@/models/Field"
+import { useQueryClient } from "@tanstack/react-query"
+import { useDeleteField } from "@/services/CreateFieldServices";
+import { useUpdateField } from "@/services/CreateFieldServices";
 
-interface Field {
-  id: string
-  name: string
-  type: string
-  description: string
-  pricePerHour: number
-  capacity: number
-  grassType: "natural" | "synthetic"
-  address: string
-  latitude: number
-  longitude: number
-  isCovered: boolean
-  isAvailable: boolean
-  status: "available" | "occupied" | "maintenance"
-}
 
 export const FieldManagementScreen = () => {
   const [activeTab, setActiveTab] = useState<"list" | "map">("list")
@@ -29,62 +19,50 @@ export const FieldManagementScreen = () => {
   const [selectedField, setSelectedField] = useState<Field | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [fieldToDeleteId, setFieldToDeleteId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const [fields, setFields] = useState<Field[]>([
-    {
-      id: "1",
-      name: "Cancha Central",
-      type: "FUTBOL 11",
-      description: "Cancha principal con césped sintético de alta calidad",
-      pricePerHour: 80,
-      capacity: 22,
-      grassType: "synthetic",
-      address: "Av. Principal 123, Ciudad",
-      latitude: -34.6037,
-      longitude: -58.3816,
-      isCovered: false,
-      isAvailable: true,
-      status: "available",
-    },
-    {
-      id: "2",
-      name: "Cancha Norte",
-      type: "FUTBOL 7",
-      description: "Cancha techada ideal para días de lluvia",
-      pricePerHour: 50,
-      capacity: 14,
-      grassType: "synthetic",
-      address: "Calle Norte 456, Ciudad",
-      latitude: -34.5937,
-      longitude: -58.3716,
-      isCovered: true,
-      isAvailable: true,
-      status: "available",
-    },
-  ])
+  const queryClient = useQueryClient()
+  const { data: fields = [], isLoading } = useGetOwnerFields()
+  const createFieldMutation = useCreateField()
 
-  const handleCreateField = (fieldData: Omit<Field, "id">) => {
-    const newField: Field = {
-      ...fieldData,
-      id: Date.now().toString(),
-    }
-    setFields([...fields, newField])
-    setShowCreateModal(false)
-  }
-
-  const handleEditField = (fieldData: Omit<Field, "id">) => {
-    if (selectedField) {
-      setFields(fields.map((field) => (field.id === selectedField.id ? { ...field, ...fieldData } : field)))
-      setShowEditModal(false)
-      setSelectedField(null)
+  const handleCreateField = async (fieldData: Omit<Field, "id" | "status" | "isAvailable">) => {
+    try {
+      await createFieldMutation.mutateAsync(fieldData)
+      queryClient.invalidateQueries({ queryKey: ["owner-fields"] })
+      setErrorMessage(null)
+      setShowCreateModal(false)
+    } catch (error: any) {
+      console.error("Error creating field:", error)
+      setErrorMessage(error.message || "Error al crear la cancha")
     }
   }
 
-  const handleDeleteField = (fieldId: string) => {
-    setFields(fields.filter((field) => field.id !== fieldId))
-    setFieldToDeleteId(null)
-    setShowDeleteModal(false)
-  }
+  const updateFieldMutation = useUpdateField();
+
+  const handleEditField = async (fieldData: Omit<Field, "id">) => {
+    if (!selectedField) return;
+    try {
+      await updateFieldMutation.mutateAsync({ id: selectedField.id, updates: fieldData });
+      setErrorMessage(null)
+      setShowEditModal(false);
+      setSelectedField(null);
+    } catch (error: any) {
+      console.error("Error updating field:", error);
+      setErrorMessage(error.message || "Error al actualizar la cancha");
+    }
+  };
+
+  const deleteFieldMutation = useDeleteField();
+  const handleDeleteField = async (fieldId: string) => {
+    try {
+      await deleteFieldMutation.mutateAsync(fieldId);
+      setFieldToDeleteId(null);
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error("Error deleting field:", error);
+      // Handle error (show toast, etc)
+    }
+  };
 
   console.log("FieldManagementScreen mounted")
 
@@ -96,6 +74,13 @@ export const FieldManagementScreen = () => {
         fontFamily: "system-ui, sans-serif",
       }}
     >
+      {errorMessage && (
+        <ErrorPopup
+          message={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
+      )}
+
       {/* Header */}
       <div
         style={{
@@ -125,7 +110,7 @@ export const FieldManagementScreen = () => {
                 gap: "8px",
               }}
             >
-              ⚽ Gestión de Canchas
+              ⚽ Gestión de Canchas de Fútbol 5
             </h1>
             <p style={{ color: "#6c757d", margin: 0, fontSize: "14px" }}>Administra tus canchas de fútbol</p>
           </div>
@@ -227,120 +212,127 @@ export const FieldManagementScreen = () => {
               gap: "20px",
             }}
           >
-            {fields.map((field) => (
-              <div
-                key={field.id}
-                style={{
-                  backgroundColor: "white",
-                  borderRadius: "8px",
-                  border: "1px solid #e9ecef",
-                  padding: "20px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              >
+            {isLoading ? (
+              <div>Cargando canchas...</div>
+            ) : fields.length === 0 ? (
+              <div>No hay canchas registradas</div>
+            ) : (
+              fields.map((field) => (
                 <div
+                  key={field.id}
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: "12px",
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    border: "1px solid #e9ecef",
+                    padding: "20px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                   }}
                 >
-                  <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#212529", margin: 0 }}>{field.name}</h3>
-                  <span
-                    style={{
-                      padding: "4px 8px",
-                      backgroundColor: "#212529",
-                      color: "white",
-                      borderRadius: "4px",
-                      fontSize: "11px",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Disponible
-                  </span>
-                </div>
-
-                <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.address}</p>
-                <p style={{ color: "#495057", fontSize: "14px", margin: "0 0 16px 0", lineHeight: "1.4" }}>
-                  {field.description}
-                </p>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "12px",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Users size={14} color="#6c757d" />
-                    <span style={{ fontSize: "14px", color: "#495057" }}>{field.type}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <DollarSign size={14} color="#6c757d" />
-                    <span style={{ fontSize: "14px", color: "#495057" }}>${field.pricePerHour}/hora</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <MapPin size={14} color="#6c757d" />
-                    <span style={{ fontSize: "14px", color: "#495057" }}>
-                      {field.grassType === "synthetic" ? "Sintético" : "Natural"}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ fontSize: "14px", color: "#495057" }}>
-                      {field.isCovered ? "Techada" : "Al aire libre"}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button
-                    onClick={() => {
-                      setSelectedField(field)
-                      setShowEditModal(true)
-                    }}
+                  <div
                     style={{
                       display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "8px 12px",
-                      backgroundColor: "transparent",
-                      color: "#495057",
-                      border: "1px solid #dee2e6",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "14px",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: "12px",
                     }}
                   >
-                    <Edit size={14} />
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => {
-                      setFieldToDeleteId(field.id)
-                      setShowDeleteModal(true)
-                    }}
+                    <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#212529", margin: 0 }}>{field.name}</h3>
+                    <span
+                      style={{
+                        padding: "4px 8px",
+                        backgroundColor: "#212529",
+                        color: "white",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Disponible
+                    </span>
+                  </div>
+
+                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.location}</p>
+                  <p style={{ color: "#495057", fontSize: "14px", margin: "0 0 16px 0", lineHeight: "1.4" }}>
+                    {field.description}
+                  </p>
+
+                  <div
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "8px 12px",
-                      backgroundColor: "#dc3545",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "14px",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "12px",
+                      marginBottom: "16px",
                     }}
                   >
-                    <Trash2 size={14} />
-                    Eliminar
-                  </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <MapPin size={14} color="#6c757d" />
+                      <span style={{ fontSize: "14px", color: "#495057" }}>
+                        {field.grass === "sintetico" ? "Sintético" : "Natural"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <DollarSign size={14} color="#6c757d" />
+                      <span style={{ fontSize: "14px", color: "#495057" }}>${field.price}/hora</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontSize: "14px", color: "#495057" }}>
+                        {field.lighting ? "Con iluminación" : "Sin iluminación"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontSize: "14px", color: "#495057" }}>
+                        {field.roofing ? "Techada" : "Al aire libre"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => {
+                        setSelectedField(field)
+                        setShowEditModal(true)
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "8px 12px",
+                        backgroundColor: "transparent",
+                        color: "#495057",
+                        border: "1px solid #dee2e6",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                      }}
+                    >
+                      <Edit size={14} />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFieldToDeleteId(field.id)
+                        setShowDeleteModal(true)
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "8px 12px",
+                        backgroundColor: "#dc3545",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         ) : (
           <div>
@@ -476,22 +468,25 @@ const CreateFieldModal = ({
 }) => {
   const [formData, setFormData] = useState({
     name: "",
-    type: "",
+    grass: "sintetico" as "natural" | "sintetico",
+    lighting: false,
+    roofing: false,
+    location: "",
+    area: "",
+    photos: [] as string[],
     description: "",
-    pricePerHour: 0,
-    capacity: 0,
-    grassType: "synthetic" as "natural" | "synthetic",
-    address: "",
-    latitude: 0,
-    longitude: 0,
-    isCovered: false,
-    isAvailable: true,
-    status: "available" as "available" | "occupied" | "maintenance",
+    price: 0,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    try {
+      await onSubmit(formData)
+    } catch (err: any) {
+      setError(err.message || "Error al crear la cancha")
+    }
   }
 
   return (
@@ -552,65 +547,174 @@ const CreateFieldModal = ({
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: "24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Nombre de la Cancha
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ej: Cancha Principal"
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
-              />
+          {error && (
+            <div
+              style={{
+                backgroundColor: "#fff5f5",
+                color: "#dc3545",
+                padding: "12px",
+                borderRadius: "6px",
+                marginBottom: "20px",
+                fontSize: "14px",
+              }}
+            >
+              {error}
             </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Tipo de Cancha
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                  backgroundColor: "white",
-                }}
-              >
-                <option value="">Selecciona el tipo</option>
-                <option value="FUTBOL 11">Fútbol 11</option>
-                <option value="FUTBOL 7">Fútbol 7</option>
-                <option value="FUTBOL 5">Fútbol 5</option>
-              </select>
-            </div>
+          )}
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Nombre de la Cancha *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => {
+                setError(null)
+                setFormData({ ...formData, name: e.target.value })
+              }}
+              placeholder="Ej: Cancha Principal"
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Tipo de Césped *
+            </label>
+            <select
+              value={formData.grass}
+              onChange={(e) => setFormData({ ...formData, grass: e.target.value as "natural" | "sintetico" })}
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                backgroundColor: "white",
+              }}
+            >
+              <option value="sintetico">Sintético</option>
+              <option value="natural">Natural</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Ubicación *
+            </label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="Ej: Av. Principal 123"
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Zona *
+            </label>
+            <input
+              type="text"
+              value={formData.area}
+              onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+              placeholder="Ej: Centro"
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Precio por Hora ($)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.price}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (value > 0) {
+                  setFormData({ ...formData, price: value });
+                }
+              }}
+              placeholder="50"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
           </div>
 
           <div style={{ marginBottom: "20px" }}>
@@ -642,93 +746,28 @@ const CreateFieldModal = ({
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Precio por Hora ($)
-              </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
               <input
-                type="number"
-                value={formData.pricePerHour}
-                onChange={(e) => setFormData({ ...formData, pricePerHour: Number(e.target.value) })}
-                placeholder="50"
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
+                type="checkbox"
+                checked={formData.lighting}
+                onChange={(e) => setFormData({ ...formData, lighting: e.target.checked })}
+                style={{ width: "16px", height: "16px" }}
               />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Capacidad (jugadores)
-              </label>
+              <span style={{ fontSize: "14px", color: "#495057" }}>Tiene iluminación</span>
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
               <input
-                type="number"
-                value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
-                placeholder="22"
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
+                type="checkbox"
+                checked={formData.roofing}
+                onChange={(e) => setFormData({ ...formData, roofing: e.target.checked })}
+                style={{ width: "16px", height: "16px" }}
               />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Tipo de Césped
-              </label>
-              <select
-                value={formData.grassType}
-                onChange={(e) => setFormData({ ...formData, grassType: e.target.value as "natural" | "synthetic" })}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                  backgroundColor: "white",
-                }}
-              >
-                <option value="synthetic">Sintético</option>
-                <option value="natural">Natural</option>
-              </select>
-            </div>
+              <span style={{ fontSize: "14px", color: "#495057" }}>Cancha techada</span>
+            </label>
           </div>
 
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: "24px" }}>
             <label
               style={{
                 display: "block",
@@ -738,13 +777,13 @@ const CreateFieldModal = ({
                 marginBottom: "6px",
               }}
             >
-              Dirección
+              URLs de Fotos (opcional)
             </label>
-            <input
-              type="text"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              placeholder="Av. Principal 123, Ciudad"
+            <textarea
+              value={formData.photos.join("\n")}
+              onChange={(e) => setFormData({ ...formData, photos: e.target.value.split("\n").filter(Boolean) })}
+              placeholder="Ingrese URLs de fotos, una por línea"
+              rows={3}
               style={{
                 width: "100%",
                 padding: "10px 12px",
@@ -752,88 +791,9 @@ const CreateFieldModal = ({
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                resize: "vertical",
               }}
             />
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Latitud
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={formData.latitude}
-                onChange={(e) => setFormData({ ...formData, latitude: Number(e.target.value) })}
-                placeholder="-34.6037"
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Longitud
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={formData.longitude}
-                onChange={(e) => setFormData({ ...formData, longitude: Number(e.target.value) })}
-                placeholder="-58.3816"
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={formData.isCovered}
-                onChange={(e) => setFormData({ ...formData, isCovered: e.target.checked })}
-                style={{ width: "16px", height: "16px" }}
-              />
-              <span style={{ fontSize: "14px", color: "#495057" }}>Cancha techada</span>
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={formData.isAvailable}
-                onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
-                style={{ width: "16px", height: "16px" }}
-              />
-              <span style={{ fontSize: "14px", color: "#495057" }}>Disponible para reservas</span>
-            </label>
           </div>
 
           <div
@@ -842,8 +802,6 @@ const CreateFieldModal = ({
               gap: "12px",
               justifyContent: "flex-end",
               paddingTop: "20px",
-              paddingLeft: "24px",
-              paddingRight: "24px",
               borderTop: "1px solid #e9ecef",
             }}
           >
@@ -896,22 +854,25 @@ const EditFieldModal = ({
 }) => {
   const [formData, setFormData] = useState({
     name: field.name,
-    type: field.type,
-    description: field.description,
-    pricePerHour: field.pricePerHour,
-    capacity: field.capacity,
-    grassType: field.grassType,
-    address: field.address,
-    latitude: field.latitude,
-    longitude: field.longitude,
-    isCovered: field.isCovered,
-    isAvailable: field.isAvailable,
-    status: field.status,
+    grass: field.grass,
+    lighting: field.lighting,
+    roofing: field.roofing,
+    location: field.location,
+    area: field.area,
+    photos: field.photos || [],
+    description: field.description || "",
+    price: field.price || 0,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    try {
+      await onSubmit(formData)
+    } catch (err: any) {
+      setError(err.message || "Error al actualizar la cancha")
+    }
   }
 
   return (
@@ -970,63 +931,174 @@ const EditFieldModal = ({
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: "24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Nombre de la Cancha
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
-              />
+          {error && (
+            <div
+              style={{
+                backgroundColor: "#fff5f5",
+                color: "#dc3545",
+                padding: "12px",
+                borderRadius: "6px",
+                marginBottom: "20px",
+                fontSize: "14px",
+              }}
+            >
+              {error}
             </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Tipo de Cancha
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                  backgroundColor: "white",
-                }}
-              >
-                <option value="FUTBOL 11">Fútbol 11</option>
-                <option value="FUTBOL 7">Fútbol 7</option>
-                <option value="FUTBOL 5">Fútbol 5</option>
-              </select>
-            </div>
+          )}
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Nombre de la Cancha *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => {
+                setError(null)
+                setFormData({ ...formData, name: e.target.value })
+              }}
+              placeholder="Ej: Cancha Principal"
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Tipo de Césped *
+            </label>
+            <select
+              value={formData.grass}
+              onChange={(e) => setFormData({ ...formData, grass: e.target.value as "natural" | "sintetico" })}
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                backgroundColor: "white",
+              }}
+            >
+              <option value="sintetico">Sintético</option>
+              <option value="natural">Natural</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Ubicación *
+            </label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="Ej: Av. Principal 123"
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Zona *
+            </label>
+            <input
+              type="text"
+              value={formData.area}
+              onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+              placeholder="Ej: Centro"
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Precio por Hora ($)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.price}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (value > 0) {
+                  setFormData({ ...formData, price: value });
+                }
+              }}
+              placeholder="50"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
           </div>
 
           <div style={{ marginBottom: "20px" }}>
@@ -1044,6 +1116,7 @@ const EditFieldModal = ({
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe las características de la cancha"
               rows={3}
               style={{
                 width: "100%",
@@ -1057,91 +1130,28 @@ const EditFieldModal = ({
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Precio por Hora ($)
-              </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
               <input
-                type="number"
-                value={formData.pricePerHour}
-                onChange={(e) => setFormData({ ...formData, pricePerHour: Number(e.target.value) })}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
+                type="checkbox"
+                checked={formData.lighting}
+                onChange={(e) => setFormData({ ...formData, lighting: e.target.checked })}
+                style={{ width: "16px", height: "16px" }}
               />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Capacidad (jugadores)
-              </label>
+              <span style={{ fontSize: "14px", color: "#495057" }}>Tiene iluminación</span>
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
               <input
-                type="number"
-                value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
+                type="checkbox"
+                checked={formData.roofing}
+                onChange={(e) => setFormData({ ...formData, roofing: e.target.checked })}
+                style={{ width: "16px", height: "16px" }}
               />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Tipo de Césped
-              </label>
-              <select
-                value={formData.grassType}
-                onChange={(e) => setFormData({ ...formData, grassType: e.target.value as "natural" | "synthetic" })}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                  backgroundColor: "white",
-                }}
-              >
-                <option value="synthetic">Sintético</option>
-                <option value="natural">Natural</option>
-              </select>
-            </div>
+              <span style={{ fontSize: "14px", color: "#495057" }}>Cancha techada</span>
+            </label>
           </div>
 
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: "24px" }}>
             <label
               style={{
                 display: "block",
@@ -1151,12 +1161,13 @@ const EditFieldModal = ({
                 marginBottom: "6px",
               }}
             >
-              Dirección
+              URLs de Fotos (opcional)
             </label>
-            <input
-              type="text"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            <textarea
+              value={formData.photos.join("\n")}
+              onChange={(e) => setFormData({ ...formData, photos: e.target.value.split("\n").filter(Boolean) })}
+              placeholder="Ingrese URLs de fotos, una por línea"
+              rows={3}
               style={{
                 width: "100%",
                 padding: "10px 12px",
@@ -1164,86 +1175,9 @@ const EditFieldModal = ({
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                resize: "vertical",
               }}
             />
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Latitud
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={formData.latitude}
-                onChange={(e) => setFormData({ ...formData, latitude: Number(e.target.value) })}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#212529",
-                  marginBottom: "6px",
-                }}
-              >
-                Longitud
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={formData.longitude}
-                onChange={(e) => setFormData({ ...formData, longitude: Number(e.target.value) })}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={formData.isCovered}
-                onChange={(e) => setFormData({ ...formData, isCovered: e.target.checked })}
-                style={{ width: "16px", height: "16px" }}
-              />
-              <span style={{ fontSize: "14px", color: "#495057" }}>Cancha techada</span>
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={formData.isAvailable}
-                onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
-                style={{ width: "16px", height: "16px" }}
-              />
-              <span style={{ fontSize: "14px", color: "#495057" }}>Disponible para reservas</span>
-            </label>
           </div>
 
           <div
@@ -1252,8 +1186,6 @@ const EditFieldModal = ({
               gap: "12px",
               justifyContent: "flex-end",
               paddingTop: "20px",
-              paddingLeft: "24px",
-              paddingRight: "24px",
               borderTop: "1px solid #e9ecef",
             }}
           >
@@ -1412,3 +1344,40 @@ const DeleteConfirmationModal = ({
     </div>
   )
 }
+
+// Add this component at the end of the file
+const ErrorPopup = ({ message, onClose }: { message: string; onClose: () => void }) => {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: "20px",
+        right: "20px",
+        backgroundColor: "#dc3545",
+        color: "white",
+        padding: "16px 24px",
+        borderRadius: "8px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+        zIndex: 2000,
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        maxWidth: "400px",
+      }}
+    >
+      <div style={{ flex: 1 }}>{message}</div>
+      <button
+        onClick={onClose}
+        style={{
+          background: "none",
+          border: "none",
+          color: "white",
+          cursor: "pointer",
+          padding: "4px",
+        }}
+      >
+        <X size={20} />
+      </button>
+    </div>
+  );
+};

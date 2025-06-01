@@ -2,20 +2,19 @@ import { Redirect, Route, Switch } from "wouter";
 
 import { MainScreen as AdminMainScreen } from "@/screens/field-admin/MainScreen";
 import { PlayerMainScreen } from "@/screens/player/MainScreen";
-import { CreateFieldScreen } from "@/screens/field-admin/CreateFieldScreen"
 import { useToken } from "@/services/TokenContext";
 import { FieldManagementScreen } from "@/screens/field-admin/FieldManagementScreen";
 import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
+import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
+import { TeamsScreen } from "@/screens/player/TeamsScreen";
+import { ProfileScreen } from "@/screens/player/ProfileScreen";
 
 function AdminRoutes() {
   return (
     <Switch>
       <Route path="/main">
         <AdminMainScreen />
-      </Route>
-      <Route path="/create-field">
-        <CreateFieldScreen />
       </Route>
       <Route path="/canchas">
         <FieldManagementScreen />
@@ -35,6 +34,15 @@ function PlayerRoutes() {
     <Switch>
       <Route path="/main">
         <PlayerMainScreen />
+      </Route>
+      <Route path="/available-fields">
+        <AvailableFieldsScreen />
+      </Route>
+      <Route path="/teams">
+        <TeamsScreen />
+      </Route>
+      <Route path="/profile">
+        <ProfileScreen />
       </Route>
       <Route path="/">
         <Redirect href="/main" />
