@@ -2,7 +2,6 @@ import { Redirect, Route, Switch } from "wouter";
 
 import { MainScreen as AdminMainScreen } from "@/screens/field-admin/MainScreen";
 import { PlayerMainScreen } from "@/screens/player/MainScreen";
-import { CreateFieldScreen } from "@/screens/field-admin/CreateFieldScreen"
 import { useToken } from "@/services/TokenContext";
 import { FieldManagementScreen } from "@/screens/field-admin/FieldManagementScreen";
 import { LoginScreen } from "./screens/auth/LoginScreen";
@@ -14,9 +13,6 @@ function AdminRoutes() {
     <Switch>
       <Route path="/main">
         <AdminMainScreen />
-      </Route>
-      <Route path="/create-field">
-        <CreateFieldScreen />
       </Route>
       <Route path="/canchas">
         <FieldManagementScreen />
