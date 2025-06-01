@@ -29,11 +29,8 @@ public class User implements UserDetails, UserCredentials {
     private String role;
 
     @Column(unique = true, nullable = false)
-    private String username;
-
-    @Column(unique = true, nullable = false)
     @Email
-    private String email;
+    private String username;
 
     @Column(nullable = false)
     private String gender;
@@ -59,14 +56,13 @@ public class User implements UserDetails, UserCredentials {
     public User() {
     }
 
-    public User(String username, String email, String password, String role, String gender, String age,
+    public User(String username, String password, String role, String gender, String age,
             String zone, String name, String last_name) {
         this.username = username;
         this.password = password;
         this.birthYear = BirthYearFromStringAge(age);
         this.gender = gender;
         this.zone = zone;
-        this.email = email;
         this.role = role;
         this.name = name;
         this.last_name = last_name;
@@ -100,10 +96,6 @@ public class User implements UserDetails, UserCredentials {
 
     public String getRole() {
         return role;
-    }
-
-    public String getEmail() {
-        return email;
     }
 
     public boolean isEmailVerified() {

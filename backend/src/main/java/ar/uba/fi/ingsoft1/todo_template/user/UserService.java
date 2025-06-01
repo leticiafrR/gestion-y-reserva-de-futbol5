@@ -4,7 +4,6 @@ import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshToken;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshTokenService;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateEmailException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
 import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,8 +95,5 @@ public class UserService implements UserDetailsService {
             throw new DuplicateUsernameException(data.username());
         }
 
-        if (userRepository.existsByEmail(data.email())) {
-            throw new DuplicateEmailException(data.email());
-        }
     }
 }

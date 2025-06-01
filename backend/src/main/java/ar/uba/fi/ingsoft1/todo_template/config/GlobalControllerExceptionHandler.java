@@ -1,7 +1,6 @@
 package ar.uba.fi.ingsoft1.todo_template.config;
 
 import ar.uba.fi.ingsoft1.todo_template.common.exception.ItemNotFoundException;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateEmailException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InvalidTokenException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.UnableToSendMessageException;
@@ -22,11 +21,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalControllerExceptionHandler {
-
-    @ExceptionHandler(DuplicateEmailException.class)
-    public ResponseEntity<IncorrectValueResponse> handleDuplicateEmail(DuplicateEmailException ex) {
-        return new ResponseEntity<>(new IncorrectValueResponse("email", ex.getMessage()), HttpStatus.CONFLICT);
-    }
 
     @ExceptionHandler(DuplicateUsernameException.class)
     public ResponseEntity<IncorrectValueResponse> handleDuplicateUsername(DuplicateUsernameException ex) {
