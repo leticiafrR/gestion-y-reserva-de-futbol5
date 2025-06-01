@@ -21,9 +21,9 @@
   -moz-osx-font-smoothing: grayscale;
   --radius: 1.25rem;
   --radius-lg: 20px;
-  --background: #f6faf7;
+  --background: #f6f7fa;
   --foreground: #000000;
-  --card: #ebf2ed;
+  --card: #ebecf2;
   --card-foreground: #1e1e1e;
   --popover: #ffffff;
   --popover-foreground: #1e1e1e;

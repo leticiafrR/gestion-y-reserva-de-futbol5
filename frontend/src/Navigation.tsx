@@ -8,6 +8,7 @@ import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
 import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
 import { TeamsScreen } from "@/screens/player/TeamsScreen";
+import { ProfileScreen } from "@/screens/player/ProfileScreen";
 
 function AdminRoutes() {
   return (
@@ -39,6 +40,9 @@ function PlayerRoutes() {
       </Route>
       <Route path="/teams">
         <TeamsScreen />
+      </Route>
+      <Route path="/profile">
+        <ProfileScreen />
       </Route>
       <Route path="/">
         <Redirect href="/main" />
