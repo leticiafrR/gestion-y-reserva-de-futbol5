@@ -30,38 +30,46 @@ let mockFields: Field[] = [
   {
     id: "1",
     name: "Cancha CENTRAL",
-    type: "FUTBOL 11",
-    description: "Cancha principal con césped sintético de alta calidad",
-    pricePerHour: 80,
-    capacity: 22,
-    grassType: "synthetic",
-    address: "Av. Principal 123, Ciudad",
-    latitude: -34.6037,
-    longitude: -58.3816,
-    isCovered: false,
-    hasLighting: true,
+    grass: "sintetico",
+    lighting: true,
+    roofing: false,
+    location: "Av. Principal 123",
+    area: "Centro",
     photos: [],
+    description: "Cancha con césped sintético y buena iluminación.",
+    price: 80
   },
   {
     id: "2",
-    name: "Cancha No  NORTE",
-    type: "FUTBOL 7",
-    description: "Cancha techada ideal para días de lluvia",
-    pricePerHour: 50,
-    capacity: 14,
-    grassType: "synthetic",
-    address: "Calle Norte 456, Ciudad",
-    latitude: -34.5937,
-    longitude: -58.3716,
-    isCovered: true,
-    hasLighting: true,
+    name: "Cancha NORTE",
+    grass: "natural",
+    lighting: false,
+    roofing: false,
+    location: "Calle Norte 456",
+    area: "Norte",
     photos: [],
+    description: "Cancha de césped natural, ideal para torneos.",
+    price: 50
   }
 ];
 
 async function getOwnerFields(): Promise<Field[]> {
   // Return the current mock fields
   return mockFields;
+  /*
+  const response = await fetch(BASE_API_URL + "/fields/owner", {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      // Authorization: `Bearer ${accessToken}`, 
+    },
+  });
+  if (response.ok) {
+    return response.json();
+  } else {
+    throw new Error(`Failed to fetch owner fields with status ${response.status}: ${await response.text()}`);
+  */
 }
 
 async function createField(data: Omit<Field, "id">) {
@@ -138,9 +146,16 @@ export function useUpdateField() {
 }
 
 async function updateField(fieldId: string, updates: Omit<Field, "id">) {
-  // Mock update
+  // Validar nombre único (excepto para la cancha actual)
+  if (
+    mockFields.some(
+      f => f.id !== fieldId && f.name.toLowerCase() === updates.name.toLowerCase()
+    )
+  ) {
+    throw new Error("Ya existe una cancha con ese nombre");
+  }
   mockFields = mockFields.map(f =>
-    f.id === fieldId ? { ...f, ...updates } : f
+    f.id === fieldId ? { ...f, ...updates, id: fieldId } : f
   );
   return { success: true };
 
