@@ -24,6 +24,7 @@ const AgeField = ({ field }: FieldComponentProps) => {
           id={id}
           name={field.name}
           type="number"
+          min="1"
           value={field.state.value}
           className={`${inputStyles.input} ${
             field.state.meta.errors.length > 0 ? inputStyles.error : ""
@@ -34,7 +35,12 @@ const AgeField = ({ field }: FieldComponentProps) => {
               : ""
           }
           onBlur={field.handleBlur}
-          onChange={(e) => field.handleChange(parseInt(e.target.value) || 0)}
+          onChange={(e) => {
+            const value = parseInt(e.target.value) || 0;
+            if (value > 0) {
+              field.handleChange(value);
+            }
+          }}
         />
       </div>
     </div>

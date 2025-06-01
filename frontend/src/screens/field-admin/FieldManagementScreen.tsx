@@ -697,8 +697,14 @@ const CreateFieldModal = ({
             </label>
             <input
               type="number"
+              min="1"
               value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (value > 0) {
+                  setFormData({ ...formData, price: value });
+                }
+              }}
               placeholder="50"
               style={{
                 width: "100%",
@@ -1075,8 +1081,14 @@ const EditFieldModal = ({
             </label>
             <input
               type="number"
+              min="1"
               value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (value > 0) {
+                  setFormData({ ...formData, price: value });
+                }
+              }}
               placeholder="50"
               style={{
                 width: "100%",
