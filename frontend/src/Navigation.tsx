@@ -6,6 +6,7 @@ import { useToken } from "@/services/TokenContext";
 import { FieldManagementScreen } from "@/screens/field-admin/FieldManagementScreen";
 import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
+import { VerifyEmailScreen } from "./screens/auth/VerifyEmailScreen";
 import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
 import { TeamsScreen } from "@/screens/player/TeamsScreen";
 import { ProfileScreen } from "@/screens/player/ProfileScreen";
@@ -78,6 +79,9 @@ export const Navigation = () => {
           </Route>
           <Route path="/signup">
             <SignupScreen />
+          </Route>
+          <Route path="/verify">
+            <VerifyEmailScreen />
           </Route>
           <Route>
             <Redirect href="/login" />
