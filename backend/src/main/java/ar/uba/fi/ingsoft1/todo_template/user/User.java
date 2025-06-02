@@ -1,16 +1,17 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.Email;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
+import java.time.Year;
 import java.util.Collection;
 import java.util.List;
 
@@ -18,11 +19,8 @@ import java.util.List;
 public class User implements UserDetails, UserCredentials {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(unique = true, nullable = false)
-    private String username;
 
     @Column(nullable = false)
     private String password;
@@ -30,12 +28,50 @@ public class User implements UserDetails, UserCredentials {
     @Column(nullable = false)
     private String role;
 
-    public User() {}
+    @Column(unique = true, nullable = false)
+    @Email
+    private String username;
 
-    public User(String username, String password) {
+    @Column(nullable = false)
+    private String gender;
+
+    @Column(nullable = false)
+    private Integer birthYear;
+
+    @Column(nullable = false)
+    private String zone;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
+    private String last_name;
+
+    @Column(name = "is_email_verified", nullable = false, columnDefinition = "boolean default false")
+    private Boolean emailVerified = false;
+
+    @Column(nullable = false)
+    private Boolean active = true;
+
+    public User() {
+    }
+
+    public User(String username, String password, String role, String gender, String age,
+            String zone, String name, String last_name) {
         this.username = username;
         this.password = password;
-        this.role = "USER";
+        this.birthYear = BirthYearFromStringAge(age);
+        this.gender = gender;
+        this.zone = zone;
+        this.role = role;
+        this.name = name;
+        this.last_name = last_name;
+    }
+
+    private Integer BirthYearFromStringAge(String age) {
+        int ageValue = Integer.parseInt(age);
+        int currentYear = Year.now().getValue();
+        return currentYear - ageValue;
     }
 
     @Override
@@ -60,6 +96,18 @@ public class User implements UserDetails, UserCredentials {
 
     public String getRole() {
         return role;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 
     @Override
