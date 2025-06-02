@@ -1,29 +1,62 @@
 // @ts-nocheck - Mocked for development
 import { useMutation } from "@tanstack/react-query";
+import { SignupRequest } from "@/models/Signup";
+import { BASE_API_URL } from "@/config/app-query-client";
 
-// @ts-expect-error - Mocked for development
-// import { BASE_API_URL } from "@/config/app-query-client";
 // @ts-expect-error - Mocked for development
 // import { LoginResponseSchema } from "@/models/Login";
-import { SignupRequest } from "@/models/Signup";
-import { useToken } from "@/services/TokenContext";
 
 export function useSignup() {
-  const [, setToken] = useToken();
-
   return useMutation({
     mutationFn: async (req: SignupRequest) => {
-      const tokenData = await signup(req);
-      setToken({ state: "LOGGED_IN", ...tokenData });
+      // Transformar los datos al formato que espera el backend
+      const backendRequest = {
+        name: req.firstName,
+        last_name: req.lastName,
+        username: req.email,
+        password: req.password,
+        role: req.userType,
+        gender: req.gender,
+        age: req.age.toString(), // El backend calculará el birthYear a partir de la edad
+        zone: req.zone
+      };
+
+      const response = await signup(backendRequest);
+      return response;
     },
   });
 }
 
-async function signup(data: SignupRequest) {
-  // Mock successful signup response
+interface BackendSignupRequest {
+  name: string;
+  last_name: string;
+  username: string;
+  password: string;
+  role: string;
+  gender: string;
+  age: string;
+  zone: string;
+}
+
+async function signup(data: BackendSignupRequest) {
+  const response = await fetch(`${BASE_API_URL}/users/register`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error en el registro: ${response.status}`);
+  }
+
+  // No necesitamos devolver los tokens ya que el usuario debe verificar su email primero
   return {
-    accessToken: "dummy-access-token-123",
-    refreshToken: "dummy-refresh-token-456"
+    success: true,
+    message: "Registro exitoso. Por favor, verifica tu email para continuar."
   };
 
   /*
