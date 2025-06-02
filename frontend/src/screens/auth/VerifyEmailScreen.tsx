@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react"
+import { authService } from "@/services/auth.service"
+import { useLocation } from "wouter"
 
 export const VerifyEmailScreen = () => {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
+  const [errorMessage, setErrorMessage] = useState("")
+  const [, setLocation] = useLocation()
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -14,32 +18,24 @@ export const VerifyEmailScreen = () => {
 
         if (!token) {
           setStatus("error")
+          setErrorMessage("No se proporcionó un token de verificación")
           return
         }
 
-        // Simular verificación - reemplazar con tu API
-        const response = await fetch(`/api/auth/verify-email`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        })
-
-        if (response.ok) {
-          setStatus("success")
-          // Redirigir después de 3 segundos
-          setTimeout(() => {
-            window.location.href = "/login"
-          }, 3000)
-        } else {
-          setStatus("error")
-        }
+        const response = await authService.verifyEmail(token)
+        setStatus("success")
+        // Redirigir después de 3 segundos
+        setTimeout(() => {
+          setLocation("/login")
+        }, 3000)
       } catch (error) {
         setStatus("error")
+        setErrorMessage(error instanceof Error ? error.message : "Error al verificar el email")
       }
     }
 
     verifyEmail()
-  }, [])
+  }, [setLocation])
 
   const getContent = () => {
     switch (status) {
@@ -59,7 +55,7 @@ export const VerifyEmailScreen = () => {
         return {
           icon: <XCircle size={48} color="#ef4444" />,
           title: "Error de verificación",
-          description: "El enlace no es válido o ha expirado",
+          description: errorMessage || "El enlace no es válido o ha expirado",
         }
     }
   }
@@ -132,7 +128,7 @@ export const VerifyEmailScreen = () => {
         {/* Botón solo si hay error */}
         {status === "error" && (
           <button
-            onClick={() => (window.location.href = "/login")}
+            onClick={() => setLocation("/login")}
             style={{
               width: "100%",
               padding: "12px 24px",
