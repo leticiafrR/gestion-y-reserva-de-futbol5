@@ -160,20 +160,23 @@ export const MainScreen = () => {
                 <MapPin style={{ marginRight: '12px' }} size={16} />
                 Gestionar Canchas
               </button>
-              <button style={{ 
-                width: '100%', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'flex-start', 
-                padding: '12px 16px', 
-                backgroundColor: 'white', 
-                border: '1px solid #e5e7eb', 
-                borderRadius: '6px',
-                color: '#374151',
-                cursor: 'pointer'
-              }}>
-                <Users style={{ marginRight: '12px' }} size={16} />
-                Ver Clientes
+              <button
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  padding: "12px 16px",
+                  backgroundColor: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "6px",
+                  color: "#374151",
+                  cursor: "pointer",
+                }}
+                onClick={() => (window.location.href = "/horarios")}
+              >
+                <Clock style={{ marginRight: "12px" }} size={16} />
+                Gestionar Horarios
               </button>
             </div>
           </div>

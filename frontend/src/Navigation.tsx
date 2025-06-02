@@ -9,6 +9,7 @@ import { SignupScreen } from "./screens/auth/SignupScreen";
 import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
 import { TeamsScreen } from "@/screens/player/TeamsScreen";
 import { ProfileScreen } from "@/screens/player/ProfileScreen";
+import { ScheduleManagementScreen } from "./screens/field-admin/ScheduleManagementScreen";
 
 function AdminRoutes() {
   return (
@@ -18,6 +19,9 @@ function AdminRoutes() {
       </Route>
       <Route path="/canchas">
         <FieldManagementScreen />
+      </Route>
+      <Route path="/horarios">
+        <ScheduleManagementScreen />
       </Route>
       <Route path="/">
         <Redirect href="/main" />
