@@ -10,6 +10,7 @@ import type { Field } from "@/models/Field"
 import { useQueryClient } from "@tanstack/react-query"
 import { useDeleteField } from "@/services/CreateFieldServices";
 import { useUpdateField } from "@/services/CreateFieldServices";
+import { FieldsMap } from "@/components/FieldsMap/FieldsMap";
 
 
 export const FieldManagementScreen = () => {
@@ -251,7 +252,7 @@ export const FieldManagementScreen = () => {
                     </span>
                   </div>
 
-                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.location}</p>
+                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.location.address}</p>
                   <p style={{ color: "#495057", fontSize: "14px", margin: "0 0 16px 0", lineHeight: "1.4" }}>
                     {field.description}
                   </p>
@@ -342,89 +343,8 @@ export const FieldManagementScreen = () => {
             <p style={{ color: "#6c757d", fontSize: "14px", marginBottom: "20px" }}>
               Ubicación de todas las canchas registradas
             </p>
-
-            <div
-              style={{
-                backgroundColor: "#c8e6c9",
-                borderRadius: "8px",
-                height: "400px",
-                position: "relative",
-                border: "1px solid #a5d6a7",
-              }}
-            >
-              {/* Simulated map pins */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "30%",
-                  left: "25%",
-                  backgroundColor: "white",
-                  border: "2px solid #4caf50",
-                  borderRadius: "8px",
-                  padding: "8px 12px",
-                  fontSize: "12px",
-                  fontWeight: "500",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <MapPin size={12} color="#4caf50" />
-                  <div>
-                    <div style={{ color: "#212529" }}>Cancha Central</div>
-                    <div style={{ color: "#6c757d", fontSize: "10px" }}>$80/hora</div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "60%",
-                  backgroundColor: "white",
-                  border: "2px solid #4caf50",
-                  borderRadius: "8px",
-                  padding: "8px 12px",
-                  fontSize: "12px",
-                  fontWeight: "500",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <MapPin size={12} color="#4caf50" />
-                  <div>
-                    <div style={{ color: "#212529" }}>Cancha Norte</div>
-                    <div style={{ color: "#6c757d", fontSize: "10px" }}>$50/hora</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Legend */}
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "20px",
-                  left: "20px",
-                  backgroundColor: "white",
-                  borderRadius: "6px",
-                  padding: "12px",
-                  border: "1px solid #e9ecef",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                }}
-              >
-                <h4 style={{ fontSize: "12px", fontWeight: "bold", color: "#212529", margin: "0 0 8px 0" }}>Leyenda</h4>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <div
-                    style={{
-                      width: "8px",
-                      height: "8px",
-                      backgroundColor: "#4caf50",
-                      borderRadius: "50%",
-                    }}
-                  ></div>
-                  <span style={{ fontSize: "11px", color: "#495057" }}>Cancha disponible</span>
-                </div>
-              </div>
+            <div style={{ marginBottom: 32 }}>
+              <FieldsMap fields={fields} />
             </div>
           </div>
         )}

@@ -2,21 +2,27 @@ import { useAvailableFields } from "@/services/AvailableFieldsServices";
 import type { Field } from "@/models/Field";
 import { useState } from "react";
 import { navigate } from "wouter/use-browser-location";
-import { X } from "lucide-react";
+import { X, MapPin, List } from "lucide-react";
+import { FieldsMap } from "@/components/FieldsMap/FieldsMap";
 
 export const AvailableFieldsScreen = () => {
   const { data: fields, isLoading, error } = useAvailableFields();
   const [selectedField, setSelectedField] = useState<Field | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
   // Estados para los filtros
   const [search, setSearch] = useState("");
+  const [zoneSearch, setZoneSearch] = useState("");
   const [grassType, setGrassType] = useState("");
   const [onlyWithLighting, setOnlyWithLighting] = useState(false);
   const [onlyRoofed, setOnlyRoofed] = useState(false);
   const [maxPrice, setMaxPrice] = useState<number>(100);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   // Obtener tipos de césped únicos para el filtro
   const grassTypes = Array.from(new Set(fields?.map(f => f.grass) ?? []));
+  // Obtener zonas únicas para el filtro
+  const zones = Array.from(new Set(fields?.map(f => f.area) ?? []));
 
   // Obtener rango de precios para los límites del slider
   const prices = fields?.map(f => f.price ?? 0) ?? [];
@@ -25,12 +31,13 @@ export const AvailableFieldsScreen = () => {
   // Filtrado de canchas
   const filteredFields = (fields ?? []).filter((field: Field) => {
     const matchesName = field.name.toLowerCase().includes(search.toLowerCase());
+    const matchesZone = field.area.toLowerCase().includes(zoneSearch.toLowerCase());
     const matchesGrass = grassType ? field.grass === grassType : true;
     const matchesLighting = onlyWithLighting ? field.lighting : true;
     const matchesRoofed = onlyRoofed ? field.roofing : true;
     const fieldPrice = field.price ?? 0;
     const matchesMaxPrice = fieldPrice <= maxPrice;
-    return matchesName && matchesGrass && matchesLighting && matchesRoofed && matchesMaxPrice;
+    return matchesName && matchesZone && matchesGrass && matchesLighting && matchesRoofed && matchesMaxPrice;
   });
 
   if (isLoading) return <div style={{ textAlign: "center", marginTop: "2rem" }}>Cargando canchas...</div>;
@@ -51,25 +58,84 @@ export const AvailableFieldsScreen = () => {
         marginBottom: "2rem" 
       }}>
         <h1 style={{ color: "var(--foreground)", margin: 0, fontSize: "2rem" }}>Canchas Disponibles</h1>
-        <button
-          style={{
-            padding: "10px 16px",
-            backgroundColor: "var(--secondary)",
-            color: "var(--secondary-foreground)",
-            border: "1px solid var(--border)",
-            cursor: "pointer",
-            fontSize: "14px",
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <button
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "var(--secondary)",
+              color: "var(--secondary-foreground)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            {filtersExpanded ? "Ocultar Filtros" : "Mostrar Filtros"}
+          </button>
+          <div style={{ 
+            display: "flex", 
+            backgroundColor: "var(--card)", 
             borderRadius: "var(--radius)",
-            transition: "all 0.2s ease",
-            textDecoration: "none"
-          }}
-          onClick={() => {
-            navigate("/main");
-          }}
-        >
-          Volver a Inicio
-        </button>
+            border: "1px solid var(--border)",
+            overflow: "hidden"
+          }}>
+            <button
+              onClick={() => setViewMode("list")}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: viewMode === "list" ? "var(--primary)" : "transparent",
+                color: viewMode === "list" ? "var(--primary-foreground)" : "var(--foreground)",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
+              }}
+            >
+              <List size={16} />
+              Lista
+            </button>
+            <button
+              onClick={() => setViewMode("map")}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: viewMode === "map" ? "var(--primary)" : "transparent",
+                color: viewMode === "map" ? "var(--primary-foreground)" : "var(--foreground)",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
+              }}
+            >
+              <MapPin size={16} />
+              Mapa
+            </button>
+          </div>
+          <button
+            style={{
+              padding: "10px 16px",
+              backgroundColor: "var(--secondary)",
+              color: "var(--secondary-foreground)",
+              border: "1px solid var(--border)",
+              cursor: "pointer",
+              fontSize: "14px",
+              borderRadius: "var(--radius)",
+              transition: "all 0.2s ease",
+              textDecoration: "none"
+            }}
+            onClick={() => {
+              navigate("/main");
+            }}
+          >
+            Volver a Inicio
+          </button>
+        </div>
       </div>
+
       <div
         style={{
           marginBottom: "2rem",
@@ -79,10 +145,14 @@ export const AvailableFieldsScreen = () => {
           alignItems: "center",
           justifyContent: "center",
           background: "var(--card)",
-          padding: "1.5rem 2rem",
+          padding: filtersExpanded ? "1.5rem 2rem" : "0",
           borderRadius: "var(--radius-lg)",
           boxShadow: "0 2px 8px var(--border)",
-          border: "1px solid var(--border)"
+          border: "1px solid var(--border)",
+          maxHeight: filtersExpanded ? "1000px" : "0",
+          opacity: filtersExpanded ? 1 : 0,
+          overflow: "hidden",
+          transition: "all 0.3s ease-in-out"
         }}
       >
         <input
@@ -99,6 +169,33 @@ export const AvailableFieldsScreen = () => {
             minWidth: 180
           }}
         />
+        <select
+          value={zoneSearch}
+          onChange={e => setZoneSearch(e.target.value)}
+          style={{
+            padding: "0.75rem 1rem",
+            borderRadius: "var(--radius)",
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--background)",
+            color: "var(--foreground)",
+            minWidth: 180
+          }}
+        >
+          <option value="">Todas las zonas</option>
+          {zones.map(zone => (
+            <option key={zone} value={zone}>{zone}</option>
+          ))}
+        </select>
+        <div style={{ 
+          width: "100%", 
+          textAlign: "center", 
+          fontSize: "0.8rem", 
+          color: "var(--muted-foreground)",
+          marginTop: "-1rem",
+          marginBottom: "0.5rem"
+        }}>
+          Solo se muestran las zonas que tienen canchas disponibles
+        </div>
         <select
           value={grassType}
           onChange={e => setGrassType(e.target.value)}
@@ -200,69 +297,77 @@ export const AvailableFieldsScreen = () => {
           Solo techadas
         </label>
       </div>
-      <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
-        {filteredFields.length === 0 && (
-          <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No se encontraron canchas.</div>
-        )}
-        {filteredFields.map((field) => (
-          <div
-            key={field.id}
-            onClick={() => setSelectedField(field)}
-            style={{
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-lg)",
-              padding: "1.5rem",
-              width: "320px",
-              background: "var(--card)",
-              boxShadow: "0 2px 8px var(--border)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              cursor: "pointer",
-              transition: "transform 0.2s ease, box-shadow 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 4px 12px var(--border)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "none";
-              e.currentTarget.style.boxShadow = "0 2px 8px var(--border)";
-            }}
-          >
-            <img
-              src={field.photos[0]}
-              alt={field.name}
+
+      {viewMode === "map" ? (
+        <FieldsMap 
+          fields={filteredFields} 
+          onFieldSelect={setSelectedField}
+        />
+      ) : (
+        <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
+          {filteredFields.length === 0 && (
+            <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No se encontraron canchas.</div>
+          )}
+          {filteredFields.map((field) => (
+            <div
+              key={field.id}
+              onClick={() => setSelectedField(field)}
               style={{
-                width: "100%",
-                height: "180px",
-                objectFit: "cover",
-                borderRadius: "var(--radius)",
-                marginBottom: "1rem",
-                boxShadow: "0 1px 4px var(--border)"
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-lg)",
+                padding: "1.5rem",
+                width: "320px",
+                background: "var(--card)",
+                boxShadow: "0 2px 8px var(--border)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                cursor: "pointer",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease",
               }}
-            />
-            <h2 style={{ margin: "0.5rem 0", color: "var(--primary)", fontSize: "1.5rem" }}>{field.name}</h2>
-            <p style={{ margin: "0.2rem 0", color: "var(--foreground)" }}><b>Zona:</b> {field.area}</p>
-            <p style={{ margin: "0.2rem 0", color: "var(--foreground)" }}><b>Césped:</b> {field.grass === "natural" ? "Natural" : "Sintético"}</p>
-            <p style={{ margin: "0.2rem 0", color: "var(--foreground)" }}>
-              <b>Iluminación:</b>{" "}
-              <span style={{ color: field.lighting ? "var(--chart-2)" : "var(--destructive)", fontWeight: 600 }}>
-                {field.lighting ? "Sí" : "No"}
-              </span>
-            </p>
-            <p style={{ margin: "0.2rem 0", color: "var(--foreground)" }}>
-              <b>Techada:</b>{" "}
-              <span style={{ color: field.roofing ? "var(--chart-2)" : "var(--destructive)", fontWeight: 600 }}>
-                {field.roofing ? "Sí" : "No"}
-              </span>
-            </p>
-            <p style={{ margin: "0.5rem 0", fontSize: "1.5rem", color: "var(--primary)", fontWeight: "bold" }}>
-              ${field.price}/hora
-            </p>
-          </div>
-        ))}
-      </div>
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px var(--border)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "none";
+                e.currentTarget.style.boxShadow = "0 2px 8px var(--border)";
+              }}
+            >
+              <img
+                src={field.photos[0]}
+                alt={field.name}
+                style={{
+                  width: "100%",
+                  height: "180px",
+                  objectFit: "cover",
+                  borderRadius: "var(--radius)",
+                  marginBottom: "1rem",
+                  boxShadow: "0 1px 4px var(--border)"
+                }}
+              />
+              <h2 style={{ margin: "0.5rem 0", color: "var(--primary)", fontSize: "1.5rem" }}>{field.name}</h2>
+              <p style={{ margin: "0.2rem 0", color: "var(--foreground)" }}><b>Zona:</b> {field.area}</p>
+              <p style={{ margin: "0.2rem 0", color: "var(--foreground)" }}><b>Césped:</b> {field.grass === "natural" ? "Natural" : "Sintético"}</p>
+              <p style={{ margin: "0.2rem 0", color: "var(--foreground)" }}>
+                <b>Iluminación:</b>{" "}
+                <span style={{ color: field.lighting ? "var(--chart-2)" : "var(--destructive)", fontWeight: 600 }}>
+                  {field.lighting ? "Sí" : "No"}
+                </span>
+              </p>
+              <p style={{ margin: "0.2rem 0", color: "var(--foreground)" }}>
+                <b>Techada:</b>{" "}
+                <span style={{ color: field.roofing ? "var(--chart-2)" : "var(--destructive)", fontWeight: 600 }}>
+                  {field.roofing ? "Sí" : "No"}
+                </span>
+              </p>
+              <p style={{ margin: "0.5rem 0", fontSize: "1.5rem", color: "var(--primary)", fontWeight: "bold" }}>
+                ${field.price}/hora
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {selectedField && (
         <FieldDetailsModal
@@ -325,7 +430,7 @@ const FieldDetailsModal = ({
               {field.name}
             </h2>
             <p style={{ color: "var(--muted-foreground)", margin: 0, fontSize: "16px" }}>
-              {field.area} - {field.location}
+              {field.area} - {field.location.address}
             </p>
           </div>
           <button
@@ -430,7 +535,7 @@ const FieldDetailsModal = ({
             <div>
               <h3 style={{ color: "var(--foreground)", fontSize: "18px", marginBottom: "16px" }}>Ubicación</h3>
               <p style={{ color: "var(--foreground)", margin: "0 0 8px 0" }}>
-                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.location}
+                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.location.address}
               </p>
               <p style={{ color: "var(--foreground)", margin: "0 0 8px 0" }}>
                 <span style={{ fontWeight: "500" }}>Zona:</span> {field.area}

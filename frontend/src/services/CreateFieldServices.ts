@@ -33,11 +33,16 @@ let mockFields: Field[] = [
     grass: "sintetico",
     lighting: true,
     roofing: false,
-    location: "Av. Principal 123",
+    location: {
+      lat: -34.6037,
+      lng: -58.3816,
+      address: "Av. Principal 123"
+    },
     area: "Centro",
     photos: [],
     description: "Cancha con césped sintético y buena iluminación.",
-    price: 80
+    price: 80,
+    isAvailable: true
   },
   {
     id: "2",
@@ -45,11 +50,16 @@ let mockFields: Field[] = [
     grass: "natural",
     lighting: false,
     roofing: false,
-    location: "Calle Norte 456",
+    location: {
+      lat: -34.5837,
+      lng: -58.4016,
+      address: "Calle Norte 456"
+    },
     area: "Norte",
     photos: [],
     description: "Cancha de césped natural, ideal para torneos.",
-    price: 50
+    price: 50,
+    isAvailable: false
   }
 ];
 

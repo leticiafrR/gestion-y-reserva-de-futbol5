@@ -18,7 +18,11 @@ async function getAvailableFields(): Promise<Field[]> {
       grass: "sintetico",
       lighting: true,
       roofing: true,
-      location: "Av. Siempreviva 742",
+      location: {
+        lat: -34.6037,
+        lng: -58.3816,
+        address: "Av. Siempreviva 742"
+      },
       area: "Norte",
       photos: ["https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8"],
       description: "Cancha principal con las mejores instalaciones",
@@ -30,7 +34,11 @@ async function getAvailableFields(): Promise<Field[]> {
       grass: "natural",
       lighting: false,
       roofing: false,
-      location: "Calle Falsa 123",
+      location: {
+        lat: -34.6012,
+        lng: -58.3820,
+        address: "Calle Falsa 123"
+      },
       area: "Sur",
       photos: ["https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d"],
       description: "Cancha con césped natural ideal para partidos amistosos",
@@ -42,7 +50,11 @@ async function getAvailableFields(): Promise<Field[]> {
       grass: "sintetico",
       lighting: true,
       roofing: false,
-      location: "Boulevard 456",
+      location: {
+        lat: -34.6100,
+        lng: -58.3900,
+        address: "Boulevard 456"
+      },
       area: "Oeste",
       photos: ["https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8"],
       description: "Cancha con iluminación perfecta para partidos nocturnos",
@@ -54,7 +66,11 @@ async function getAvailableFields(): Promise<Field[]> {
       grass: "natural",
       lighting: true,
       roofing: true,
-      location: "Ruta 8 km 12",
+      location: {
+        lat: -34.6200,
+        lng: -58.3700,
+        address: "Ruta 8 km 12"
+      },
       area: "Sur",
       photos: ["https://images.unsplash.com/photo-1461896836934-ffe607ba8211"],
       description: "Cancha techada con césped natural de primera calidad",
@@ -66,7 +82,11 @@ async function getAvailableFields(): Promise<Field[]> {
       grass: "sintetico",
       lighting: false,
       roofing: true,
-      location: "Av. Libertad 999",
+      location: {
+        lat: -34.5900,
+        lng: -58.4000,
+        address: "Av. Libertad 999"
+      },
       area: "Norte",
       photos: ["https://wallpapers.com/images/featured-full/imagenes-de-perritos-o5kux3u31f8r6zqg.jpg"],
       description: "Cancha techada ideal para días lluviosos",
@@ -78,7 +98,11 @@ async function getAvailableFields(): Promise<Field[]> {
       grass: "sintetico",
       lighting: true,
       roofing: true,
-      location: "Camino Real 321",
+      location: {
+        lat: -34.6000,
+        lng: -58.3700,
+        address: "Camino Real 321"
+      },
       area: "Este",
       photos: ["https://images.unsplash.com/photo-1474494819794-90f9664b530d"],
       description: "Cancha completa con todas las comodidades",
