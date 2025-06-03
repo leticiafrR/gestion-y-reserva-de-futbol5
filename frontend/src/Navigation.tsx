@@ -1,36 +1,76 @@
 import { Redirect, Route, Switch } from "wouter";
 
-import { MainScreen } from "@/screens/MainScreen";
-import { CreateFieldScreen } from "@/screens/CreateFieldScreen"
+import { MainScreen as AdminMainScreen } from "@/screens/field-admin/MainScreen";
+import { PlayerMainScreen } from "@/screens/player/MainScreen";
 import { useToken } from "@/services/TokenContext";
-import { FieldManagementScreen } from "@/screens/FieldManagementScreen";
-import { LoginScreen } from "./screens/LoginScreen";
-import { SignupScreen } from "./screens/SignupScreen";
+import { FieldManagementScreen } from "@/screens/field-admin/FieldManagementScreen";
+import { LoginScreen } from "./screens/auth/LoginScreen";
+import { SignupScreen } from "./screens/auth/SignupScreen";
+import { VerifyEmailScreen } from "./screens/auth/VerifyEmailScreen";
+import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
+import { TeamsScreen } from "@/screens/player/TeamsScreen";
+import { ProfileScreen } from "@/screens/player/ProfileScreen";
+import { ScheduleManagementScreen } from "./screens/field-admin/ScheduleManagementScreen";
+
+function AdminRoutes() {
+  return (
+    <Switch>
+      <Route path="/main">
+        <AdminMainScreen />
+      </Route>
+      <Route path="/canchas">
+        <FieldManagementScreen />
+      </Route>
+      <Route path="/horarios">
+        <ScheduleManagementScreen />
+      </Route>
+      <Route path="/">
+        <Redirect href="/main" />
+      </Route>
+      <Route>
+        <Redirect href="/main" />
+      </Route>
+    </Switch>
+  );
+}
+
+function PlayerRoutes() {
+  return (
+    <Switch>
+      <Route path="/main">
+        <PlayerMainScreen />
+      </Route>
+      <Route path="/available-fields">
+        <AvailableFieldsScreen />
+      </Route>
+      <Route path="/teams">
+        <TeamsScreen />
+      </Route>
+      <Route path="/profile">
+        <ProfileScreen />
+      </Route>
+      <Route path="/">
+        <Redirect href="/main" />
+      </Route>
+      <Route>
+        <Redirect href="/main" />
+      </Route>
+    </Switch>
+  );
+}
 
 export const Navigation = () => {
   const [tokenState] = useToken();
-  console.log("tokenState", tokenState); // <-- agrega esto
+  // Leer el tipo de usuario desde localStorage
+  const userType = typeof window !== "undefined" ? localStorage.getItem("loginUserType") || "user" : "user";
+
   switch (tokenState.state) {
     case "LOGGED_IN":
-      return (
-        <Switch>
-          <Route path="/main">
-            <MainScreen />
-          </Route>
-          <Route path="/create-field">
-            <CreateFieldScreen /> {/* Temporarily using MainScreen, we'll create proper screens later */}
-          </Route>
-          <Route path="/canchas">
-            <FieldManagementScreen />
-          </Route>
-          <Route path="/">
-            <Redirect href="/main" />
-          </Route>
-          <Route>
-            <Redirect href="/main" />
-          </Route>
-        </Switch>
-      );
+      if (userType === "admin") {
+        return <AdminRoutes />;
+      } else {
+        return <PlayerRoutes />;
+      }
     case "LOGGED_OUT":
       return (
         <Switch>
@@ -39,6 +79,9 @@ export const Navigation = () => {
           </Route>
           <Route path="/signup">
             <SignupScreen />
+          </Route>
+          <Route path="/verify-email">
+            <VerifyEmailScreen />
           </Route>
           <Route>
             <Redirect href="/login" />
