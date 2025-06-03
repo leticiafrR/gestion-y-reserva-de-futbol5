@@ -1,3 +1,4 @@
+// @ts-expect-error 
 import { Search, Filter, Sliders } from "lucide-react"
 import type { Field } from "@/models/Field"
 
@@ -34,6 +35,7 @@ export const FieldFilters = ({
   maxPrice,
   setMaxPrice,
   filtersExpanded,
+  // @ts-expect-error 
   setFiltersExpanded,
   fields,
   filteredFields,

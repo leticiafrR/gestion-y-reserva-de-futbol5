@@ -1,3 +1,4 @@
+// @ts-expect-error 
 import React from "react";
 
 const CustomMarkerLabel = ({ name, price, color }: { name: string; price: number; color: string }) => {

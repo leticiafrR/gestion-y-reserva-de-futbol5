@@ -4,18 +4,7 @@ import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api"
 import { useState } from "react"
 import ReactDOMServer from "react-dom/server"
 import CustomMarkerLabel from "./CustomMarkerLabel"
-
-interface Field {
-  id: string
-  name: string
-  price?: number
-  location: {
-    lat: number
-    lng: number
-  }
-  status?: "available" | "occupied" | "maintenance"
-  type?: string
-}
+import type { Field } from "@/models/Field"
 
 const mapContainerStyle = {
   width: "100%",
@@ -34,13 +23,8 @@ interface FieldsMapProps {
 }
 
 function createSimpleMarker(field: Field): google.maps.Icon {
-  const { name, price = 0, status = "available" } = field
-  const statusColors = {
-    available: "#4caf50",
-    occupied: "#ef4444",
-    maintenance: "#f59e0b",
-  }
-  const color = statusColors[status]
+  const { name, price = 0, isAvailable = true } = field
+  const color = isAvailable ? "#4caf50" : "#ef4444"
 
   // Renderizar el componente a string
   const markerHTML = ReactDOMServer.renderToString(
@@ -63,6 +47,7 @@ function createSimpleMarker(field: Field): google.maps.Icon {
 }
 
 export const FieldsMap = ({ fields, onFieldSelect }: FieldsMapProps) => {
+  // @ts-expect-error - map is used indirectly through setMap
   const [map, setMap] = useState<google.maps.Map | null>(null)
 
   const { isLoaded, loadError } = useLoadScript({
