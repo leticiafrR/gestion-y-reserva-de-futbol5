@@ -16,11 +16,12 @@
     "jsx": "react-jsx",
 
     /* Linting */
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": false,
-    "noUncheckedSideEffectImports": false,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+
 
 
     /* Imports */
@@ -29,5 +30,5 @@
     }
   },
   "include": ["src"],
-  "exclude": ["src/screens/**/*"]
+  // "exclude": ["src/screens/**/*"]
 }

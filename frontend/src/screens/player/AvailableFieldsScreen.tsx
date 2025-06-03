@@ -177,7 +177,7 @@ export const AvailableFieldsScreen = () => {
 
       {/* Contenido Principal */}
       {viewMode === "map" ? (
-        <FieldsMap fields={filteredFields} onFieldSelect={setSelectedField} />
+        <FieldsMap fields={filteredFields as Field[]} onFieldSelect={setSelectedField} />
       ) : (
         <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
           {filteredFields.length === 0 && (
