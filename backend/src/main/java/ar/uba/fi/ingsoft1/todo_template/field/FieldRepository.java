@@ -11,4 +11,6 @@ public interface FieldRepository extends JpaRepository<Field, Long> {
     boolean existsByNameAndAddressAndIdNot(String name, String address, Long id);
     Optional<Field> findByIdAndOwner(Long id, User owner);
     List<Field> findByOwner(User owner);
+    List<Field> findByActiveTrue();
+
 }

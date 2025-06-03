@@ -89,4 +89,9 @@ public class FieldService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         return fieldRepository.findByOwner(owner);
     }
+
+    public List<Field> getAllActiveFields() {
+        return fieldRepository.findByActiveTrue();
+    }
+
 }
