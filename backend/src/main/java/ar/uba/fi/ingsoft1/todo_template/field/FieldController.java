@@ -1,5 +1,6 @@
 package ar.uba.fi.ingsoft1.todo_template.field;
 
+import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import ar.uba.fi.ingsoft1.todo_template.field.availability.FieldAvailabilityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,6 +40,7 @@ public class FieldController {
     public ResponseEntity<Field> createField(
             @Parameter(description = "Datos de la cancha") @Valid @RequestBody FieldCreateDTO dto) {
         String username = getAuthenticatedUsername();
+        System.out.println("Este es el username -> " + username + ": es el username que voy a usar para crear la cancha");
         Field field = fieldService.createField(dto, username);
         return ResponseEntity.ok(field);
     }
@@ -76,6 +78,7 @@ public class FieldController {
     public ResponseEntity<Void> deleteField(
             @Parameter(description = "ID de la cancha") @PathVariable Long id) {
         String username = getAuthenticatedUsername();
+
         fieldService.deleteField(id, username);
         return ResponseEntity.noContent().build();
     }
@@ -105,6 +108,18 @@ public class FieldController {
 
     private String getAuthenticatedUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getName();
+        JwtUserDetails userDetails = (JwtUserDetails) authentication.getPrincipal();
+        return userDetails.getUsername();
     }
+    @GetMapping("/all")
+    @Operation(
+            summary = "Listar todas las canchas activas",
+            description = "Devuelve las canchas disponibles para cualquier usuario"
+    )
+    @ApiResponse(responseCode = "200", description = "Listado de canchas activas")
+    public ResponseEntity<List<Field>> listAllActiveFields() {
+        return ResponseEntity.ok(fieldService.getAllActiveFields());
+    }
+
+
 }
