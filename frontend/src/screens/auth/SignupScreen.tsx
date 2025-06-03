@@ -272,7 +272,7 @@ const ZoneField = ({ field }: FieldComponentProps) => {
 
 export const SignupScreen = () => {
   console.log("SignupScreen mounted");
-  const { mutate, error } = useSignup();
+  const { mutate, error, isSuccess, data } = useSignup();
 
   const formData = useAppForm({
     defaultValues: {
@@ -296,63 +296,99 @@ export const SignupScreen = () => {
     <CommonLayout>
       <div className={styles.signupContainer}>
         <h1 className={styles.signupTitle}>Sign Up</h1>
-        <formData.AppForm>
-          <formData.FormContainer extraError={error}>
-            <div className={styles.formGrid}>
-              <formData.AppField
-                name="firstName"
-                children={(field) => <field.TextField label="First Name" />}
-              />
-              <formData.AppField
-                name="lastName"
-                children={(field) => <field.TextField label="Last Name" />}
-              />
-              <div className={styles.fullWidth}>
+        {isSuccess ? (
+          <div style={{
+            padding: "20px",
+            backgroundColor: "#ecfdf5",
+            border: "1px solid #10b981",
+            borderRadius: "8px",
+            marginBottom: "20px",
+            textAlign: "center"
+          }}>
+            <h3 style={{ color: "#047857", marginBottom: "8px" }}>¡Registro exitoso!</h3>
+            <p style={{ color: "#065f46", marginBottom: "16px" }}>
+              {data?.message || "Te hemos enviado un email de verificación. Por favor, revisa tu bandeja de entrada y sigue las instrucciones para activar tu cuenta."}
+            </p>
+            <button
+              onClick={() => window.location.href = "/login"}
+              style={{
+                backgroundColor: "#10b981",
+                color: "white",
+                border: "none",
+                padding: "8px 16px",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "14px"
+              }}
+            >
+              Ir al Login
+            </button>
+          </div>
+        ) : (
+          <formData.AppForm>
+            <formData.FormContainer extraError={error}>
+              <div className={styles.formGrid}>
                 <formData.AppField
-                  name="email"
-                  children={(field) => <field.TextField label="Email" />}
+                  name="firstName"
+                  children={(field) => <field.TextField label="First Name" />}
                 />
-              </div>
-              <div className={styles.fullWidth}>
                 <formData.AppField
-                  name="photo"
-                  children={(field) => <PhotoField field={field} />}
+                  name="lastName"
+                  children={(field) => <field.TextField label="Last Name" />}
                 />
-              </div>
-              <formData.AppField
-                name="age"
-                children={(field) => <AgeField field={field} />}
-              />
-              <formData.AppField
-                name="gender"
-                children={(field) => <GenderField field={field} />}
-              />
-              <div className={styles.fullWidth}>
+                <div className={styles.fullWidth}>
+                  <formData.AppField
+                    name="email"
+                    children={(field) => <field.TextField label="Email" />}
+                  />
+                </div>
+                <div className={styles.fullWidth}>
+                  <formData.AppField
+                    name="photo"
+                    children={(field) => <PhotoField field={field} />}
+                  />
+                </div>
                 <formData.AppField
-                  name="zone"
-                  children={(field) => <ZoneField field={field} />}
+                  name="age"
+                  children={(field) => <AgeField field={field} />}
                 />
-              </div>
-              <div className={styles.fullWidth}>
                 <formData.AppField
-                  name="userType"
-                  children={(field) => <UserTypeField field={field} />}
+                  name="gender"
+                  children={(field) => <GenderField field={field} />}
                 />
+                <div className={styles.fullWidth}>
+                  <formData.AppField
+                    name="zone"
+                    children={(field) => <ZoneField field={field} />}
+                  />
+                </div>
+                <div className={styles.fullWidth}>
+                  <formData.AppField
+                    name="userType"
+                    children={(field) => <UserTypeField field={field} />}
+                  />
+                </div>
+                <div className={styles.fullWidth}>
+                  <formData.AppField
+                    name="password"
+                    children={(field) => <field.PasswordField label="Password" />}
+                  />
+                </div>
               </div>
-              <div className={styles.fullWidth}>
-                <formData.AppField
-                  name="password"
-                  children={(field) => <field.PasswordField label="Password" />}
-                />
-              </div>
-            </div>
-          </formData.FormContainer>
-        </formData.AppForm>
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <button type="button" style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer" }} onClick={() => window.location.href = "/login"}>
-            ¿Ya tienes cuenta? Inicia sesión
-          </button>
-        </div>
+            </formData.FormContainer>
+          </formData.AppForm>
+        )}
+        {!isSuccess && (
+          <div style={{ textAlign: "center", marginTop: 16 }}>
+            <button 
+              type="button" 
+              style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer" }} 
+              onClick={() => window.location.href = "/login"}
+            >
+              ¿Ya tienes cuenta? Inicia sesión
+            </button>
+          </div>
+        )}
       </div>
     </CommonLayout>
   );

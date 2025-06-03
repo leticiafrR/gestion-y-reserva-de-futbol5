@@ -1,49 +1,39 @@
 // @ts-nocheck - Mocked for development
 import { useMutation } from "@tanstack/react-query";
-
-// @ts-expect-error - Mocked for development
-// import { BASE_API_URL } from "@/config/app-query-client";
-// @ts-expect-error - Mocked for development
-import { LoginRequest } from "@/models/Login";
+import { LoginRequest, LoginResponse, LoginResponseSchema } from "@/models/Login";
 import { useToken } from "@/services/TokenContext";
+import { BASE_API_URL } from "@/config/app-query-client";
 
 export function useLogin() {
   const [, setToken] = useToken();
 
-  return useMutation({
+  return useMutation<LoginResponse, Error, LoginRequest>({
     mutationFn: async (req: LoginRequest) => {
       const tokenData = await login(req);
       setToken({ state: "LOGGED_IN", ...tokenData });
+      return tokenData;
     },
   });
 }
 
-async function login(data: LoginRequest) {
-  // Mock incorrect credentials check
-  if (data.email === "test@example.com" && data.password === "wrong") {
-    throw new Error("Email o contraseña incorrectos");
-  }
-
-  // Mock successful login response
-  return {
-    accessToken: "dummy-access-token-123",
-    refreshToken: "dummy-refresh-token-456"
-  };
-
-  /*
-  const response = await fetch(BASE_API_URL + "/sessions", {
+async function login(data: LoginRequest): Promise<LoginResponse> {
+  const response = await fetch(`${BASE_API_URL}/sessions`, {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      username: data.email,
+      password: data.password
+    }),
   });
 
-  if (response.ok) {
-    return LoginResponseSchema.parse(await response.json());
-  } else {
-    throw new Error(`Login failed with status ${response.status}: ${await response.text()}`);
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error en el login: ${response.status}`);
   }
-  */
+
+  const responseData = await response.json();
+  return LoginResponseSchema.parse(responseData);
 } 

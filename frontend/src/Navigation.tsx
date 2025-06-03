@@ -80,7 +80,7 @@ export const Navigation = () => {
           <Route path="/signup">
             <SignupScreen />
           </Route>
-          <Route path="/verify">
+          <Route path="/verify-email">
             <VerifyEmailScreen />
           </Route>
           <Route>

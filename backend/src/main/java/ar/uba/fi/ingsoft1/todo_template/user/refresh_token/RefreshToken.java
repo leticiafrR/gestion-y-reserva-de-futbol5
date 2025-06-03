@@ -12,7 +12,7 @@ import java.time.Instant;
 @Entity
 public class RefreshToken {
     @Id
-    private String value;
+    private String content;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id")
@@ -23,14 +23,14 @@ public class RefreshToken {
 
     public RefreshToken() {}
 
-    public RefreshToken(String value, User user, Instant expiresAt) {
-        this.value = value;
+    public RefreshToken(String content, User user, Instant expiresAt) {
+        this.content = content;
         this.user = user;
         this.expiresAt = expiresAt;
     }
 
     public String value() {
-        return this.value;
+        return this.content;
     }
 
     public User user() {
