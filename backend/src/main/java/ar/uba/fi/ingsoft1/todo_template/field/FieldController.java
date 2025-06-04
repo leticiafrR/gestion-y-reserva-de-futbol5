@@ -48,11 +48,15 @@ public class FieldController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Listado de canchas obtenido exitosamente")
     })
-    public ResponseEntity<List<Field>> listMyFields() {
+    public ResponseEntity<List<FieldDTO>> listMyFields() {
         String username = getAuthenticatedUsername();
-        List<Field> fields = fieldService.getFieldsOf(username);
+        List<FieldDTO> fields = fieldService.getFieldsOf(username)
+                .stream()
+                .map(FieldDTO::from)
+                .toList();
         return ResponseEntity.ok(fields);
     }
+
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar cancha", description = "Actualiza los datos de una cancha que pertenece al usuario")
@@ -123,10 +127,14 @@ public class FieldController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Listado de canchas activas")
     })
-    public ResponseEntity<List<Field>> listAllActiveFields() {
-        List<Field> activeFields = fieldService.getAllActiveFields();
+    public ResponseEntity<List<FieldDTO>> listAllActiveFields() {
+        List<FieldDTO> activeFields = fieldService.getAllActiveFields()
+                .stream()
+                .map(FieldDTO::from)
+                .toList();
         return ResponseEntity.ok(activeFields);
     }
+
 
 
     @GetMapping("/{fieldId}/availability")
