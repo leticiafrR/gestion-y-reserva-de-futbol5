@@ -69,17 +69,41 @@ public class FieldController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar cancha", description = "Desactiva una cancha para que no esté más disponible")
+    @Operation(summary = "Eliminar cancha (borrado real)", description = "Elimina completamente una cancha de la base de datos")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Cancha desactivada exitosamente"),
+            @ApiResponse(responseCode = "204", description = "Cancha eliminada exitosamente"),
             @ApiResponse(responseCode = "404", description = "Cancha no encontrada o no pertenece al usuario")
     })
-    public ResponseEntity<Void> deleteField(
-            @Parameter(description = "ID de la cancha") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteField(@PathVariable Long id) {
         String username = getAuthenticatedUsername();
         fieldService.deleteField(id, username);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{id}/deactivate")
+    @Operation(summary = "Desactivar cancha", description = "Marca la cancha como inactiva")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cancha desactivada correctamente"),
+            @ApiResponse(responseCode = "404", description = "Cancha no encontrada o no pertenece al usuario")
+    })
+    public ResponseEntity<Field> deactivateField(@PathVariable Long id) {
+        String username = getAuthenticatedUsername();
+        Field updated = fieldService.setFieldActiveStatus(id, username, false);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PatchMapping("/{id}/activate")
+    @Operation(summary = "Activar cancha", description = "Marca la cancha como activa nuevamente")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cancha activada correctamente"),
+            @ApiResponse(responseCode = "404", description = "Cancha no encontrada o no pertenece al usuario")
+    })
+    public ResponseEntity<Field> activateField(@PathVariable Long id) {
+        String username = getAuthenticatedUsername();
+        Field updated = fieldService.setFieldActiveStatus(id, username, true);
+        return ResponseEntity.ok(updated);
+    }
+
 
     @PostMapping("/{fieldId}/availability")
     @Operation(summary = "Configurar disponibilidad", description = "Define los horarios disponibles semanales para la cancha")
