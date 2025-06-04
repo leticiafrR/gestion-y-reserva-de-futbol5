@@ -20,7 +20,7 @@ public class FieldService {
     }
 
     public Field createField(FieldCreateDTO dto, String ownerUsername) {
-        if (fieldRepository.existsByNameAndAddress(dto.name(), dto.location().address())) {
+        if (fieldRepository.existsByNameAndAddress(dto.name(), dto.address())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ya existe una cancha con ese nombre y dirección.");
         }
 
@@ -34,9 +34,7 @@ public class FieldService {
         field.setZone(dto.zone());
         field.setPhotoUrl(dto.photoUrl());
         field.setPrice(dto.price());
-        field.setAddress(dto.location().address());
-        field.setLat(dto.location().lat());
-        field.setLng(dto.location().lng());
+        field.setAddress(dto.address());
         field.setOwner(owner);
 
         return fieldRepository.save(field);
@@ -49,7 +47,7 @@ public class FieldService {
         Field field = fieldRepository.findByIdAndOwner(id, owner)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada o no te pertenece."));
 
-        if (fieldRepository.existsByNameAndAddressAndIdNot(dto.name(), dto.location().address(), id)) {
+        if (fieldRepository.existsByNameAndAddressAndIdNot(dto.name(), dto.address(), id)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ya existe una cancha con ese nombre y dirección.");
         }
 
@@ -59,9 +57,7 @@ public class FieldService {
         field.setZone(dto.zone());
         field.setPhotoUrl(dto.photoUrl());
         field.setPrice(dto.price());
-        field.setAddress(dto.location().address());
-        field.setLat(dto.location().lat());
-        field.setLng(dto.location().lng());
+        field.setAddress(dto.address());
 
         return fieldRepository.save(field);
     }

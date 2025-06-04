@@ -32,12 +32,6 @@ public class Field {
     private String address;
 
     @Column(nullable = false)
-    private Double lat;
-
-    @Column(nullable = false)
-    private Double lng;
-
-    @Column(nullable = false)
     private String photoUrl;
 
     @Column(nullable = false)

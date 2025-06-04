@@ -10,7 +10,7 @@ public record FieldUpdateDTO(
         @NotBlank String grassType,
         @NotNull Boolean lighting,
         @NotBlank String zone,
+        @NotBlank String address,
         @NotBlank String photoUrl,
-        @NotNull @PositiveOrZero Double price,
-        @NotNull @Valid LocationDTO location
+        @NotNull @PositiveOrZero Double price
 ) {}
