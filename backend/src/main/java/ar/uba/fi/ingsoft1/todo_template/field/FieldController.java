@@ -48,12 +48,9 @@ public class FieldController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Listado de canchas obtenido exitosamente")
     })
-    public ResponseEntity<List<FieldDTO>> listMyFields() {
+    public ResponseEntity<List<Field>> listMyFields() {
         String username = getAuthenticatedUsername();
-        List<FieldDTO> fields = fieldService.getFieldsOf(username)
-                .stream()
-                .map(FieldDTO::from)
-                .toList();
+        List<Field> fields = fieldService.getFieldsOf(username);
         return ResponseEntity.ok(fields);
     }
 
@@ -127,11 +124,8 @@ public class FieldController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Listado de canchas activas")
     })
-    public ResponseEntity<List<FieldDTO>> listAllActiveFields() {
-        List<FieldDTO> activeFields = fieldService.getAllActiveFields()
-                .stream()
-                .map(FieldDTO::from)
-                .toList();
+    public ResponseEntity<List<Field>> listAllActiveFields() {
+        List<Field> activeFields = fieldService.getAllActiveFields();
         return ResponseEntity.ok(activeFields);
     }
 
