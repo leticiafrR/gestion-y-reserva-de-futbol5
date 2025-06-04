@@ -30,7 +30,7 @@ export const PlayerMainScreen = () => {
       emoji: "📅"
     },
     {
-      title: "Mis equipos",
+      title: "Equipos",
       description: "Administra tus equipos",
       path: "/teams",
       emoji: "👥"
