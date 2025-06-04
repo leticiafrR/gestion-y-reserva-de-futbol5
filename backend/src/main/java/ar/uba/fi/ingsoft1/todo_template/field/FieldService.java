@@ -20,21 +20,23 @@ public class FieldService {
     }
 
     public Field createField(FieldCreateDTO dto, String ownerUsername) {
-        if (fieldRepository.existsByNameAndAddress(dto.name(), dto.address())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field with that name and location already exists.");
+        if (fieldRepository.existsByNameAndAddress(dto.name(), dto.location().address())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ya existe una cancha con ese nombre y dirección.");
         }
 
         User owner = userRepository.findByUsername(ownerUsername)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado."));
 
         Field field = new Field();
         field.setName(dto.name());
         field.setGrassType(dto.grassType());
         field.setLighting(dto.lighting());
         field.setZone(dto.zone());
-        field.setAddress(dto.address());
         field.setPhotoUrl(dto.photoUrl());
         field.setPrice(dto.price());
+        field.setAddress(dto.location().address());
+        field.setLat(dto.location().lat());
+        field.setLng(dto.location().lng());
         field.setOwner(owner);
 
         return fieldRepository.save(field);
@@ -42,36 +44,38 @@ public class FieldService {
 
     public Field updateField(Long id, FieldUpdateDTO dto, String ownerUsername) {
         User owner = userRepository.findByUsername(ownerUsername)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado."));
 
         Field field = fieldRepository.findByIdAndOwner(id, owner)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Field not found or not associated with specified user."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada o no te pertenece."));
 
-        if (fieldRepository.existsByNameAndAddressAndIdNot(dto.name(), dto.address(), id)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field with that name and location already exists.");
+        if (fieldRepository.existsByNameAndAddressAndIdNot(dto.name(), dto.location().address(), id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ya existe una cancha con ese nombre y dirección.");
         }
 
         field.setName(dto.name());
         field.setGrassType(dto.grassType());
         field.setLighting(dto.lighting());
         field.setZone(dto.zone());
-        field.setAddress(dto.address());
         field.setPhotoUrl(dto.photoUrl());
         field.setPrice(dto.price());
+        field.setAddress(dto.location().address());
+        field.setLat(dto.location().lat());
+        field.setLng(dto.location().lng());
 
         return fieldRepository.save(field);
     }
 
-    public Field deleteField(Long id, String ownerUsername) {
+    public void deleteField(Long id, String ownerUsername) {
         User owner = userRepository.findByUsername(ownerUsername)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado."));
 
         Field field = fieldRepository.findByIdAndOwner(id, owner)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada o no te pertenece."));
 
-        field.setActive(false);
-        return fieldRepository.save(field);
+        fieldRepository.delete(field);
     }
+
 
     public Field setFieldActiveStatus(Long id, String ownerUsername, boolean active) {
         User owner = userRepository.findByUsername(ownerUsername)

@@ -11,6 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Field {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,6 +30,12 @@ public class Field {
 
     @Column(nullable = false)
     private String address;
+
+    @Column(nullable = false)
+    private Double lat;
+
+    @Column(nullable = false)
+    private Double lng;
 
     @Column(nullable = false)
     private String photoUrl;
