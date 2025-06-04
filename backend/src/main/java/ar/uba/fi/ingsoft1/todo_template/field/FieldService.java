@@ -90,6 +90,7 @@ public class FieldService {
         return fieldRepository.findByOwner(owner);
     }
 
+
     public List<Field> getAllActiveFields() {
         return fieldRepository.findByActiveTrue();
     }
