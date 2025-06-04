@@ -1,7 +1,7 @@
 import { useUserTeams, useCreateTeam, useUpdateTeam, useDeleteTeam } from "@/services/TeamServices";
 import { navigate } from "wouter/use-browser-location";
-import { useState } from "react";
-import { Plus, Edit, Trash2, X } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Edit, Trash2, X, Upload } from "lucide-react";
 import type { Team } from "@/models/Team";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToken } from "@/services/TokenContext";
@@ -316,6 +316,28 @@ const CreateTeamModal = ({
     primaryColor: "#ff0000",
     secondaryColor: "#ffffff"
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Here you would typically upload the file to your server/storage
+      // and get back a URL. For now, we'll just use a local URL
+      setFormData({ ...formData, logo: URL.createObjectURL(file) });
+    }
+  };
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRemovePhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFormData({ ...formData, logo: "" });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -405,21 +427,88 @@ const CreateTeamModal = ({
               fontSize: "14px",
               fontWeight: "500",
             }}>
-              URL del Logo
+              Logo del Equipo
             </label>
             <input
-              type="url"
-              value={formData.logo}
-              onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-              placeholder="https://..."
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid var(--border)",
-                borderRadius: "4px",
-                fontSize: "14px",
-              }}
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
             />
+            <div
+              onClick={handleButtonClick}
+              style={{
+                border: "2px dashed var(--border)",
+                borderRadius: "8px",
+                padding: "20px",
+                textAlign: "center",
+                cursor: "pointer",
+                backgroundColor: formData.logo ? "transparent" : "var(--secondary)",
+                transition: "all 0.2s ease",
+                position: "relative",
+                minHeight: "150px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
+              {formData.logo ? (
+                <>
+                  <img
+                    src={formData.logo}
+                    alt="Logo Preview"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "200px",
+                      borderRadius: "4px",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <button
+                    onClick={handleRemovePhoto}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Upload size={32} color="var(--muted-foreground)" />
+                  <div style={{ color: "var(--muted-foreground)" }}>
+                    <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "500" }}>
+                      Haz clic para subir una imagen
+                    </p>
+                    <p style={{ margin: 0, fontSize: "12px" }}>
+                      PNG, JPG o GIF (max. 5MB)
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div style={{ marginBottom: "20px" }}>
@@ -582,16 +671,32 @@ const EditTeamModal = ({
     primaryColor: team.colors?.[0]?.startsWith('#') ? team.colors[0] : `#${team.colors?.[0]}` || "#ff0000",
     secondaryColor: team.colors?.[1]?.startsWith('#') ? team.colors[1] : `#${team.colors?.[1]}` || "#ffffff"
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Here you would typically upload the file to your server/storage
+      // and get back a URL. For now, we'll just use a local URL
+      setFormData({ ...formData, logo: URL.createObjectURL(file) });
+    }
+  };
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRemovePhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFormData({ ...formData, logo: "" });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Ensure colors have # prefix
-    const updatedData = {
-      ...formData,
-      primaryColor: formData.primaryColor.startsWith('#') ? formData.primaryColor : `#${formData.primaryColor}`,
-      secondaryColor: formData.secondaryColor.startsWith('#') ? formData.secondaryColor : `#${formData.secondaryColor}`,
-    };
-    await onSubmit(updatedData);
+    await onSubmit(formData);
   };
 
   return (
@@ -677,21 +782,88 @@ const EditTeamModal = ({
               fontSize: "14px",
               fontWeight: "500",
             }}>
-              URL del Logo
+              Logo del Equipo
             </label>
             <input
-              type="url"
-              value={formData.logo}
-              onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-              placeholder="https://..."
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid var(--border)",
-                borderRadius: "4px",
-                fontSize: "14px",
-              }}
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
             />
+            <div
+              onClick={handleButtonClick}
+              style={{
+                border: "2px dashed var(--border)",
+                borderRadius: "8px",
+                padding: "20px",
+                textAlign: "center",
+                cursor: "pointer",
+                backgroundColor: formData.logo ? "transparent" : "var(--secondary)",
+                transition: "all 0.2s ease",
+                position: "relative",
+                minHeight: "150px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
+              {formData.logo ? (
+                <>
+                  <img
+                    src={formData.logo}
+                    alt="Logo Preview"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "200px",
+                      borderRadius: "4px",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <button
+                    onClick={handleRemovePhoto}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Upload size={32} color="var(--muted-foreground)" />
+                  <div style={{ color: "var(--muted-foreground)" }}>
+                    <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "500" }}>
+                      Haz clic para subir una imagen
+                    </p>
+                    <p style={{ margin: 0, fontSize: "12px" }}>
+                      PNG, JPG o GIF (max. 5MB)
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div style={{ marginBottom: "20px" }}>
