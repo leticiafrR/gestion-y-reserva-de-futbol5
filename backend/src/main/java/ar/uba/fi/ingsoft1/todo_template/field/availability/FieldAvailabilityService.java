@@ -25,10 +25,10 @@ public class FieldAvailabilityService {
         Field field = fieldRepository.findById(fieldId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Field not found"));
 
-
+        // Eliminar configuración anterior
         availabilityRepository.deleteAll(availabilityRepository.findByField(field));
 
-
+        // Si se quiere vaciar la config, simplemente salimos
         if (configs.isEmpty()) return;
 
         List<FieldAvailability> result = new ArrayList<>();

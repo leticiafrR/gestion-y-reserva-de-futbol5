@@ -1,5 +1,6 @@
 package ar.uba.fi.ingsoft1.todo_template.field;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -9,7 +10,7 @@ public record FieldUpdateDTO(
         @NotBlank String grassType,
         @NotNull Boolean lighting,
         @NotBlank String zone,
-        @NotBlank String address,
         @NotBlank String photoUrl,
-        @NotNull @PositiveOrZero Double price
+        @NotNull @PositiveOrZero Double price,
+        @NotNull @Valid LocationDTO location
 ) {}
