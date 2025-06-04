@@ -26,8 +26,8 @@ export const AvailableFieldsScreen = () => {
   // Filtrado de canchas
   const filteredFields = (fields ?? []).filter((field: Field) => {
     const matchesName = field.name.toLowerCase().includes(search.toLowerCase())
-    const matchesZone = zoneSearch ? field.area === zoneSearch : true
-    const matchesGrass = grassType ? field.grass === grassType : true
+    const matchesZone = zoneSearch ? field.zone === zoneSearch : true
+    const matchesGrass = grassType ? field.grassType === grassType : true
     const matchesLighting = onlyWithLighting ? field.lighting : true
     const matchesRoofed = onlyRoofed ? field.roofing : true
     const fieldPrice = field.price ?? 0

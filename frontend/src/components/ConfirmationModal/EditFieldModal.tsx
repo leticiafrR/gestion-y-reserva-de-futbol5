@@ -11,9 +11,13 @@ interface Field {
   grassType: "natural" | "synthetic"
   hasLighting: boolean
   zone: string
-  address: string
+  location: {
+    address: string
+    lat: number
+    lng: number
+  }
   features: string[]
-  photos: string[]
+  photoUrl: string
   isActive: boolean
   createdAt: string
 }
@@ -30,9 +34,8 @@ export const EditFieldModal = ({ field, onClose, onSubmit }: EditFieldModalProps
     grassType: field.grassType,
     hasLighting: field.hasLighting,
     zone: field.zone,
-    address: field.address,
+    location: field.location,
     features: [...field.features],
-    photoUrl: [...field.photoUrl],
     isActive: field.isActive,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})

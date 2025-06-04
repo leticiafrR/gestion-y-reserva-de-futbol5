@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
   // @ts-expect-error 
 import { Plus, Edit, Trash2, MapPin, Users, DollarSign, X } from "lucide-react"
 import { navigate } from "wouter/use-browser-location"
@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useDeleteField } from "@/services/CreateFieldServices";
 import { useUpdateField } from "@/services/CreateFieldServices";
 import { FieldsMap } from "@/components/FieldsMap/FieldsMap";
+import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 
 
 export const FieldManagementScreen = () => {
@@ -22,6 +23,8 @@ export const FieldManagementScreen = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [fieldToDeleteId, setFieldToDeleteId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
 
   const queryClient = useQueryClient()
   const { data: fields = [], isLoading } = useGetOwnerFields()
@@ -63,6 +66,10 @@ export const FieldManagementScreen = () => {
       queryClient.invalidateQueries({ queryKey: ["owner-fields"] });
       setFieldToDeleteId(null);
       setShowDeleteModal(false);
+      setSuccessMessage("Cancha eliminada correctamente");
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
     } catch (error) {
       console.error("Error deleting field:", error);
       setErrorMessage("Error al eliminar la cancha");
@@ -83,6 +90,12 @@ export const FieldManagementScreen = () => {
         <ErrorPopup
           message={errorMessage}
           onClose={() => setErrorMessage(null)}
+        />
+      )}
+      {successMessage && (
+        <SuccessPopup
+          message={successMessage}
+          onClose={() => setSuccessMessage(null)}
         />
       )}
 
@@ -231,8 +244,33 @@ export const FieldManagementScreen = () => {
                     border: "1px solid #e9ecef",
                     padding: "20px",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                    cursor: "pointer",
+                    transition: "box-shadow 0.2s, transform 0.2s",
+                  }}
+                  onClick={() => {
+                    setSelectedField(field)
+                    setShowDetailsModal(true)
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)"
+                    e.currentTarget.style.transform = "translateY(-4px)"
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)"
+                    e.currentTarget.style.transform = "none"
                   }}
                 >
+                  <img
+                    src={field.photoUrl || "/placeholder.svg"}
+                    alt={field.name}
+                    style={{
+                      width: "100%",
+                      height: "180px",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                      marginBottom: "1rem",
+                    }}
+                  />
                   <div
                     style={{
                       display: "flex",
@@ -242,21 +280,23 @@ export const FieldManagementScreen = () => {
                     }}
                   >
                     <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#212529", margin: 0 }}>{field.name}</h3>
-                    <span
-                      style={{
-                        padding: "4px 8px",
-                        backgroundColor: "#212529",
-                        color: "white",
-                        borderRadius: "4px",
-                        fontSize: "11px",
-                        fontWeight: "500",
-                      }}
-                    >
-                      Disponible
-                    </span>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          backgroundColor: field.active ? "#10b981" : "#ef4444",
+                          color: "white",
+                          borderRadius: "4px",
+                          fontSize: "11px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {field.active ? "Activa" : "Inactiva"}
+                      </span>
+                    </div>
                   </div>
 
-                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.address}</p>
+                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.location.address}</p>
                   <p style={{ color: "#495057", fontSize: "14px", margin: "0 0 16px 0", lineHeight: "1.4" }}>
                     {field.description}
                   </p>
@@ -377,6 +417,14 @@ export const FieldManagementScreen = () => {
             onConfirm={handleDeleteField}
           />
         )}
+
+        {/* Details Modal */}
+        {showDetailsModal && selectedField && (
+          <FieldDetailsModalAdmin
+            field={selectedField}
+            onClose={() => setShowDetailsModal(false)}
+          />
+        )}
       </div>
     </div>
   )
@@ -395,7 +443,11 @@ const CreateFieldModal = ({
     grassType: "sintetico" as "natural" | "sintetico",
     lighting: false,
     roofing: false,
-    address: "",
+    location: {
+      address: "",
+      lat: -34.6037, // Default to Buenos Aires
+      lng: -58.3816,
+    },
     zone: "",
     photoUrl: "",
     description: "",
@@ -403,11 +455,55 @@ const CreateFieldModal = ({
   })
 
   const [error, setError] = useState<string | null>(null)
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: "AIzaSyAV-7--jx2dP-MyDxVrhcSYlNnY8KNb8g8",
+    libraries: ["places"],
+  });
+
+  const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
+    autocompleteRef.current = autocomplete;
+  };
+
+  const onPlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.formatted_address) {
+        // Get the neighborhood or locality from address components
+        let zone = "";
+        if (place.address_components) {
+          const neighborhood = place.address_components.find(
+            component => component.types.includes("neighborhood")
+          );
+          const locality = place.address_components.find(
+            component => component.types.includes("locality")
+          );
+          zone = neighborhood?.long_name || locality?.long_name || "";
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          location: {
+            address: place.formatted_address || prev.location.address,
+            lat: place.geometry?.location?.lat() || prev.location.lat,
+            lng: place.geometry?.location?.lng() || prev.location.lng,
+          },
+          zone: zone || prev.zone
+        }));
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await onSubmit(formData)
+      const fieldData = {
+        ...formData,
+        address: formData.location.address,
+        location: formData.location
+      };
+      await onSubmit(fieldData)
     } catch (err: any) {
       setError(err.message || "Error al crear la cancha")
     }
@@ -514,6 +610,8 @@ const CreateFieldModal = ({
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -542,6 +640,7 @@ const CreateFieldModal = ({
                 fontSize: "14px",
                 boxSizing: "border-box",
                 backgroundColor: "white",
+                color: "#212529",
               }}
             >
               <option value="sintetico">Sintético</option>
@@ -561,24 +660,36 @@ const CreateFieldModal = ({
             >
               Ubicación *
             </label>
-            <input
-              type="text"
-              value={formData.address}
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                address: e.target.value 
-              })}
-              placeholder="Ej: Av. Principal 123"
-              required
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: "1px solid #ced4da",
-                borderRadius: "6px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-              }}
-            />
+            {isLoaded ? (
+              <Autocomplete
+                onLoad={onLoad}
+                onPlaceChanged={onPlaceChanged}
+                restrictions={{ country: "ar" }}
+              >
+                <input
+                  type="text"
+                  value={formData.location.address}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    location: { ...prev.location, address: e.target.value }
+                  }))}
+                  placeholder="Ej: Av. Principal 123"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    border: "1px solid #ced4da",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    backgroundColor: "white",
+                    color: "#212529",
+                  }}
+                />
+              </Autocomplete>
+            ) : (
+              <div>Cargando...</div>
+            )}
           </div>
 
           <div style={{ marginBottom: "20px" }}>
@@ -606,6 +717,8 @@ const CreateFieldModal = ({
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -640,6 +753,8 @@ const CreateFieldModal = ({
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -669,6 +784,8 @@ const CreateFieldModal = ({
                 fontSize: "14px",
                 boxSizing: "border-box",
                 resize: "vertical",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -719,6 +836,8 @@ const CreateFieldModal = ({
                 fontSize: "14px",
                 boxSizing: "border-box",
                 resize: "vertical",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -784,7 +903,11 @@ const EditFieldModal = ({
     grassType: field.grassType,
     lighting: field.lighting,
     roofing: field.roofing,
-    address: field.address,
+    location: {
+      address: field.location.address,
+      lat: field.location.lat,
+      lng: field.location.lng,
+    },
     zone: field.zone,
     photoUrl: field.photoUrl || "",
     description: field.description || "",
@@ -792,11 +915,55 @@ const EditFieldModal = ({
   })
 
   const [error, setError] = useState<string | null>(null)
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: "AIzaSyAV-7--jx2dP-MyDxVrhcSYlNnY8KNb8g8",
+    libraries: ["places"],
+  });
+
+  const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
+    autocompleteRef.current = autocomplete;
+  };
+
+  const onPlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.formatted_address) {
+        // Get the neighborhood or locality from address components
+        let zone = "";
+        if (place.address_components) {
+          const neighborhood = place.address_components.find(
+            component => component.types.includes("neighborhood")
+          );
+          const locality = place.address_components.find(
+            component => component.types.includes("locality")
+          );
+          zone = neighborhood?.long_name || locality?.long_name || "";
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          location: {
+            address: place.formatted_address || prev.location.address,
+            lat: place.geometry?.location?.lat() || prev.location.lat,
+            lng: place.geometry?.location?.lng() || prev.location.lng,
+          },
+          zone: zone || prev.zone
+        }));
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await onSubmit(formData)
+      const fieldData = {
+        ...formData,
+        address: formData.location.address,
+        location: formData.location
+      };
+      await onSubmit(fieldData)
     } catch (err: any) {
       setError(err.message || "Error al actualizar la cancha")
     }
@@ -901,6 +1068,8 @@ const EditFieldModal = ({
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -929,6 +1098,7 @@ const EditFieldModal = ({
                 fontSize: "14px",
                 boxSizing: "border-box",
                 backgroundColor: "white",
+                color: "#212529",
               }}
             >
               <option value="sintetico">Sintético</option>
@@ -948,24 +1118,36 @@ const EditFieldModal = ({
             >
               Ubicación *
             </label>
-            <input
-              type="text"
-              value={formData.address}
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                address: e.target.value 
-              })}
-              placeholder="Ej: Av. Principal 123"
-              required
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: "1px solid #ced4da",
-                borderRadius: "6px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-              }}
-            />
+            {isLoaded ? (
+              <Autocomplete
+                onLoad={onLoad}
+                onPlaceChanged={onPlaceChanged}
+                restrictions={{ country: "ar" }}
+              >
+                <input
+                  type="text"
+                  value={formData.location.address}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    location: { ...prev.location, address: e.target.value }
+                  }))}
+                  placeholder="Ej: Av. Principal 123"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    border: "1px solid #ced4da",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    backgroundColor: "white",
+                    color: "#212529",
+                  }}
+                />
+              </Autocomplete>
+            ) : (
+              <div>Cargando...</div>
+            )}
           </div>
 
           <div style={{ marginBottom: "20px" }}>
@@ -993,6 +1175,8 @@ const EditFieldModal = ({
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -1027,6 +1211,8 @@ const EditFieldModal = ({
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -1056,6 +1242,8 @@ const EditFieldModal = ({
                 fontSize: "14px",
                 boxSizing: "border-box",
                 resize: "vertical",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -1106,6 +1294,8 @@ const EditFieldModal = ({
                 fontSize: "14px",
                 boxSizing: "border-box",
                 resize: "vertical",
+                backgroundColor: "white",
+                color: "#212529",
               }}
             />
           </div>
@@ -1308,6 +1498,301 @@ const ErrorPopup = ({ message, onClose }: { message: string; onClose: () => void
       >
         <X size={20} />
       </button>
+    </div>
+  );
+};
+
+const SuccessPopup = ({ message, onClose }: { message: string; onClose: () => void }) => {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: "20px",
+        right: "20px",
+        backgroundColor: "#28a745",
+        color: "white",
+        padding: "16px 24px",
+        borderRadius: "8px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+        zIndex: 2000,
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        maxWidth: "400px",
+      }}
+    >
+      <div style={{ flex: 1 }}>{message}</div>
+      <button
+        onClick={onClose}
+        style={{
+          background: "none",
+          border: "none",
+          color: "white",
+          cursor: "pointer",
+          padding: "4px",
+        }}
+      >
+        <X size={20} />
+      </button>
+    </div>
+  );
+};
+
+const FieldDetailsModalAdmin = ({ field, onClose }: { field: Field; onClose: () => void }) => {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        padding: "20px",
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "12px",
+          width: "100%",
+          maxWidth: "800px",
+          maxHeight: "90vh",
+          overflow: "auto",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "20px 24px",
+            borderBottom: "1px solid #e5e7eb",
+            position: "sticky",
+            top: 0,
+            backgroundColor: "white",
+            zIndex: 1,
+          }}
+        >
+          <div>
+            <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#1f2937", margin: "0 0 4px 0" }}>
+              {field.name}
+            </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+              <span style={{ 
+                padding: "6px 12px", 
+                backgroundColor: field.active ? "#10b981" : "#ef4444", 
+                color: "white", 
+                borderRadius: "4px", 
+                fontSize: "14px", 
+                fontWeight: "600" 
+              }}>
+                {field.active ? "Cancha Activa" : "Cancha Inactiva"}
+              </span>
+            </div>
+            <p style={{ color: "#6b7280", margin: 0, fontSize: "16px" }}>
+              {field.zone} - {field.location.address}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px",
+              backgroundColor: "transparent",
+              border: "none",
+              cursor: "pointer",
+              borderRadius: "6px",
+              color: "#374151",
+            }}
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <div style={{ padding: "24px" }}>
+          {/* Imagen */}
+          <div style={{ marginBottom: "24px" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "16px",
+                marginTop: "16px",
+              }}
+            >
+              <img
+                src={field.photoUrl || "/placeholder.svg"}
+                alt={`${field.name} - Foto`}
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Información detallada */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+              gap: "24px",
+              marginBottom: "24px",
+            }}
+          >
+            <div>
+              <h3 style={{ color: "#1f2937", fontSize: "18px", marginBottom: "16px" }}>Características</h3>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                <li
+                  style={{
+                    marginBottom: "12px",
+                    color: "#374151",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span style={{ fontWeight: "500" }}>Tipo de césped:</span>
+                  {field.grassType === "natural" ? "Natural" : "Sintético"}
+                </li>
+                <li
+                  style={{
+                    marginBottom: "12px",
+                    color: "#374151",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span style={{ fontWeight: "500" }}>Iluminación:</span>
+                  <span style={{ color: field.lighting ? "#10b981" : "#ef4444" }}>{field.lighting ? "Sí" : "No"}</span>
+                </li>
+                <li
+                  style={{
+                    marginBottom: "12px",
+                    color: "#374151",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span style={{ fontWeight: "500" }}>Techada:</span>
+                  <span style={{ color: field.roofing ? "#10b981" : "#ef4444" }}>{field.roofing ? "Sí" : "No"}</span>
+                </li>
+                <li
+                  style={{
+                    marginBottom: "12px",
+                    color: "#374151",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span style={{ fontWeight: "500" }}>Precio:</span>
+                  <span style={{ fontSize: "18px", color: "#3b82f6" }}>${field.price}/hora</span>
+                </li>
+              </ul>
+              <FieldScheduleView schedule={field.schedule || []} />
+            </div>
+
+            <div>
+              <h3 style={{ color: "#1f2937", fontSize: "18px", marginBottom: "16px" }}>Ubicación</h3>
+              <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
+                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.location.address}
+              </p>
+              <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
+                <span style={{ fontWeight: "500" }}>Zona:</span> {field.zone}
+              </p>
+            </div>
+          </div>
+
+          {field.description && (
+            <div style={{ marginBottom: "24px" }}>
+              <h3 style={{ color: "#1f2937", fontSize: "18px", marginBottom: "16px" }}>Descripción</h3>
+              <p style={{ color: "#374151", margin: 0, lineHeight: 1.6 }}>{field.description}</p>
+            </div>
+          )}
+
+          {/* Botón de cerrar */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "12px",
+              borderTop: "1px solid #e5e7eb",
+              paddingTop: "24px",
+              position: "sticky",
+              bottom: 0,
+              backgroundColor: "white",
+              zIndex: 1,
+            }}
+          >
+            <button
+              onClick={onClose}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "white",
+                color: "#374151",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+              }}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const daysMap = {
+  MONDAY: "Lunes",
+  TUESDAY: "Martes",
+  WEDNESDAY: "Miércoles",
+  THURSDAY: "Jueves",
+  FRIDAY: "Viernes",
+  SATURDAY: "Sábado",
+  SUNDAY: "Domingo"
+};
+
+const allDays = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY"
+];
+
+const FieldScheduleView = ({ schedule }: { schedule: { dayOfWeek: string; openTime: string; closeTime: string }[] }) => {
+  return (
+    <div style={{ marginTop: 24 }}>
+      <h4 style={{ color: "#1f2937", fontSize: 16, marginBottom: 8 }}>Horarios Disponibles</h4>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <tbody>
+          {allDays.map(day => {
+            const found = schedule.find(s => s.dayOfWeek === day);
+            return (
+              <tr key={day}>
+                <td style={{ padding: "4px 8px", color: "#374151", fontWeight: 500 }}>{daysMap[day as keyof typeof daysMap]}</td>
+                <td style={{ padding: "4px 8px", color: found ? "#10b981" : "#ef4444" }}>
+                  {found ? `${found.openTime} - ${found.closeTime}` : "Cerrado"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 };

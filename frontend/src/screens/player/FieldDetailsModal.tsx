@@ -50,8 +50,20 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
             <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#1f2937", margin: "0 0 4px 0" }}>
               {field.name}
             </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+              <span style={{ 
+                padding: "6px 12px", 
+                backgroundColor: field.active ? "#10b981" : "#ef4444", 
+                color: "white", 
+                borderRadius: "4px", 
+                fontSize: "14px", 
+                fontWeight: "600" 
+              }}>
+                {field.active ? "Cancha Activa" : "Cancha Inactiva"}
+              </span>
+            </div>
             <p style={{ color: "#6b7280", margin: 0, fontSize: "16px" }}>
-              {field.zone} - {field.address}
+              {field.zone} - {field.location.address}
             </p>
           </div>
           <button
@@ -80,19 +92,16 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
                 marginTop: "16px",
               }}
             >
-              {field.photos.map((photo, index) => (
-                <img
-                  key={index}
-                  src={photo || "/placeholder.svg"}
-                  alt={`${field.name} - Foto ${index + 1}`}
-                  style={{
-                    width: "100%",
-                    height: "200px",
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                  }}
-                />
-              ))}
+              <img
+                src={field.photoUrl || "/placeholder.svg"}
+                alt={`${field.name} - Foto`}
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
             </div>
           </div>
 
@@ -118,7 +127,7 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
                   }}
                 >
                   <span style={{ fontWeight: "500" }}>Tipo de césped:</span>
-                  {field.grass === "natural" ? "Natural" : "Sintético"}
+                  {field.grassType === "natural" ? "Natural" : "Sintético"}
                 </li>
                 <li
                   style={{
@@ -157,12 +166,13 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
                   <span style={{ fontSize: "18px", color: "#3b82f6" }}>${field.price}/hora</span>
                 </li>
               </ul>
+              <FieldScheduleView schedule={field.schedule || []} />
             </div>
 
             <div>
               <h3 style={{ color: "#1f2937", fontSize: "18px", marginBottom: "16px" }}>Ubicación</h3>
               <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
-                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.address}
+                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.location.address}
               </p>
               <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
                 <span style={{ fontWeight: "500" }}>Zona:</span> {field.zone}
@@ -205,27 +215,72 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
             >
               Cerrar
             </button>
-            <button
-              onClick={() => {
-                // TODO: Implementar la lógica de reserva
-                console.log("Reservar cancha:", field.id)
-              }}
-              style={{
-                padding: "10px 20px",
-                backgroundColor: "#3b82f6",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "500",
-              }}
-            >
-              Reservar Cancha
-            </button>
+            {field.active && (
+              <button
+                onClick={() => {
+                  // TODO: Implementar la lógica de reserva
+                  console.log("Reservar cancha:", field.id)
+                }}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#3b82f6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                Reservar Cancha
+              </button>
+            )}
           </div>
         </div>
       </div>
     </div>
   )
-} 
+}
+
+const daysMap = {
+  MONDAY: "Lunes",
+  TUESDAY: "Martes",
+  WEDNESDAY: "Miércoles",
+  THURSDAY: "Jueves",
+  FRIDAY: "Viernes",
+  SATURDAY: "Sábado",
+  SUNDAY: "Domingo"
+};
+
+const allDays = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY"
+];
+
+const FieldScheduleView = ({ schedule }: { schedule: { dayOfWeek: string; openTime: string; closeTime: string }[] }) => {
+  return (
+    <div style={{ marginTop: 24 }}>
+      <h4 style={{ color: "#1f2937", fontSize: 16, marginBottom: 8 }}>Horarios Disponibles</h4>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <tbody>
+          {allDays.map(day => {
+            const found = schedule.find(s => s.dayOfWeek === day);
+            return (
+              <tr key={day}>
+                <td style={{ padding: "4px 8px", color: "#374151", fontWeight: 500 }}>{daysMap[day as keyof typeof daysMap]}</td>
+                <td style={{ padding: "4px 8px", color: found ? "#10b981" : "#ef4444" }}>
+                  {found ? `${found.openTime} - ${found.closeTime}` : "Cerrado"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}; 

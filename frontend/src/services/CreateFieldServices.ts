@@ -38,7 +38,15 @@ let mockFields: Field[] = [
     photos: [],
     description: "Cancha con césped sintético y buena iluminación.",
     price: 80,
-    isAvailable: true
+    active: true,
+    schedule: [
+      { dayOfWeek: "MONDAY", openTime: "10:00", closeTime: "18:00" },
+      { dayOfWeek: "TUESDAY", openTime: "10:00", closeTime: "18:00" },
+      { dayOfWeek: "WEDNESDAY", openTime: "10:00", closeTime: "18:00" },
+      { dayOfWeek: "THURSDAY", openTime: "10:00", closeTime: "18:00" },
+      { dayOfWeek: "FRIDAY", openTime: "10:00", closeTime: "18:00" }
+    ],
+    photoUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
   },
   {
     id: "2",
@@ -55,26 +63,33 @@ let mockFields: Field[] = [
     photos: [],
     description: "Cancha de césped natural, ideal para torneos.",
     price: 50,
-    isAvailable: false
+    active: false,
+    schedule: [
+      { dayOfWeek: "SATURDAY", openTime: "09:00", closeTime: "14:00" },
+      { dayOfWeek: "SUNDAY", openTime: "09:00", closeTime: "14:00" }
+    ],
+    photoUrl: "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80"
   }
 ];
 
 async function getOwnerFields(): Promise<Field[]> {
-  const accessToken = getAuthToken();
-  console.log("accessToken", accessToken);
-  const response = await fetch(`${BASE_API_URL}/fields`, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`, 
-    },
-  });
-  if (response.ok) {
-    return response.json();
-  } else {
-    throw new Error(`Failed to fetch owner fields with status ${response.status}: ${await response.text()}`);
-  }
+  return mockFields;
+  // const accessToken = getAuthToken();
+  // console.log("accessToken", accessToken);
+  // const response = await fetch(`${BASE_API_URL}/fields/mine`, {
+  //   method: "GET",
+  //   headers: {
+  //     Accept: "application/json",
+  //     "Content-Type": "application/json",
+  //     Authorization: `Bearer ${accessToken}`, 
+  //   },
+  // });
+  // console.log("response", response);
+  // if (response.ok) {
+  //   return response.json();
+  // } else {
+  //   throw new Error(`Failed to fetch owner fields with status ${response.status}: ${await response.text()}`);
+  // }
 }
 
 async function createField(data: Omit<Field, "id">) {
@@ -91,6 +106,15 @@ async function createField(data: Omit<Field, "id">) {
   //   description: "Cancha de fútbol 5 con césped sintético y excelente iluminación",
   //   price: 100,
   // }
+  const transformedData = {
+    ...data,
+    location: {
+      address: data.address,
+      lat: 0,
+      lng: 0
+    }
+  };
+  delete transformedData.address;
   console.log("data", data);
   const accessToken = getAuthToken();
   const response = await fetch(`${BASE_API_URL}/fields`, {
@@ -102,6 +126,7 @@ async function createField(data: Omit<Field, "id">) {
     },
     body: JSON.stringify(data),
   });
+  console.log("response", response);
 
   if (response.ok) {
     return response.json();
