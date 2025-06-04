@@ -1,12 +1,8 @@
 // @ts-nocheck - Mocked for development
-import { useMutation, useQuery } from "@tanstack/react-query";
-
-// @ts-expect-error - Mocked for development
-// import { BASE_API_URL } from "@/config/app-query-client";
-// @ts-expect-error - Mocked for development
-import { CreateFieldRequest } from "@/models/CreateField.ts";
-import { CreateField } from "@/models/CreateField.ts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BASE_API_URL, getAuthToken } from "@/config/app-query-client";
+import type { Field } from "@/models/Field";
+import { CreateFieldRequest } from "@/models/CreateField";
 
 export function useCreateField() {
   const queryClient = useQueryClient();
@@ -64,41 +60,45 @@ let mockFields: Field[] = [
 ];
 
 async function getOwnerFields(): Promise<Field[]> {
-  // Return the current mock fields
-  return mockFields;
-  /*
-  const response = await fetch(BASE_API_URL + "/fields/owner", {
+  const accessToken = getAuthToken();
+  console.log("accessToken", accessToken);
+  const response = await fetch(`${BASE_API_URL}/fields`, {
     method: "GET",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      // Authorization: `Bearer ${accessToken}`, 
+      Authorization: `Bearer ${accessToken}`, 
     },
   });
   if (response.ok) {
     return response.json();
   } else {
     throw new Error(`Failed to fetch owner fields with status ${response.status}: ${await response.text()}`);
-  */
+  }
 }
 
 async function createField(data: Omit<Field, "id">) {
-  // Check for duplicate name
-  if (mockFields.some(f => f.name.toLowerCase() === data.name.toLowerCase())) {
-    throw new Error("Ya existe una cancha con ese nombre");
-  }
-  // Add new field to the mock database
-  const newField: Field = { ...data, id: (mockFields.length + 1).toString() };
-  mockFields = [...mockFields, newField];
-  return { success: true };
-
-  /*
-  const response = await fetch(BASE_API_URL + "/fields", {
+  
+  
+  // const datita = {
+  //   name: "Cancha Principal",
+  //   grassType: "sintetico",
+  //   lighting: true,
+  //   roofing: false,
+  //   zone: "Centro",
+  //   photoUrl: "https://example.com/photo1.jpg",
+  //   address: "Calle Principal 123",
+  //   description: "Cancha de fútbol 5 con césped sintético y excelente iluminación",
+  //   price: 100,
+  // }
+  console.log("data", data);
+  const accessToken = getAuthToken();
+  const response = await fetch(`${BASE_API_URL}/fields`, {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`, // from TokenContext?
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(data),
   });
@@ -108,7 +108,6 @@ async function createField(data: Omit<Field, "id">) {
   } else {
     throw new Error(`Field creation failed with status ${response.status}: ${await response.text()}`);
   }
-  */
 }
 
 export function useDeleteField() {
@@ -122,27 +121,23 @@ export function useDeleteField() {
 }
 
 async function deleteField(fieldId: string) {
-  // Remove the field from the mock database
-  mockFields = mockFields.filter(f => f.id !== fieldId);
-  return { success: true };
-
-  /*
+  const accessToken = getAuthToken();
   const response = await fetch(`${BASE_API_URL}/fields/${fieldId}`, {
     method: "DELETE",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      // Authorization: `Bearer ${accessToken}`, 
+      Authorization: `Bearer ${accessToken}`,
     },
   });
+  console.log("response", response);
+
 
   if (response.ok) {
     return { success: true };
   } else {
     throw new Error(`Field deletion failed with status ${response.status}: ${await response.text()}`);
   }
-}
-*/
 }
 
 export function useUpdateField() {
@@ -156,27 +151,13 @@ export function useUpdateField() {
 }
 
 async function updateField(fieldId: string, updates: Omit<Field, "id">) {
-  // Validar nombre único (excepto para la cancha actual)
-  if (
-    mockFields.some(
-      f => f.id !== fieldId && f.name.toLowerCase() === updates.name.toLowerCase()
-    )
-  ) {
-    throw new Error("Ya existe una cancha con ese nombre");
-  }
-  mockFields = mockFields.map(f =>
-    f.id === fieldId ? { ...f, ...updates, id: fieldId } : f
-  );
-  return { success: true };
-
-  /*
-  // Real API example:
+  const accessToken = getAuthToken();
   const response = await fetch(`${BASE_API_URL}/fields/${fieldId}`, {
     method: "PUT",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      // Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(updates),
   });
@@ -186,5 +167,4 @@ async function updateField(fieldId: string, updates: Omit<Field, "id">) {
   } else {
     throw new Error(`Field update failed with status ${response.status}: ${await response.text()}`);
   }
-  */
 }

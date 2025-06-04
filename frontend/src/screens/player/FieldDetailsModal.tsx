@@ -51,7 +51,7 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
               {field.name}
             </h2>
             <p style={{ color: "#6b7280", margin: 0, fontSize: "16px" }}>
-              {field.area} - {field.location.address}
+              {field.zone} - {field.address}
             </p>
           </div>
           <button
@@ -162,10 +162,10 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
             <div>
               <h3 style={{ color: "#1f2937", fontSize: "18px", marginBottom: "16px" }}>Ubicación</h3>
               <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
-                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.location.address}
+                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.address}
               </p>
               <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
-                <span style={{ fontWeight: "500" }}>Zona:</span> {field.area}
+                <span style={{ fontWeight: "500" }}>Zona:</span> {field.zone}
               </p>
             </div>
           </div>

@@ -3,18 +3,19 @@ import { z } from "zod";
 export const FieldSchema = z.object({
     id: z.string(),
     name: z.string().min(1, "El nombre es requerido"),
-    grass: z.enum(["natural", "sintetico"], {
+    grassType: z.enum(["natural", "sintetico"], {
         required_error: "El tipo de césped es requerido",
     }),
     lighting: z.boolean(),
     roofing: z.boolean(),
-    location: z.object({
-        lat: z.number(),
-        lng: z.number(),
-        address: z.string().min(1, "La dirección es requerida"),
-    }),
-    area: z.string().min(1, "La zona es requerida"),
-    photos: z.array(z.string().url("URL de foto inválida")).optional().default([]),
+    address: z.string().min(1, "La dirección es requerida"),
+    // location: z.object({
+    //     lat: z.number(),
+    //     lng: z.number(),
+    //     address: z.string().min(1, "La dirección es requerida"),
+    // }),
+    zone: z.string().min(1, "La zona es requerida"),
+    photoUrl: z.string().url("URL de foto inválida").optional().default(""),
     description: z.string().optional(),
     price: z.number().min(0, "El precio debe ser un número positivo").optional(),
     isAvailable: z.boolean().optional(),

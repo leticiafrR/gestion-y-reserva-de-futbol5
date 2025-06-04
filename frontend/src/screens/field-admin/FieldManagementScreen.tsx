@@ -27,6 +27,8 @@ export const FieldManagementScreen = () => {
   const { data: fields = [], isLoading } = useGetOwnerFields()
   const createFieldMutation = useCreateField()
 
+  console.log("fields", fields);
+
   const handleCreateField = async (fieldData: Omit<Field, "id" | "status" | "isAvailable">) => {
     try {
       await createFieldMutation.mutateAsync(fieldData)
@@ -58,11 +60,12 @@ export const FieldManagementScreen = () => {
   const handleDeleteField = async (fieldId: string) => {
     try {
       await deleteFieldMutation.mutateAsync(fieldId);
+      queryClient.invalidateQueries({ queryKey: ["owner-fields"] });
       setFieldToDeleteId(null);
       setShowDeleteModal(false);
     } catch (error) {
       console.error("Error deleting field:", error);
-      // Handle error (show toast, etc)
+      setErrorMessage("Error al eliminar la cancha");
     }
   };
 
@@ -253,7 +256,7 @@ export const FieldManagementScreen = () => {
                     </span>
                   </div>
 
-                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.location.address}</p>
+                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.address}</p>
                   <p style={{ color: "#495057", fontSize: "14px", margin: "0 0 16px 0", lineHeight: "1.4" }}>
                     {field.description}
                   </p>
@@ -269,7 +272,7 @@ export const FieldManagementScreen = () => {
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <MapPin size={14} color="#6c757d" />
                       <span style={{ fontSize: "14px", color: "#495057" }}>
-                        {field.grass === "sintetico" ? "Sintético" : "Natural"}
+                        {field.grassType === "sintetico" ? "Sintético" : "Natural"}
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -389,16 +392,12 @@ const CreateFieldModal = ({
 }) => {
   const [formData, setFormData] = useState({
     name: "",
-    grass: "sintetico" as "natural" | "sintetico",
+    grassType: "sintetico" as "natural" | "sintetico",
     lighting: false,
     roofing: false,
-    location: {
-      lat: 0,
-      lng: 0,
-      address: ""
-    },
-    area: "",
-    photos: [] as string[],
+    address: "",
+    zone: "",
+    photoUrl: "",
     description: "",
     price: 0,
   })
@@ -532,8 +531,8 @@ const CreateFieldModal = ({
               Tipo de Césped *
             </label>
             <select
-              value={formData.grass}
-              onChange={(e) => setFormData({ ...formData, grass: e.target.value as "natural" | "sintetico" })}
+              value={formData.grassType}
+              onChange={(e) => setFormData({ ...formData, grassType: e.target.value as "natural" | "sintetico" })}
               required
               style={{
                 width: "100%",
@@ -564,10 +563,10 @@ const CreateFieldModal = ({
             </label>
             <input
               type="text"
-              value={formData.location.address}
+              value={formData.address}
               onChange={(e) => setFormData({ 
                 ...formData, 
-                location: { ...formData.location, address: e.target.value } 
+                address: e.target.value 
               })}
               placeholder="Ej: Av. Principal 123"
               required
@@ -596,8 +595,8 @@ const CreateFieldModal = ({
             </label>
             <input
               type="text"
-              value={formData.area}
-              onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+              value={formData.zone}
+              onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
               placeholder="Ej: Centro"
               required
               style={{
@@ -705,12 +704,12 @@ const CreateFieldModal = ({
                 marginBottom: "6px",
               }}
             >
-              URLs de Fotos (opcional)
+              URL de Foto (opcional)
             </label>
             <textarea
-              value={formData.photos.join("\n")}
-              onChange={(e) => setFormData({ ...formData, photos: e.target.value.split("\n").filter(Boolean) })}
-              placeholder="Ingrese URLs de fotos, una por línea"
+              value={formData.photoUrl}
+              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
+              placeholder="Ingrese URL de la foto"
               rows={3}
               style={{
                 width: "100%",
@@ -782,12 +781,12 @@ const EditFieldModal = ({
 }) => {
   const [formData, setFormData] = useState({
     name: field.name,
-    grass: field.grass,
+    grassType: field.grassType,
     lighting: field.lighting,
     roofing: field.roofing,
-    location: field.location,
-    area: field.area,
-    photos: field.photos || [],
+    address: field.address,
+    zone: field.zone,
+    photoUrl: field.photoUrl || "",
     description: field.description || "",
     price: field.price || 0,
   })
@@ -919,8 +918,8 @@ const EditFieldModal = ({
               Tipo de Césped *
             </label>
             <select
-              value={formData.grass}
-              onChange={(e) => setFormData({ ...formData, grass: e.target.value as "natural" | "sintetico" })}
+              value={formData.grassType}
+              onChange={(e) => setFormData({ ...formData, grassType: e.target.value as "natural" | "sintetico" })}
               required
               style={{
                 width: "100%",
@@ -951,10 +950,10 @@ const EditFieldModal = ({
             </label>
             <input
               type="text"
-              value={formData.location.address}
+              value={formData.address}
               onChange={(e) => setFormData({ 
                 ...formData, 
-                location: { ...formData.location, address: e.target.value } 
+                address: e.target.value 
               })}
               placeholder="Ej: Av. Principal 123"
               required
@@ -983,8 +982,8 @@ const EditFieldModal = ({
             </label>
             <input
               type="text"
-              value={formData.area}
-              onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+              value={formData.zone}
+              onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
               placeholder="Ej: Centro"
               required
               style={{
@@ -1092,12 +1091,12 @@ const EditFieldModal = ({
                 marginBottom: "6px",
               }}
             >
-              URLs de Fotos (opcional)
+              URL de Foto (opcional)
             </label>
             <textarea
-              value={formData.photos.join("\n")}
-              onChange={(e) => setFormData({ ...formData, photos: e.target.value.split("\n").filter(Boolean) })}
-              placeholder="Ingrese URLs de fotos, una por línea"
+              value={formData.photoUrl}
+              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
+              placeholder="Ingrese URL de la foto"
               rows={3}
               style={{
                 width: "100%",

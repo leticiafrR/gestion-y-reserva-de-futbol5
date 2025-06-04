@@ -32,7 +32,7 @@ export const EditFieldModal = ({ field, onClose, onSubmit }: EditFieldModalProps
     zone: field.zone,
     address: field.address,
     features: [...field.features],
-    photos: [...field.photos],
+    photoUrl: [...field.photoUrl],
     isActive: field.isActive,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
