@@ -10,6 +10,7 @@ type TokenContextData =
       state: "LOGGED_IN";
       accessToken: string;
       refreshToken: string | null;
+      email: string;
     };
 
 const TokenContext = React.createContext<[TokenContextData, Dispatch<TokenContextData>] | null>(null);
