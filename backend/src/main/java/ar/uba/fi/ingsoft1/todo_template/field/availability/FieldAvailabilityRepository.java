@@ -13,4 +13,6 @@ public interface FieldAvailabilityRepository extends JpaRepository<FieldAvailabi
     boolean existsByFieldAndDayOfWeekAndStartTimeLessThanEqualAndEndTimeGreaterThan(
             Field field, DayOfWeek dayOfWeek, LocalTime from, LocalTime to
     );
+
+    List<FieldAvailability> findByFieldAndDayOfWeek(Field field, DayOfWeek day);
 }
