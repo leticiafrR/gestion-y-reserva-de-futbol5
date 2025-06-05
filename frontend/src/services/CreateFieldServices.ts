@@ -93,28 +93,6 @@ async function getOwnerFields(): Promise<Field[]> {
 }
 
 async function createField(data: Omit<Field, "id">) {
-  
-  
-  // const datita = {
-  //   name: "Cancha Principal",
-  //   grassType: "sintetico",
-  //   lighting: true,
-  //   roofing: false,
-  //   zone: "Centro",
-  //   photoUrl: "https://example.com/photo1.jpg",
-  //   address: "Calle Principal 123",
-  //   description: "Cancha de fútbol 5 con césped sintético y excelente iluminación",
-  //   price: 100,
-  // }
-  const transformedData = {
-    ...data,
-    location: {
-      address: data.address,
-      lat: 0,
-      lng: 0
-    }
-  };
-  delete transformedData.address;
   console.log("data", data);
   const accessToken = getAuthToken();
   const response = await fetch(`${BASE_API_URL}/fields`, {

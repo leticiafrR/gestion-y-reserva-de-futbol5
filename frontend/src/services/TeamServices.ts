@@ -1,181 +1,166 @@
 // @ts-nocheck - Mocked for development
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Team } from "@/models/Team";
+import { BASE_API_URL } from "@/config/app-query-client";
+import { useToken } from "@/services/TokenContext";
 
-// Mock data storage
-let mockTeams: Team[] = [
-  {
-    id: "1",
-    name: "Los Galácticos",
-    logo: "https://images.unsplash.com/photo-1589487391730-58f20eb2c308",
-    colors: ["#ff0000", "#ffffff"],
-    ranking: 1,
-    ownerId: "user1",
-    members: ["user2", "user3"]
-  },
-  {
-    id: "2",
-    name: "Equipo Azul",
-    logo: "",
-    colors: ["#0000ff", "#ffffff"],
-    ranking: 3,
-    ownerId: "user2",
-    members: ["user1"]
-  },
-  {
-    id: "3",
-    name: "Los Tigres",
-    logo: "https://images.unsplash.com/photo-1574629810360-7efbbe195018",
-    colors: ["#ffa500", "#000000"],
-    ranking: 2,
-    ownerId: "user3",
-    members: ["user1", "user4"]
-  }
-];
-
-export function useUserTeams() {
-  return useQuery({
-    queryKey: ["userTeams"],
-    queryFn: getUserTeams,
-  });
+interface TeamCreateRequest {
+  name: string;
+  logo?: string;
+  primaryColor: string;
+  secondaryColor: string;
 }
 
-async function getUserTeams(): Promise<Team[]> {
-  // En una implementación real, esto filtraría los equipos donde el usuario actual
-  // es el dueño o miembro usando el email del usuario autenticado
-  const currentUserId = "user1"; // Obtener del contexto de autenticación
-  return mockTeams.filter(team => 
-    team.ownerId === currentUserId || team.members.includes(currentUserId)
-  );
+interface TeamUpdateRequest {
+  name?: string;
+  logo?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
+export function useUserTeams() {
+  const [token] = useToken();
+  return useQuery({
+    queryKey: ["userTeams"],
+    queryFn: () => getAllTeams(token),
+    enabled: token.state === "LOGGED_IN",
+  });
 }
 
 export function useCreateTeam() {
   const queryClient = useQueryClient();
+  const [token] = useToken();
   return useMutation({
-    mutationFn: createTeam,
+    mutationFn: (data: TeamCreateRequest) => createTeam(data, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userTeams"] });
     },
   });
-}
-
-async function createTeam(data: Omit<Team, "id" | "ownerId" | "members">) {
-  // Check for duplicate name
-  if (mockTeams.some(t => t.name.toLowerCase() === data.name.toLowerCase())) {
-    throw new Error("Ya existe un equipo con ese nombre");
-  }
-
-  // In a real implementation, we would get the current user's ID
-  const currentUserId = "user1";
-  
-  const newTeam: Team = {
-    ...data,
-    id: (mockTeams.length + 1).toString(),
-    ownerId: currentUserId,
-    members: []
-  };
-
-  mockTeams = [...mockTeams, newTeam];
-  return { success: true };
-}
-
-export function useDeleteTeam() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: deleteTeam,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["userTeams"] });
-    },
-  });
-}
-
-async function deleteTeam(teamId: string) {
-  const currentUserId = "user1"; // In real implementation, get from auth context
-  const team = mockTeams.find(t => t.id === teamId);
-  
-  if (!team) {
-    throw new Error("Equipo no encontrado");
-  }
-
-  if (team.ownerId !== currentUserId) {
-    throw new Error("Solo el dueño puede eliminar el equipo");
-  }
-
-  mockTeams = mockTeams.filter(t => t.id !== teamId);
-  return { success: true };
 }
 
 export function useUpdateTeam() {
   const queryClient = useQueryClient();
+  const [token] = useToken();
   return useMutation({
-    mutationFn: updateTeam,
+    mutationFn: ({ teamId, updates }: { teamId: string; updates: TeamUpdateRequest }) => 
+      updateTeam({ teamId, updates }, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userTeams"] });
     },
   });
 }
 
-type UpdateTeamParams = {
-  teamId: string;
-  updates: Omit<Team, "id" | "ownerId" | "members">;
-};
-
-async function updateTeam({ teamId, updates }: UpdateTeamParams) {
-  const currentUserId = "user1"; // In real implementation, get from auth context
-  const team = mockTeams.find(t => t.id === teamId);
-  
-  if (!team) {
-    throw new Error("Equipo no encontrado");
-  }
-
-  if (team.ownerId !== currentUserId) {
-    throw new Error("Solo el dueño puede actualizar el equipo");
-  }
-
-  // Check for duplicate name if name is being updated
-  if (updates.name && mockTeams.some(t => 
-    t.id !== teamId && t.name.toLowerCase() === updates.name.toLowerCase()
-  )) {
-    throw new Error("Ya existe un equipo con ese nombre");
-  }
-
-  mockTeams = mockTeams.map(t =>
-    t.id === teamId ? { ...t, ...updates, id: teamId, ownerId: t.ownerId, members: t.members } : t
-  );
-  return { success: true };
-}
-
-export function useLeaveMemberTeam() {
+export function useDeleteTeam() {
   const queryClient = useQueryClient();
+  const [token] = useToken();
   return useMutation({
-    mutationFn: leaveMemberTeam,
+    mutationFn: (teamId: string) => deleteTeam(teamId, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userTeams"] });
     },
   });
 }
 
-async function leaveMemberTeam(teamId: string) {
-  const currentUserId = "user1"; // En una implementación real, obtener del contexto de autenticación
-  const team = mockTeams.find(t => t.id === teamId);
-  
-  if (!team) {
-    throw new Error("Equipo no encontrado");
-  }
 
-  if (team.ownerId === currentUserId) {
-    throw new Error("El dueño no puede abandonar el equipo, debe eliminarlo");
-  }
+async function getAllTeams(token: any): Promise<Team[]> {
+  try {
+    const userEmail = localStorage.getItem('userEmail');
+    
+    const response = await fetch(`${BASE_API_URL}/teams`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+      },
+    });
 
-  if (!team.members.includes(currentUserId)) {
-    throw new Error("No eres miembro de este equipo");
-  }
+    if (!response.ok) {
+      throw new Error(`Error al obtener equipos: ${response.status}`);
+    }
 
-  mockTeams = mockTeams.map(t =>
-    t.id === teamId
-      ? { ...t, members: t.members.filter(m => m !== currentUserId) }
-      : t
-  );
+    const teams = await response.json();
+    
+    if (!Array.isArray(teams)) {
+      throw new Error('La respuesta del servidor no tiene el formato esperado');
+    }
+
+    return teams.map((team: any) => ({
+      id: team.id.toString(),
+      name: team.name,
+      logo: team.logo || "",
+      colors: [team.primaryColor, team.secondaryColor],
+      ownerId: team.captain,
+    }));
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function createTeam(data: TeamCreateRequest, token: any): Promise<{ success: boolean }> {
+  const response = await fetch(`${BASE_API_URL}/teams`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+    body: JSON.stringify({
+      name: data.name,
+      logo: data.logo,
+      primaryColor: data.primaryColor,
+      secondaryColor: data.secondaryColor,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al crear equipo: ${response.status}`);
+  }
 
   return { success: true };
 }
+
+async function updateTeam({ teamId, updates }: { teamId: string; updates: TeamUpdateRequest }, token: any): Promise<{ success: boolean }> {
+  const response = await fetch(`${BASE_API_URL}/teams/${parseInt(teamId)}`, {
+    method: "PATCH",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+    body: JSON.stringify({
+      name: updates.name,
+      logo: updates.logo,
+      primaryColor: updates.primaryColor,
+      secondaryColor: updates.secondaryColor,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al actualizar equipo: ${response.status}`);
+  }
+
+  return { success: true };
+}
+
+async function deleteTeam(teamId: string, token: any): Promise<{ success: boolean }> {
+  const response = await fetch(`${BASE_API_URL}/teams/${teamId}`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al eliminar equipo: ${response.status}`);
+  }
+
+  return { success: true };
+}
+
+

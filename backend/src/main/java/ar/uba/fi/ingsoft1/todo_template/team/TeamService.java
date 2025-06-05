@@ -45,6 +45,14 @@ public class TeamService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the captain can update the team");
         }
 
+        // Check name uniqueness if updating
+        if (dto.getName() != null && !dto.getName().equals(team.getName())) {
+            Optional<Team> existingTeam = teamRepository.findByName(dto.getName());
+            if (existingTeam.isPresent()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Team name already exists");
+            }
+        }
+
         return Optional.of(teamRepository.save(dto.applyTo(team)));
     }
 

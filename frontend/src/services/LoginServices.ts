@@ -10,13 +10,13 @@ export function useLogin() {
   return useMutation<LoginResponse, Error, LoginRequest>({
     mutationFn: async (req: LoginRequest) => {
       const tokenData = await login(req);
-      setToken({ state: "LOGGED_IN", ...tokenData });
+      setToken({ state: "LOGGED_IN", ...tokenData, email: req.email });
       return tokenData;
     },
   });
 }
 
-async function login(data: LoginRequest): Promise<LoginResponse> {
+async function login(req: LoginRequest): Promise<LoginResponse> {
   const response = await fetch(`${BASE_API_URL}/sessions`, {
     method: "POST",
     headers: {
@@ -24,16 +24,16 @@ async function login(data: LoginRequest): Promise<LoginResponse> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      username: data.email,
-      password: data.password
+      username: req.email,
+      password: req.password
     }),
   });
 
   if (!response.ok) {
     const errorData = await response.text();
-    throw new Error(errorData || `Error en el login: ${response.status}`);
+    throw new Error(errorData || `Error al iniciar sesión: ${response.status}`);
   }
 
-  const responseData = await response.json();
-  return LoginResponseSchema.parse(responseData);
+  const data = await response.json();
+  return LoginResponseSchema.parse(data);
 } 
