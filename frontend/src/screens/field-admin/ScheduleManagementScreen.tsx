@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { ArrowLeft } from "lucide-react"
 import { ScheduleConfiguration } from "@/components/ScheduleConfiguration/ScheduleConfiguration"
+import { useGetOwnerFields } from "@/services/CreateFieldServices"
+import type { Field as ApiField } from "@/models/Field"
 
 interface Field {
   id: string
@@ -11,13 +13,36 @@ interface Field {
 }
 
 export const ScheduleManagementScreen = () => {
-  const [selectedFieldId, setSelectedFieldId] = useState<string>("1")
+  const [selectedFieldId, setSelectedFieldId] = useState<string>("")
+  const { data: apiFields = [], isLoading, error } = useGetOwnerFields()
 
-  const fields: Field[] = [
-    { id: "1", name: "Cancha Central", type: "FUTBOL 11" },
-    { id: "2", name: "Cancha Norte", type: "FUTBOL 7" },
-    { id: "3", name: "Cancha Sur", type: "FUTBOL 5" },
-  ]
+  // Transform API fields to the format expected by ScheduleConfiguration
+  const fields: Field[] = apiFields.map((field: ApiField) => ({
+    id: field.id,
+    name: field.name,
+    type: field.grassType === "sintetico" ? "FUTBOL 5" : "FUTBOL 11"
+  }))
+
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+        Cargando canchas...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", color: "red" }}>
+        Error al cargar las canchas: {error.message}
+      </div>
+    )
+  }
+
+  // Set initial selected field if none is selected and we have fields
+  if (!selectedFieldId && fields.length > 0) {
+    setSelectedFieldId(fields[0].id)
+  }
 
   return (
     <div
@@ -84,7 +109,13 @@ export const ScheduleManagementScreen = () => {
         </div>
       </div>
 
-      <ScheduleConfiguration fields={fields} selectedFieldId={selectedFieldId} onFieldChange={setSelectedFieldId} />
+      {fields.length === 0 ? (
+        <div style={{ padding: "24px", textAlign: "center" }}>
+          No tienes canchas registradas. Por favor, crea una cancha primero.
+        </div>
+      ) : (
+        <ScheduleConfiguration fields={fields} selectedFieldId={selectedFieldId} onFieldChange={setSelectedFieldId} />
+      )}
     </div>
   )
 }

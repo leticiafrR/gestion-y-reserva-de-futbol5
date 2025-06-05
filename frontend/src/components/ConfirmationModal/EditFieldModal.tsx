@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { X } from "lucide-react"
+import { useUpdateFieldActiveStatus } from "@/services/CreateFieldServices"
 
 interface Field {
   id: string
@@ -11,14 +12,10 @@ interface Field {
   grassType: "natural" | "synthetic"
   hasLighting: boolean
   zone: string
-  location: {
-    address: string
-    lat: number
-    lng: number
-  }
-  features: string[]
+  address: string
   photoUrl: string
-  isActive: boolean
+  features: string[]
+  active: boolean
   createdAt: string
 }
 
@@ -29,17 +26,20 @@ interface EditFieldModalProps {
 }
 
 export const EditFieldModal = ({ field, onClose, onSubmit }: EditFieldModalProps) => {
+  console.log("EditFieldModal rendered with field:", field);
   const [formData, setFormData] = useState<Omit<Field, "id" | "createdAt">>({
     name: field.name,
     grassType: field.grassType,
     hasLighting: field.hasLighting,
     zone: field.zone,
-    location: field.location,
+    address: field.address,
+    photoUrl: field.photoUrl,
     features: [...field.features],
-    isActive: field.isActive,
+    active: field.active,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [newFeature, setNewFeature] = useState("")
+  const updateFieldActiveStatusMutation = useUpdateFieldActiveStatus()
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -62,6 +62,20 @@ export const EditFieldModal = ({ field, onClose, onSubmit }: EditFieldModalProps
     e.preventDefault()
     if (validateForm()) {
       onSubmit(formData)
+    }
+  }
+
+  const handleActiveStatusChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newActiveStatus = e.target.checked
+    console.log("newActiveStatus", newActiveStatus)
+    try {
+      await updateFieldActiveStatusMutation.mutateAsync({ id: field.id, active: newActiveStatus })
+      console.log("updateFieldActiveStatusMutation", updateFieldActiveStatusMutation)
+      setFormData(prev => ({ ...prev, active: newActiveStatus }))
+    } catch (error) {
+      console.error("Error updating field active status:", error)
+      // Revert the checkbox state if the update fails
+      setFormData(prev => ({ ...prev, active: !newActiveStatus }))
     }
   }
 
@@ -243,8 +257,11 @@ export const EditFieldModal = ({ field, onClose, onSubmit }: EditFieldModalProps
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
               <input
                 type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                checked={formData.active}
+                onChange={(e) => {
+                  console.log("Checkbox onChange event triggered");
+                  handleActiveStatusChange(e);
+                }}
                 style={{ width: "16px", height: "16px" }}
               />
               <span style={{ fontSize: "14px", color: "#374151" }}>Cancha activa</span>

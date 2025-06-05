@@ -1,5 +1,7 @@
 package ar.uba.fi.ingsoft1.todo_template.field;
 
+import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
+import ar.uba.fi.ingsoft1.todo_template.field.availability.FieldAvailabilityDTO;
 import ar.uba.fi.ingsoft1.todo_template.field.availability.FieldAvailabilityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,8 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import ar.uba.fi.ingsoft1.todo_template.field.availability.FieldAvailabilityDTO;
-
 
 import java.util.List;
 
@@ -38,7 +38,7 @@ public class FieldController {
     })
     public ResponseEntity<Field> createField(
             @Parameter(description = "Datos de la cancha") @Valid @RequestBody FieldCreateDTO dto) {
-        String username = getAuthenticatedUsername();
+        String username = getAuthenticatedUser().username();
         Field field = fieldService.createField(dto, username);
         return ResponseEntity.ok(field);
     }
@@ -49,11 +49,10 @@ public class FieldController {
             @ApiResponse(responseCode = "200", description = "Listado de canchas obtenido exitosamente")
     })
     public ResponseEntity<List<Field>> listMyFields() {
-        String username = getAuthenticatedUsername();
+        String username = getAuthenticatedUser().username();
         List<Field> fields = fieldService.getFieldsOf(username);
         return ResponseEntity.ok(fields);
     }
-
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar cancha", description = "Actualiza los datos de una cancha que pertenece al usuario")
@@ -65,7 +64,7 @@ public class FieldController {
     public ResponseEntity<Field> updateField(
             @Parameter(description = "ID de la cancha") @PathVariable Long id,
             @Valid @RequestBody FieldUpdateDTO dto) {
-        String username = getAuthenticatedUsername();
+        String username = getAuthenticatedUser().username();
         return ResponseEntity.ok(fieldService.updateField(id, dto, username));
     }
 
@@ -76,7 +75,7 @@ public class FieldController {
             @ApiResponse(responseCode = "404", description = "Cancha no encontrada o no pertenece al usuario")
     })
     public ResponseEntity<Void> deleteField(@PathVariable Long id) {
-        String username = getAuthenticatedUsername();
+        String username = getAuthenticatedUser().username();
         fieldService.deleteField(id, username);
         return ResponseEntity.noContent().build();
     }
@@ -88,7 +87,7 @@ public class FieldController {
             @ApiResponse(responseCode = "404", description = "Cancha no encontrada o no pertenece al usuario")
     })
     public ResponseEntity<Field> deactivateField(@PathVariable Long id) {
-        String username = getAuthenticatedUsername();
+        String username = getAuthenticatedUser().username();
         Field updated = fieldService.setFieldActiveStatus(id, username, false);
         return ResponseEntity.ok(updated);
     }
@@ -100,11 +99,10 @@ public class FieldController {
             @ApiResponse(responseCode = "404", description = "Cancha no encontrada o no pertenece al usuario")
     })
     public ResponseEntity<Field> activateField(@PathVariable Long id) {
-        String username = getAuthenticatedUsername();
+        String username = getAuthenticatedUser().username();
         Field updated = fieldService.setFieldActiveStatus(id, username, true);
         return ResponseEntity.ok(updated);
     }
-
 
     @PostMapping("/{fieldId}/availability")
     @Operation(summary = "Configurar disponibilidad", description = "Define los horarios disponibles semanales para la cancha")
@@ -129,8 +127,6 @@ public class FieldController {
         return ResponseEntity.ok(activeFields);
     }
 
-
-
     @GetMapping("/{fieldId}/availability")
     @Operation(summary = "Ver disponibilidad", description = "Obtiene los horarios disponibles configurados para la cancha")
     @ApiResponses(value = {
@@ -140,9 +136,9 @@ public class FieldController {
     public ResponseEntity<List<FieldAvailabilityDTO>> getAvailability(@PathVariable Long fieldId) {
         return ResponseEntity.ok(availabilityService.getAvailability(fieldId));
     }
-
-    private String getAuthenticatedUsername() {
+    
+    private JwtUserDetails getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getName();
+        return (JwtUserDetails) authentication.getPrincipal();
     }
 }

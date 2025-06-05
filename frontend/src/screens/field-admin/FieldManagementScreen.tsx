@@ -6,7 +6,7 @@ import { useState, useRef } from "react"
   // @ts-expect-error 
 import { Plus, Edit, Trash2, MapPin, Users, DollarSign, X } from "lucide-react"
 import { navigate } from "wouter/use-browser-location"
-import { useGetOwnerFields, useCreateField } from "@/services/CreateFieldServices"
+import { useGetOwnerFields, useCreateField, useUpdateFieldActiveStatus } from "@/services/CreateFieldServices"
 import type { Field } from "@/models/Field"
 import { useQueryClient } from "@tanstack/react-query"
 import { useDeleteField } from "@/services/CreateFieldServices";
@@ -45,11 +45,23 @@ export const FieldManagementScreen = () => {
   }
 
   const updateFieldMutation = useUpdateField();
+  const updateFieldActiveStatusMutation = useUpdateFieldActiveStatus();
 
   const handleEditField = async (fieldData: Omit<Field, "id">) => {
     if (!selectedField) return;
     try {
-      await updateFieldMutation.mutateAsync({ id: selectedField.id, updates: fieldData });
+      // Primero actualizamos el estado activo/inactivo
+      await updateFieldActiveStatusMutation.mutateAsync({ 
+        id: selectedField.id, 
+        active: fieldData.active 
+      });
+      
+      // Luego actualizamos el resto de los datos
+      await updateFieldMutation.mutateAsync({ 
+        id: selectedField.id, 
+        updates: fieldData 
+      });
+      
       setErrorMessage(null)
       setShowEditModal(false);
       setSelectedField(null);
@@ -247,9 +259,11 @@ export const FieldManagementScreen = () => {
                     cursor: "pointer",
                     transition: "box-shadow 0.2s, transform 0.2s",
                   }}
-                  onClick={() => {
-                    setSelectedField(field)
-                    setShowDetailsModal(true)
+                  onClick={(e) => {
+                    if (!(e.target as HTMLElement).closest('button')) {
+                      setSelectedField(field)
+                      setShowDetailsModal(true)
+                    }
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)"
@@ -296,7 +310,7 @@ export const FieldManagementScreen = () => {
                     </div>
                   </div>
 
-                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.location.address}</p>
+                  <p style={{ color: "#6c757d", fontSize: "14px", margin: "0 0 12px 0" }}>{field.address}</p>
                   <p style={{ color: "#495057", fontSize: "14px", margin: "0 0 16px 0", lineHeight: "1.4" }}>
                     {field.description}
                   </p>
@@ -443,15 +457,13 @@ const CreateFieldModal = ({
     grassType: "sintetico" as "natural" | "sintetico",
     lighting: false,
     roofing: false,
-    location: {
-      address: "",
-      lat: -34.6037, // Default to Buenos Aires
-      lng: -58.3816,
-    },
+    address: "",
     zone: "",
     photoUrl: "",
     description: "",
     price: 0,
+    active: true,
+    schedule: []
   })
 
   const [error, setError] = useState<string | null>(null)
@@ -484,11 +496,7 @@ const CreateFieldModal = ({
 
         setFormData(prev => ({
           ...prev,
-          location: {
-            address: place.formatted_address || prev.location.address,
-            lat: place.geometry?.location?.lat() || prev.location.lat,
-            lng: place.geometry?.location?.lng() || prev.location.lng,
-          },
+          address: place.formatted_address || prev.address,
           zone: zone || prev.zone
         }));
       }
@@ -500,8 +508,7 @@ const CreateFieldModal = ({
     try {
       const fieldData = {
         ...formData,
-        address: formData.location.address,
-        location: formData.location
+        address: formData.address,
       };
       await onSubmit(fieldData)
     } catch (err: any) {
@@ -668,10 +675,10 @@ const CreateFieldModal = ({
               >
                 <input
                   type="text"
-                  value={formData.location.address}
+                  value={formData.address}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    location: { ...prev.location, address: e.target.value }
+                    address: e.target.value
                   }))}
                   placeholder="Ej: Av. Principal 123"
                   required
@@ -809,6 +816,18 @@ const CreateFieldModal = ({
               />
               <span style={{ fontSize: "14px", color: "#495057" }}>Cancha techada</span>
             </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={formData.active}
+                onChange={(e) => {
+                  console.log("Checkbox onChange event triggered");
+                  setFormData({ ...formData, active: e.target.checked });
+                }}
+                style={{ width: "16px", height: "16px" }}
+              />
+              <span style={{ fontSize: "14px", color: "#212529" }}>Cancha activa</span>
+            </label>
           </div>
 
           <div style={{ marginBottom: "24px" }}>
@@ -903,19 +922,18 @@ const EditFieldModal = ({
     grassType: field.grassType,
     lighting: field.lighting,
     roofing: field.roofing,
-    location: {
-      address: field.location.address,
-      lat: field.location.lat,
-      lng: field.location.lng,
-    },
+    address: field.address,
     zone: field.zone,
     photoUrl: field.photoUrl || "",
     description: field.description || "",
     price: field.price || 0,
+    active: field.active,
+    schedule: field.schedule || []
   })
 
   const [error, setError] = useState<string | null>(null)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const updateFieldActiveStatusMutation = useUpdateFieldActiveStatus();
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: "AIzaSyAV-7--jx2dP-MyDxVrhcSYlNnY8KNb8g8",
@@ -944,11 +962,7 @@ const EditFieldModal = ({
 
         setFormData(prev => ({
           ...prev,
-          location: {
-            address: place.formatted_address || prev.location.address,
-            lat: place.geometry?.location?.lat() || prev.location.lat,
-            lng: place.geometry?.location?.lng() || prev.location.lng,
-          },
+          address: place.formatted_address || prev.address,
           zone: zone || prev.zone
         }));
       }
@@ -960,8 +974,7 @@ const EditFieldModal = ({
     try {
       const fieldData = {
         ...formData,
-        address: formData.location.address,
-        location: formData.location
+        address: formData.address,
       };
       await onSubmit(fieldData)
     } catch (err: any) {
@@ -1126,10 +1139,10 @@ const EditFieldModal = ({
               >
                 <input
                   type="text"
-                  value={formData.location.address}
+                  value={formData.address}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    location: { ...prev.location, address: e.target.value }
+                    address: e.target.value
                   }))}
                   placeholder="Ej: Av. Principal 123"
                   required
@@ -1266,6 +1279,18 @@ const EditFieldModal = ({
                 style={{ width: "16px", height: "16px" }}
               />
               <span style={{ fontSize: "14px", color: "#495057" }}>Cancha techada</span>
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={formData.active}
+                onChange={(e) => {
+                  console.log("Checkbox onChange event triggered");
+                  setFormData({ ...formData, active: e.target.checked });
+                }}
+                style={{ width: "16px", height: "16px" }}
+              />
+              <span style={{ fontSize: "14px", color: "#212529" }}>Cancha activa</span>
             </label>
           </div>
 
@@ -1595,7 +1620,7 @@ const FieldDetailsModalAdmin = ({ field, onClose }: { field: Field; onClose: () 
               </span>
             </div>
             <p style={{ color: "#6b7280", margin: 0, fontSize: "16px" }}>
-              {field.zone} - {field.location.address}
+              {field.zone} - {field.address}
             </p>
           </div>
           <button
@@ -1704,7 +1729,7 @@ const FieldDetailsModalAdmin = ({ field, onClose }: { field: Field; onClose: () 
             <div>
               <h3 style={{ color: "#1f2937", fontSize: "18px", marginBottom: "16px" }}>Ubicación</h3>
               <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
-                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.location.address}
+                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.address}
               </p>
               <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
                 <span style={{ fontWeight: "500" }}>Zona:</span> {field.zone}

@@ -8,18 +8,14 @@ export const FieldSchema = z.object({
     }),
     lighting: z.boolean(),
     roofing: z.boolean(),
-    // address: z.string().min(1, "La dirección es requerida"),
-    location: z.object({
-        lat: z.number(),
-        lng: z.number(),
-        address: z.string().min(1, "La dirección es requerida"),
-    }),
+    address: z.string().min(1, "La dirección es requerida"),
     zone: z.string().min(1, "La zona es requerida"),
     photoUrl: z.string().url("URL de foto inválida").optional().default(""),
     description: z.string().optional(),
     price: z.number().min(0, "El precio debe ser un número positivo").optional(),
-    isAvailable: z.boolean().optional(),
     active: z.boolean().default(true),
+    lat: z.number().optional(),
+    lng: z.number().optional(),
     schedule: z.array(z.object({
       dayOfWeek: z.enum([
         "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"

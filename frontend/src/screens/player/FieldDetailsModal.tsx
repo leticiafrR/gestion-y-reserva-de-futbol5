@@ -1,5 +1,6 @@
 import { X } from "lucide-react"
 import type { Field } from "@/models/Field"
+import { useState } from "react"
 
 interface FieldDetailsModalProps {
   field: Field
@@ -7,6 +8,16 @@ interface FieldDetailsModalProps {
 }
 
 export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) => {
+  const [showReserveSuccess, setShowReserveSuccess] = useState(false);
+
+  const handleReserve = () => {
+    setShowReserveSuccess(true);
+    setTimeout(() => {
+      setShowReserveSuccess(false);
+      onClose();
+    }, 2000);
+  };
+
   return (
     <div
       style={{
@@ -23,6 +34,39 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
         padding: "20px",
       }}
     >
+      {showReserveSuccess && (
+        <div
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            backgroundColor: "#10b981",
+            color: "white",
+            padding: "16px 24px",
+            borderRadius: "8px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+            zIndex: 2000,
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            maxWidth: "400px",
+          }}
+        >
+          <div style={{ flex: 1 }}>¡Cancha reservada exitosamente!</div>
+          <button
+            onClick={() => setShowReserveSuccess(false)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              padding: "4px",
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
       <div
         style={{
           backgroundColor: "white",
@@ -63,7 +107,7 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
               </span>
             </div>
             <p style={{ color: "#6b7280", margin: 0, fontSize: "16px" }}>
-              {field.zone} - {field.location.address}
+              {field.zone} - {field.address}
             </p>
           </div>
           <button
@@ -172,7 +216,7 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
             <div>
               <h3 style={{ color: "#1f2937", fontSize: "18px", marginBottom: "16px" }}>Ubicación</h3>
               <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
-                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.location.address}
+                <span style={{ fontWeight: "500" }}>Dirección:</span> {field.address}
               </p>
               <p style={{ color: "#374151", margin: "0 0 8px 0" }}>
                 <span style={{ fontWeight: "500" }}>Zona:</span> {field.zone}
@@ -217,10 +261,7 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
             </button>
             {field.active && (
               <button
-                onClick={() => {
-                  // TODO: Implementar la lógica de reserva
-                  console.log("Reservar cancha:", field.id)
-                }}
+                onClick={handleReserve}
                 style={{
                   padding: "10px 20px",
                   backgroundColor: "#3b82f6",

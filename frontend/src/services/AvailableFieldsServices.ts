@@ -17,11 +17,7 @@ let mockFields: Field[] = [
     grass: "sintetico",
     lighting: true,
     roofing: false,
-    location: {
-      lat: -34.6037,
-      lng: -58.3816,
-      address: "Av. Principal 123"
-    },
+    address: "Av. Principal 123",
     area: "Centro",
     photos: [],
     description: "Cancha con césped sintético y buena iluminación.",
@@ -42,11 +38,7 @@ let mockFields: Field[] = [
     grass: "natural",
     lighting: false,
     roofing: false,
-    location: {
-      lat: -34.5837,
-      lng: -58.4016,
-      address: "Calle Norte 456"
-    },
+    address: "Calle Norte 456",
     area: "Norte",
     photos: [],
     description: "Cancha de césped natural, ideal para torneos.",
@@ -61,17 +53,17 @@ let mockFields: Field[] = [
 ];
 
 async function getAvailableFields(): Promise<Field[]> {
-  return mockFields;
-  // const accessToken = getAuthToken();
-  // console.log("accessToken", accessToken);
-  // const response = await fetch(`${BASE_API_URL}/fields/all`, {
-  //   method: "GET",
-  //   headers: {
-  //     Accept: "application/json",
-  //     "Content-Type": "application/json",
-  //     Authorization: `Bearer ${accessToken}`, 
-  //   },
-  // });
+  // return mockFields;
+  const accessToken = getAuthToken();
+  console.log("accessToken", accessToken);
+  const response = await fetch(`${BASE_API_URL}/fields/all`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`, 
+    },
+  });
 
 
   console.log(response);
@@ -79,22 +71,8 @@ async function getAvailableFields(): Promise<Field[]> {
   if (response.ok) {
     const data = await response.json();
     console.log(data);
-    return data.map((field: any) => ({
-      id: field.id.toString(),
-      name: field.name,
-      grass: field.grassType.toLowerCase(),
-      lighting: field.lighting,
-      roofing: false, // This field is not in the backend model yet
-      location: {
-        lat: field.location.lat,
-        lng: field.location.lng,
-        address: field.location.address,
-      },
-      area: field.zone,
-      photos: [field.photoUrl],
-      description: "", // This field is not in the backend model yet
-      price: field.price,
-    }));
+    return data;
+π
   } else {
     throw new Error(`Failed to fetch fields with status ${response.status}: ${await response.text()}`);
   }

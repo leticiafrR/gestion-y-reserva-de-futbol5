@@ -1,10 +1,11 @@
 "use client"
 
 import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import ReactDOMServer from "react-dom/server"
 import CustomMarkerLabel from "./CustomMarkerLabel"
 import type { Field } from "@/models/Field"
+import { getCoordinatesFromAddress } from "@/utils/geocoding"
 
 const mapContainerStyle = {
   width: "100%",
@@ -23,8 +24,8 @@ interface FieldsMapProps {
 }
 
 function createSimpleMarker(field: Field): google.maps.Icon {
-  const { name, price = 0, isAvailable = true } = field
-  const color = isAvailable ? "#4caf50" : "#ef4444"
+  const { name, price = 0, active = true } = field
+  const color = active ? "#4caf50" : "#ef4444"
 
   // Renderizar el componente a string
   const markerHTML = ReactDOMServer.renderToString(
@@ -49,11 +50,47 @@ function createSimpleMarker(field: Field): google.maps.Icon {
 export const FieldsMap = ({ fields, onFieldSelect }: FieldsMapProps) => {
   // @ts-expect-error - map is used indirectly through setMap
   const [map, setMap] = useState<google.maps.Map | null>(null)
+  const [fieldsWithCoordinates, setFieldsWithCoordinates] = useState<Field[]>(fields)
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: "AIzaSyAV-7--jx2dP-MyDxVrhcSYlNnY8KNb8g8",
     libraries: ["places"],
   })
+
+  useEffect(() => {
+    const getCoordinatesForFields = async () => {
+      const fieldsToUpdate = fields.filter(field => !field.lat || !field.lng)
+      
+      if (fieldsToUpdate.length === 0) {
+        setFieldsWithCoordinates(fields)
+        return
+      }
+
+      const updatedFields = await Promise.all(
+        fields.map(async (field) => {
+          if (field.lat && field.lng) return field
+
+          try {
+            const coordinates = await getCoordinatesFromAddress(field.address)
+            return {
+              ...field,
+              lat: coordinates.lat,
+              lng: coordinates.lng,
+            }
+          } catch (error) {
+            console.error(`Error getting coordinates for field ${field.name}:`, error)
+            return field
+          }
+        })
+      )
+
+      setFieldsWithCoordinates(updatedFields)
+    }
+
+    if (isLoaded) {
+      getCoordinatesForFields()
+    }
+  }, [fields, isLoaded])
 
   if (loadError) {
     return (
@@ -120,17 +157,19 @@ export const FieldsMap = ({ fields, onFieldSelect }: FieldsMapProps) => {
           fullscreenControl: true,
         }}
       >
-        {fields.map((field) => (
-          <Marker
-            key={field.id}
-            position={{
-              lat: field.location.lat,
-              lng: field.location.lng,
-            }}
-            icon={createSimpleMarker(field)}
-            onClick={() => onFieldSelect?.(field)}
-            title={`${field.name} - $${field.price}/hora`}
-          />
+        {fieldsWithCoordinates.map((field) => (
+          field.lat && field.lng ? (
+            <Marker
+              key={field.id}
+              position={{
+                lat: field.lat,
+                lng: field.lng,
+              }}
+              icon={createSimpleMarker(field)}
+              onClick={() => onFieldSelect?.(field)}
+              title={`${field.name} - $${field.price}/hora`}
+            />
+          ) : null
         ))}
       </GoogleMap>
     </div>

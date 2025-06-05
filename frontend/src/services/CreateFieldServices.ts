@@ -73,23 +73,23 @@ let mockFields: Field[] = [
 ];
 
 async function getOwnerFields(): Promise<Field[]> {
-  return mockFields;
-  // const accessToken = getAuthToken();
-  // console.log("accessToken", accessToken);
-  // const response = await fetch(`${BASE_API_URL}/fields/mine`, {
-  //   method: "GET",
-  //   headers: {
-  //     Accept: "application/json",
-  //     "Content-Type": "application/json",
-  //     Authorization: `Bearer ${accessToken}`, 
-  //   },
-  // });
-  // console.log("response", response);
-  // if (response.ok) {
-  //   return response.json();
-  // } else {
-  //   throw new Error(`Failed to fetch owner fields with status ${response.status}: ${await response.text()}`);
-  // }
+  // return mockFields;
+  const accessToken = getAuthToken();
+  console.log("accessToken", accessToken);
+  const response = await fetch(`${BASE_API_URL}/fields/mine`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`, 
+    },
+  });
+  console.log("response", response);
+  if (response.ok) {
+    return response.json();
+  } else {
+    throw new Error(`Failed to fetch owner fields with status ${response.status}: ${await response.text()}`);
+  }
 }
 
 async function createField(data: Omit<Field, "id">) {
@@ -191,5 +191,35 @@ async function updateField(fieldId: string, updates: Omit<Field, "id">) {
     return response.json();
   } else {
     throw new Error(`Field update failed with status ${response.status}: ${await response.text()}`);
+  }
+}
+
+export function useUpdateFieldActiveStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { id: string; active: boolean }) => updateFieldActiveStatus(data.id, data.active),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["owner-fields"] });
+    },
+  });
+}
+
+async function updateFieldActiveStatus(fieldId: string, active: boolean) {
+  const accessToken = getAuthToken();
+  const endpoint = active ? `${BASE_API_URL}/fields/${fieldId}/activate` : `${BASE_API_URL}/fields/${fieldId}/deactivate`;
+  const response = await fetch(endpoint, {
+    method: "PATCH",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  console.log("response", response);
+
+  if (response.ok) {
+    return response.json();
+  } else {
+    throw new Error(`Field status update failed with status ${response.status}: ${await response.text()}`);
   }
 }

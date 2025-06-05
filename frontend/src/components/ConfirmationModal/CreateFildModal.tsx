@@ -6,11 +6,7 @@ import { useState } from "react"
 import { X } from "lucide-react"
 
 interface Field {
-  location: {
-    address: string
-    lat: number
-    lng: number
-  }
+  address: string
   name: string
   grassType: "natural" | "synthetic"
   hasLighting: boolean
@@ -31,11 +27,7 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
     grassType: "synthetic",
     hasLighting: false,
     zone: "",
-    location: {
-      address: "",
-      lat: 0,
-      lng: 0,
-    },
+    address: "",
     features: [],
     photos: [],
     isActive: true,
@@ -52,8 +44,8 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
     if (!formData.zone.trim()) {
       newErrors.zone = "La zona es obligatoria"
     }
-    if (!formData.location.address.trim()) {
-      newErrors.location.address = "La dirección es obligatoria"
+    if (!formData.address.trim()) {
+      newErrors.address = "La dirección es obligatoria"
     }
 
     setErrors(newErrors)
@@ -214,12 +206,12 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
             </label>
             <input
               type="text"
-              value={formData.location.address}
-              onChange={(e) => setFormData({ ...formData, location: { ...formData.location, address: e.target.value } })}
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               style={{
                 width: "100%",
                 padding: "10px",
-                border: `1px solid ${errors.location.address ? "#ef4444" : "#d1d5db"}`,
+                border: `1px solid ${errors.address ? "#ef4444" : "#d1d5db"}`,
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
