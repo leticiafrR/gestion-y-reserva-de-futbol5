@@ -70,15 +70,6 @@ public class UserService implements UserDetailsService {
         return generateTokens(user);
     }
 
-    // Optional<User> matchCredential(UserCredentials data) {
-    // Optional<User> maybeUser = userRepository.findByUsername(data.username());
-    // return maybeUser
-    // .filter(user -> passwordEncoder.matches(data.password(), user.getPassword()))
-    // .filter(User::isEmailVerified)
-    // .filter(User::isActive)
-    // .map(this::generateTokens);
-    // }
-
     public User matchCredentials(UserCredentials data) {
         return userRepository.findByUsername(data.username())
                 .filter(user -> passwordEncoder.matches(data.password(), user.getPassword()))
