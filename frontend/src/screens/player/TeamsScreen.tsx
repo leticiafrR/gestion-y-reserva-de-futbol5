@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, X, Upload } from "lucide-react";
 import type { Team } from "@/models/Team";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToken } from "@/services/TokenContext";
+import { uploadTeamLogo } from "@/services/supabaseClient";
 
 export const TeamsScreen = () => {
   const { data: teams, isLoading, error } = useUserTeams();
@@ -316,14 +317,34 @@ const CreateTeamModal = ({
     primaryColor: "#ff0000",
     secondaryColor: "#ffffff"
   });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Here you would typically upload the file to your server/storage
-      // and get back a URL. For now, we'll just use a local URL
-      setFormData({ ...formData, logo: URL.createObjectURL(file) });
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setUploadError("El archivo debe ser una imagen");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("La imagen no debe superar los 2MB");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const logoUrl = await uploadTeamLogo(file, formData.name);
+      setFormData({ ...formData, logo: logoUrl });
+    } catch (error) {
+      setUploadError("Error al subir la imagen");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -503,12 +524,18 @@ const CreateTeamModal = ({
                       Haz clic para subir una imagen
                     </p>
                     <p style={{ margin: 0, fontSize: "12px" }}>
-                      PNG, JPG o GIF (max. 5MB)
+                      PNG, JPG o GIF (max. 2MB)
                     </p>
                   </div>
                 </>
               )}
             </div>
+            {uploadError && (
+              <p style={{ color: "var(--destructive)", fontSize: "12px", marginTop: "4px" }}>{uploadError}</p>
+            )}
+            {isUploading && (
+              <p style={{ color: "var(--primary)", fontSize: "12px", marginTop: "4px" }}>Subiendo imagen...</p>
+            )}
           </div>
 
           <div style={{ marginBottom: "20px" }}>
@@ -671,14 +698,34 @@ const EditTeamModal = ({
     primaryColor: team.colors?.[0]?.startsWith('#') ? team.colors[0] : `#${team.colors?.[0]}` || "#ff0000",
     secondaryColor: team.colors?.[1]?.startsWith('#') ? team.colors[1] : `#${team.colors?.[1]}` || "#ffffff"
   });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Here you would typically upload the file to your server/storage
-      // and get back a URL. For now, we'll just use a local URL
-      setFormData({ ...formData, logo: URL.createObjectURL(file) });
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setUploadError("El archivo debe ser una imagen");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("La imagen no debe superar los 2MB");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const logoUrl = await uploadTeamLogo(file, formData.name);
+      setFormData({ ...formData, logo: logoUrl });
+    } catch (error) {
+      setUploadError("Error al subir la imagen");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -858,12 +905,18 @@ const EditTeamModal = ({
                       Haz clic para subir una imagen
                     </p>
                     <p style={{ margin: 0, fontSize: "12px" }}>
-                      PNG, JPG o GIF (max. 5MB)
+                      PNG, JPG o GIF (max. 2MB)
                     </p>
                   </div>
                 </>
               )}
             </div>
+            {uploadError && (
+              <p style={{ color: "var(--destructive)", fontSize: "12px", marginTop: "4px" }}>{uploadError}</p>
+            )}
+            {isUploading && (
+              <p style={{ color: "var(--primary)", fontSize: "12px", marginTop: "4px" }}>Subiendo imagen...</p>
+            )}
           </div>
 
           <div style={{ marginBottom: "20px" }}>
