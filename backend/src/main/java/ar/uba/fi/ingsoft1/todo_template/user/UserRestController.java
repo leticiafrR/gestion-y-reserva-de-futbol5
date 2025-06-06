@@ -1,8 +1,9 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
 import ar.uba.fi.ingsoft1.todo_template.config.GlobalControllerExceptionHandler.IncorrectValueResponse;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnverifiedAccountException;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InvalidTokenException;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.TokenDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.UserCreateDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.UserLoginDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,9 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-
-import java.util.Optional;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -57,5 +55,38 @@ public class UserRestController {
         public ResponseEntity<TokenDTO> login(@RequestBody UserLoginDTO credentials) {
                 return ResponseEntity.status(HttpStatus.OK).body(userService.loginUser(credentials));
         }
+
+        // @PostMapping("/user-profile/{id}")
+        // @Operation(summary = "Login user", description = "Login a user with their
+        // credentials to obtain a JWT token")
+        // @ApiResponse(responseCode = "200", description = "Successful logging",
+        // content = @Content(schema = @Schema(implementation = TokenDTO.class),
+        // mediaType = "application/json"))
+        // @ApiResponse(responseCode = "403", description = "Unverified email, inactive
+        // account, or invalid credentials", content = @Content(schema =
+        // @Schema(implementation = String.class), mediaType = "text/plain"))
+        // public ResponseEntity<TokenDTO> login(@RequestBody UserLoginDTO credentials)
+        // {
+        // return
+        // ResponseEntity.status(HttpStatus.OK).body(userService.loginUser(credentials));
+        // }
+
+        // @GetMapping("/me")
+        // @Operation(summary = "Obtener información del usuario autenticado")
+        // @ApiResponse(responseCode = "200", description = "Usuario encontrado")
+        // public ResponseEntity<UserProfileDTO> getCurrentUser() {
+        // JwtUserDetails userDetails = getAuthenticatedUser();
+
+        // // O podés directamente devolver los datos de userDetails si contiene todo
+        // UserDTO user = userService.findByUsername(userDetails.username());
+
+        // return ResponseEntity.ok(user);
+        // }
+
+        // private JwtUserDetails getAuthenticatedUser() {
+        // Authentication authentication =
+        // SecurityContextHolder.getContext().getAuthentication();
+        // return (JwtUserDetails) authentication.getPrincipal();
+        // }
 
 }
