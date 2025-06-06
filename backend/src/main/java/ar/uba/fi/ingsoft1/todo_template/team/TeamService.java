@@ -1,10 +1,13 @@
 package ar.uba.fi.ingsoft1.todo_template.team;
 
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
+import ar.uba.fi.ingsoft1.todo_template.user.User;
+import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,6 +21,8 @@ import java.util.Optional;
 public class TeamService {
 
     private final TeamRepository teamRepository;
+    private final UserRepository userRepository;
+
 
     public List<Team> getAllTeams() {
         return teamRepository.findAll();
@@ -31,6 +36,14 @@ public class TeamService {
         }
 
         Team team = dto.toTeam(username);
+        User user = userRepository
+                .findByUsername(username)
+                .orElseThrow(() -> {
+                    var msg = String.format("Username '%s' not found", username);
+                    return new UsernameNotFoundException(msg);
+                });
+        team.addMember(user);
+
         return teamRepository.save(team);
     }
 

@@ -69,4 +69,7 @@ public class TeamController {
         teamService.deleteTeam(id);
         return ResponseEntity.noContent().build();
     }
+
+    //metodo para listar a los equipos en los que está un usuario
+
 }
