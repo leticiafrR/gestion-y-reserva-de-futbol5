@@ -1,9 +1,11 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
+import ar.uba.fi.ingsoft1.todo_template.config.GlobalControllerExceptionHandler.ErrorResponse;
 import ar.uba.fi.ingsoft1.todo_template.config.GlobalControllerExceptionHandler.IncorrectValueResponse;
 import ar.uba.fi.ingsoft1.todo_template.user.dto.TokenDTO;
 import ar.uba.fi.ingsoft1.todo_template.user.dto.UserCreateDTO;
 import ar.uba.fi.ingsoft1.todo_template.user.dto.UserLoginDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.UserProfileDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,9 +23,11 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "1 - Usuarios", description = "User management endpoints")
 public class UserRestController {
         private UserService userService;
+        private final UserMapper userMapper;
 
-        public UserRestController(UserService userService) {
+        public UserRestController(UserService userService, UserMapper userMapper) {
                 this.userService = userService;
+                this.userMapper = userMapper;
         }
 
         @GetMapping("/verify")
@@ -56,37 +60,15 @@ public class UserRestController {
                 return ResponseEntity.status(HttpStatus.OK).body(userService.loginUser(credentials));
         }
 
-        // @PostMapping("/user-profile/{id}")
-        // @Operation(summary = "Login user", description = "Login a user with their
-        // credentials to obtain a JWT token")
-        // @ApiResponse(responseCode = "200", description = "Successful logging",
-        // content = @Content(schema = @Schema(implementation = TokenDTO.class),
-        // mediaType = "application/json"))
-        // @ApiResponse(responseCode = "403", description = "Unverified email, inactive
-        // account, or invalid credentials", content = @Content(schema =
-        // @Schema(implementation = String.class), mediaType = "text/plain"))
-        // public ResponseEntity<TokenDTO> login(@RequestBody UserLoginDTO credentials)
-        // {
-        // return
-        // ResponseEntity.status(HttpStatus.OK).body(userService.loginUser(credentials));
-        // }
-
-        // @GetMapping("/me")
-        // @Operation(summary = "Obtener información del usuario autenticado")
-        // @ApiResponse(responseCode = "200", description = "Usuario encontrado")
-        // public ResponseEntity<UserProfileDTO> getCurrentUser() {
-        // JwtUserDetails userDetails = getAuthenticatedUser();
-
-        // // O podés directamente devolver los datos de userDetails si contiene todo
-        // UserDTO user = userService.findByUsername(userDetails.username());
-
-        // return ResponseEntity.ok(user);
-        // }
-
-        // private JwtUserDetails getAuthenticatedUser() {
-        // Authentication authentication =
-        // SecurityContextHolder.getContext().getAuthentication();
-        // return (JwtUserDetails) authentication.getPrincipal();
-        // }
+        @GetMapping("/me")
+        @Operation(summary = "Load user profile", description = "Fetches the profile information of the currently authenticated user.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "User profile successfully loaded", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserProfileDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "User is not authenticated or session has expired", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+        })
+        public ResponseEntity<UserProfileDTO> getCurrentUserProfile() {
+                User user = (User) userService.getAuthenticatedUser();
+                return ResponseEntity.ok(userMapper.toUserProfileDTO(user));
+        }
 
 }

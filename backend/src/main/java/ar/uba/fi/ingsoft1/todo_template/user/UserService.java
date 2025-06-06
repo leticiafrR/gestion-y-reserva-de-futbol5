@@ -12,6 +12,8 @@ import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnve
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InavlidCredentialsException;
 import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -44,14 +46,6 @@ public class UserService implements UserDetailsService {
         this.emailVerificationService = emailVerificationService;
     }
 
-    public void verifyUserByEmail(String token) {
-        Optional<User> maybeUser = emailVerificationService.verifyUserByEmail(token);
-        if (!maybeUser.isEmpty()) {
-            maybeUser.get().setEmailVerified(true);
-            userRepository.save(maybeUser.get());
-        }
-    }
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository
@@ -60,6 +54,21 @@ public class UserService implements UserDetailsService {
                     var msg = String.format("Username '%s' not found", username);
                     return new UsernameNotFoundException(msg);
                 });
+    }
+
+    User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = ((JwtUserDetails) authentication.getPrincipal()).username();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+
+    public void verifyUserByEmail(String token) {
+        Optional<User> maybeUser = emailVerificationService.verifyUserByEmail(token);
+        if (!maybeUser.isEmpty()) {
+            maybeUser.get().setEmailVerified(true);
+            userRepository.save(maybeUser.get());
+        }
     }
 
     TokenDTO createUser(UserCreateDTO data) {
@@ -105,4 +114,5 @@ public class UserService implements UserDetailsService {
         }
 
     }
+
 }
