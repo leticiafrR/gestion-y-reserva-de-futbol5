@@ -18,7 +18,8 @@ export function useSignup() {
         role: req.userType,
         gender: req.gender,
         age: req.age.toString(), // El backend calculará el birthYear a partir de la edad
-        zone: req.zone
+        zone: req.zone,
+        photo: req.photo // Agregamos la URL de la foto
       };
 
       const response = await signup(backendRequest);
@@ -36,6 +37,7 @@ interface BackendSignupRequest {
   gender: string;
   age: string;
   zone: string;
+  photo?: string;
 }
 
 async function signup(data: BackendSignupRequest) {

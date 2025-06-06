@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useRef } from "react"
   // @ts-expect-error 
-import { Plus, Edit, Trash2, MapPin, Users, DollarSign, X } from "lucide-react"
+import { Plus, Edit, Trash2, MapPin, Users, DollarSign, X, Upload } from "lucide-react"
 import { navigate } from "wouter/use-browser-location"
 import { useGetOwnerFields, useCreateField, useUpdateFieldActiveStatus } from "@/services/CreateFieldServices"
 import type { Field } from "@/models/Field"
@@ -13,6 +13,7 @@ import { useDeleteField } from "@/services/CreateFieldServices";
 import { useUpdateField } from "@/services/CreateFieldServices";
 import { FieldsMap } from "@/components/FieldsMap/FieldsMap";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
+import { uploadFieldImage } from "@/services/supabaseClient"
 
 
 export const FieldManagementScreen = () => {
@@ -443,7 +444,6 @@ export const FieldManagementScreen = () => {
     </div>
   )
 }
-
 // Create Field Modal Component
 const CreateFieldModal = ({
   onClose,
@@ -465,8 +465,10 @@ const CreateFieldModal = ({
     active: true,
     schedule: []
   })
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [error, setError] = useState<string | null>(null)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
   const { isLoaded } = useLoadScript({
@@ -512,7 +514,7 @@ const CreateFieldModal = ({
       };
       await onSubmit(fieldData)
     } catch (err: any) {
-      setError(err.message || "Error al crear la cancha")
+      setUploadError(err.message || "Error al crear la cancha")
     }
   }
 
@@ -574,7 +576,7 @@ const CreateFieldModal = ({
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: "24px" }}>
-          {error && (
+          {uploadError && (
             <div
               style={{
                 backgroundColor: "#fff5f5",
@@ -585,7 +587,7 @@ const CreateFieldModal = ({
                 fontSize: "14px",
               }}
             >
-              {error}
+              {uploadError}
             </div>
           )}
 
@@ -605,7 +607,7 @@ const CreateFieldModal = ({
               type="text"
               value={formData.name}
               onChange={(e) => {
-                setError(null)
+                setUploadError(null)
                 setFormData({ ...formData, name: e.target.value })
               }}
               placeholder="Ej: Cancha Principal"
@@ -840,25 +842,119 @@ const CreateFieldModal = ({
                 marginBottom: "6px",
               }}
             >
-              URL de Foto (opcional)
+              Foto de la Cancha
             </label>
-            <textarea
-              value={formData.photoUrl}
-              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-              placeholder="Ingrese URL de la foto"
-              rows={3}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: "1px solid #ced4da",
-                borderRadius: "6px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                resize: "vertical",
-                backgroundColor: "white",
-                color: "#212529",
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                if (!file.type.startsWith("image/")) {
+                  setUploadError("El archivo debe ser una imagen")
+                  return
+                }
+                if (file.size > 2 * 1024 * 1024) {
+                  setUploadError("La imagen no debe superar los 2MB")
+                  return
+                }
+                setIsUploading(true)
+                setUploadError(null)
+                try {
+                  const photoUrl = await uploadFieldImage(file, formData.name)
+                  setFormData({ ...formData, photoUrl })
+                } catch (error) {
+                  setUploadError("Error al subir la imagen")
+                } finally {
+                  setIsUploading(false)
+                }
               }}
+              style={{ display: "none" }}
             />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: "2px dashed #e2e8f0",
+                borderRadius: "8px",
+                padding: "20px",
+                textAlign: "center",
+                cursor: "pointer",
+                backgroundColor: formData.photoUrl ? "transparent" : "#f8fafc",
+                transition: "all 0.2s ease",
+                position: "relative",
+                minHeight: "150px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
+              {formData.photoUrl ? (
+                <>
+                  <img
+                    src={formData.photoUrl}
+                    alt="Preview"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "200px",
+                      borderRadius: "4px",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <button
+                    onClick={e => {
+                      e.stopPropagation()
+                      setFormData({ ...formData, photoUrl: "" })
+                      if (fileInputRef.current) fileInputRef.current.value = ""
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseOver={e => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)"
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.5)"
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Upload size={32} color="#64748b" />
+                  <div style={{ color: "#64748b" }}>
+                    <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "500" }}>
+                      Haz clic para subir una foto
+                    </p>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8" }}>
+                      PNG, JPG o JPEG (max. 2MB)
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            {uploadError && (
+              <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{uploadError}</p>
+            )}
+            {isUploading && (
+              <p style={{ color: "#3b82f6", fontSize: "12px", marginTop: "4px" }}>Subiendo foto...</p>
+            )}
           </div>
 
           <div
@@ -931,7 +1027,10 @@ const EditFieldModal = ({
     schedule: field.schedule || []
   })
 
-  const [error, setError] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const updateFieldActiveStatusMutation = useUpdateFieldActiveStatus();
 
@@ -978,7 +1077,7 @@ const EditFieldModal = ({
       };
       await onSubmit(fieldData)
     } catch (err: any) {
-      setError(err.message || "Error al actualizar la cancha")
+      setUploadError(err.message || "Error al actualizar la cancha")
     }
   }
 
@@ -1038,7 +1137,7 @@ const EditFieldModal = ({
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: "24px" }}>
-          {error && (
+          {uploadError && (
             <div
               style={{
                 backgroundColor: "#fff5f5",
@@ -1049,7 +1148,7 @@ const EditFieldModal = ({
                 fontSize: "14px",
               }}
             >
-              {error}
+              {uploadError}
             </div>
           )}
 
@@ -1069,7 +1168,7 @@ const EditFieldModal = ({
               type="text"
               value={formData.name}
               onChange={(e) => {
-                setError(null)
+                setUploadError(null)
                 setFormData({ ...formData, name: e.target.value })
               }}
               placeholder="Ej: Cancha Principal"
@@ -1304,25 +1403,119 @@ const EditFieldModal = ({
                 marginBottom: "6px",
               }}
             >
-              URL de Foto (opcional)
+              Foto de la Cancha
             </label>
-            <textarea
-              value={formData.photoUrl}
-              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-              placeholder="Ingrese URL de la foto"
-              rows={3}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: "1px solid #ced4da",
-                borderRadius: "6px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                resize: "vertical",
-                backgroundColor: "white",
-                color: "#212529",
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                if (!file.type.startsWith("image/")) {
+                  setUploadError("El archivo debe ser una imagen")
+                  return
+                }
+                if (file.size > 2 * 1024 * 1024) {
+                  setUploadError("La imagen no debe superar los 2MB")
+                  return
+                }
+                setIsUploading(true)
+                setUploadError(null)
+                try {
+                  const photoUrl = await uploadFieldImage(file, formData.name)
+                  setFormData({ ...formData, photoUrl })
+                } catch (error) {
+                  setUploadError("Error al subir la imagen")
+                } finally {
+                  setIsUploading(false)
+                }
               }}
+              style={{ display: "none" }}
             />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: "2px dashed #e2e8f0",
+                borderRadius: "8px",
+                padding: "20px",
+                textAlign: "center",
+                cursor: "pointer",
+                backgroundColor: formData.photoUrl ? "transparent" : "#f8fafc",
+                transition: "all 0.2s ease",
+                position: "relative",
+                minHeight: "150px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
+              {formData.photoUrl ? (
+                <>
+                  <img
+                    src={formData.photoUrl}
+                    alt="Preview"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "200px",
+                      borderRadius: "4px",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <button
+                    onClick={e => {
+                      e.stopPropagation()
+                      setFormData({ ...formData, photoUrl: "" })
+                      if (fileInputRef.current) fileInputRef.current.value = ""
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseOver={e => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)"
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.5)"
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Upload size={32} color="#64748b" />
+                  <div style={{ color: "#64748b" }}>
+                    <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "500" }}>
+                      Haz clic para subir una foto
+                    </p>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8" }}>
+                      PNG, JPG o JPEG (max. 2MB)
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            {uploadError && (
+              <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{uploadError}</p>
+            )}
+            {isUploading && (
+              <p style={{ color: "#3b82f6", fontSize: "12px", marginTop: "4px" }}>Subiendo foto...</p>
+            )}
           </div>
 
           <div
@@ -1821,3 +2014,4 @@ const FieldScheduleView = ({ schedule }: { schedule: { dayOfWeek: string; openTi
     </div>
   );
 };
+

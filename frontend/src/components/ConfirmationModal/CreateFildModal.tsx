@@ -2,8 +2,9 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { X } from "lucide-react"
+import { useState, useRef } from "react"
+import { X, Upload } from "lucide-react"
+import { uploadFieldImage } from "@/services/supabaseClient"
 
 interface Field {
   address: string
@@ -12,7 +13,7 @@ interface Field {
   hasLighting: boolean
   zone: string
   features: string[]
-  photos: string[]
+  photo: string
   isActive: boolean
 }
 
@@ -29,11 +30,14 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
     zone: "",
     address: "",
     features: [],
-    photos: [],
+    photo: "",
     isActive: true,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [newFeature, setNewFeature] = useState("")
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -52,7 +56,7 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
       onSubmit(formData)
@@ -74,6 +78,52 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
       ...formData,
       features: formData.features.filter((f) => f !== feature),
     })
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      try {
+        setIsUploading(true)
+        setUploadError(null)
+
+        // Validar el tipo de archivo
+        if (!file.type.startsWith('image/')) {
+          throw new Error('El archivo debe ser una imagen')
+        }
+
+        // Validar el tamaño (2MB máximo)
+        if (file.size > 2 * 1024 * 1024) {
+          throw new Error('El tamaño del archivo debe ser menor a 2MB')
+        }
+
+        const photoUrl = await uploadFieldImage(file, formData.name)
+        setFormData({
+          ...formData,
+          photo: photoUrl,
+        })
+      } catch (error) {
+        console.error('Error uploading photo:', error)
+        setUploadError(error instanceof Error ? error.message : 'Error al subir la foto')
+      } finally {
+        setIsUploading(false)
+      }
+    }
+  }
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleRemovePhoto = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setFormData({
+      ...formData,
+      photo: "",
+    })
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   return (
@@ -306,6 +356,100 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
             )}
           </div>
 
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#374151", marginBottom: "8px" }}
+            >
+              Foto de la Cancha
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+            />
+            <div
+              onClick={handleButtonClick}
+              style={{
+                border: "2px dashed #e2e8f0",
+                borderRadius: "8px",
+                padding: "20px",
+                textAlign: "center",
+                cursor: "pointer",
+                backgroundColor: formData.photo ? "transparent" : "#f8fafc",
+                transition: "all 0.2s ease",
+                position: "relative",
+                minHeight: "150px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
+              {formData.photo ? (
+                <>
+                  <img
+                    src={formData.photo}
+                    alt="Preview"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "200px",
+                      borderRadius: "4px",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <button
+                    onClick={handleRemovePhoto}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Upload size={32} color="#64748b" />
+                  <div style={{ color: "#64748b" }}>
+                    <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "500" }}>
+                      Haz clic para subir una foto
+                    </p>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8" }}>
+                      PNG, JPG o JPEG (max. 2MB)
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            {uploadError && (
+              <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{uploadError}</p>
+            )}
+            {isUploading && (
+              <p style={{ color: "#3b82f6", fontSize: "12px", marginTop: "4px" }}>Subiendo foto...</p>
+            )}
+          </div>
+
           <div
             style={{
               display: "flex",
@@ -332,18 +476,20 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
             </button>
             <button
               type="submit"
+              disabled={isUploading}
               style={{
                 padding: "10px 20px",
                 backgroundColor: "#3b82f6",
                 color: "white",
                 border: "none",
                 borderRadius: "6px",
-                cursor: "pointer",
+                cursor: isUploading ? "not-allowed" : "pointer",
                 fontSize: "14px",
                 fontWeight: "500",
+                opacity: isUploading ? 0.7 : 1,
               }}
             >
-              Crear Cancha
+              {isUploading ? "Subiendo..." : "Crear Cancha"}
             </button>
           </div>
         </form>
