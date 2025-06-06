@@ -11,6 +11,7 @@ import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
 import { TeamsScreen } from "@/screens/player/TeamsScreen";
 import { ProfileScreen } from "@/screens/player/ProfileScreen";
 import { ScheduleManagementScreen } from "./screens/field-admin/ScheduleManagementScreen";
+import { MatchesScreen } from "@/screens/player/match/MatchesScreen";
 
 function AdminRoutes() {
   return (
@@ -42,6 +43,9 @@ function PlayerRoutes() {
       </Route>
       <Route path="/available-fields">
         <AvailableFieldsScreen />
+      </Route>
+      <Route path="/matches">
+        <MatchesScreen />
       </Route>
       <Route path="/teams">
         <TeamsScreen />

@@ -18,6 +18,12 @@ export const PlayerMainScreen = () => {
       emoji: "⚽"
     },
     {
+      title: "Partidos",
+      description: "Encuentra y gestiona partidos",
+      path: "/matches",
+      emoji: "🎯"
+    },
+    {
       title: "Torneos",
       description: "Participa en torneos y competencias",
       path: "/tournaments",
