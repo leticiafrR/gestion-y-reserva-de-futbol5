@@ -41,9 +41,9 @@ export const FieldFilters = ({
   filteredFields,
 }: FieldFiltersProps) => {
   // Obtener tipos de césped únicos para el filtro
-  const grassTypes = Array.from(new Set(fields?.map((f) => f.grass) ?? []))
+  const grassTypes = Array.from(new Set(fields?.map((f) => f.grassType) ?? []))
   // Obtener zonas únicas para el filtro
-  const zones = Array.from(new Set(fields?.map((f) => f.area) ?? []))
+  const zones = Array.from(new Set(fields?.map((f) => f.zone) ?? []))
 
   // Obtener rango de precios para los límites del slider
   const prices = fields?.map((f) => f.price ?? 0) ?? []

@@ -2,6 +2,9 @@ package ar.uba.fi.ingsoft1.todo_template.user;
 
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.RefreshDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.TokenDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.UserCreateDTO;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshToken;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshTokenService;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
@@ -9,15 +12,14 @@ import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnve
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InavlidCredentialsException;
 import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.util.Optional;
 
 @Service
@@ -44,14 +46,6 @@ public class UserService implements UserDetailsService {
         this.emailVerificationService = emailVerificationService;
     }
 
-    public void verifyUserByEmail(String token) {
-        Optional<User> maybeUser = emailVerificationService.verifyUserByEmail(token);
-        if (!maybeUser.isEmpty()) {
-            maybeUser.get().setEmailVerified(true);
-            userRepository.save(maybeUser.get());
-        }
-    }
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository
@@ -62,6 +56,21 @@ public class UserService implements UserDetailsService {
                 });
     }
 
+    User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = ((JwtUserDetails) authentication.getPrincipal()).username();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+
+    public void verifyUserByEmail(String token) {
+        Optional<User> maybeUser = emailVerificationService.verifyUserByEmail(token);
+        if (!maybeUser.isEmpty()) {
+            maybeUser.get().setEmailVerified(true);
+            userRepository.save(maybeUser.get());
+        }
+    }
+
     TokenDTO createUser(UserCreateDTO data) {
         checkUnicValuesToCreateUser(data);
         var user = data.asUser(passwordEncoder::encode);
@@ -69,15 +78,6 @@ public class UserService implements UserDetailsService {
         emailVerificationService.sendVerificationEmail(user);
         return generateTokens(user);
     }
-
-    // Optional<User> matchCredential(UserCredentials data) {
-    // Optional<User> maybeUser = userRepository.findByUsername(data.username());
-    // return maybeUser
-    // .filter(user -> passwordEncoder.matches(data.password(), user.getPassword()))
-    // .filter(User::isEmailVerified)
-    // .filter(User::isActive)
-    // .map(this::generateTokens);
-    // }
 
     public User matchCredentials(UserCredentials data) {
         return userRepository.findByUsername(data.username())
@@ -114,4 +114,5 @@ public class UserService implements UserDetailsService {
         }
 
     }
+
 }
