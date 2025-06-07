@@ -1,5 +1,6 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
+import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import ar.uba.fi.ingsoft1.todo_template.user.dto.RefreshDTO;
@@ -12,8 +13,6 @@ import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnve
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InavlidCredentialsException;
 import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -57,8 +56,7 @@ public class UserService implements UserDetailsService {
     }
 
     User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = ((JwtUserDetails) authentication.getPrincipal()).username();
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
