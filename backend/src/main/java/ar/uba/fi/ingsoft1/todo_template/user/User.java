@@ -98,6 +98,26 @@ public class User implements UserDetails, UserCredentials {
         return role;
     }
 
+    public String getGender() {
+        return gender;
+    }
+
+    public Integer getBirthYear() {
+        return birthYear;
+    }
+
+    public String getZone() {
+        return zone;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getLastName() {
+        return last_name;
+    }
+
     public boolean isEmailVerified() {
         return emailVerified;
     }

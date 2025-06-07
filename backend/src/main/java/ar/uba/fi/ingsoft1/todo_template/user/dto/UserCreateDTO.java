@@ -1,10 +1,12 @@
-package ar.uba.fi.ingsoft1.todo_template.user;
+package ar.uba.fi.ingsoft1.todo_template.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Email;
 
 import java.util.function.Function;
 
+import ar.uba.fi.ingsoft1.todo_template.user.User;
+import ar.uba.fi.ingsoft1.todo_template.user.UserCredentials;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record UserCreateDTO(

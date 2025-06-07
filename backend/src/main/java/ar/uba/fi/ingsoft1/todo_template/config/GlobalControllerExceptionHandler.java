@@ -16,6 +16,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,6 +24,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalControllerExceptionHandler {
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(UsernameNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.of(
+                "UserNotFound",
+                "Invalid session. Please log in again.",
+                HttpStatus.UNAUTHORIZED.value());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
 
     @ExceptionHandler({ UnableToSendMessageException.class, DuplicateUsernameException.class })
     public ResponseEntity<IncorrectValueResponse> handleRegistUsernameExceptions(RuntimeException ex) {
@@ -68,6 +78,15 @@ public class GlobalControllerExceptionHandler {
     }
 
     public record IncorrectValueResponse(String field, String error_description) {
+    }
+
+    public record ErrorResponse(
+            String error,
+            String message,
+            int status) {
+        public static ErrorResponse of(String error, String message, int status) {
+            return new ErrorResponse(error, message, status);
+        }
     }
 
 }
