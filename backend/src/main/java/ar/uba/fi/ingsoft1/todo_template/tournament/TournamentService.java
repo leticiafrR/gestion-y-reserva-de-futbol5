@@ -1,25 +1,30 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament;
 
-import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
-import ar.uba.fi.ingsoft1.todo_template.field.Field;
-import ar.uba.fi.ingsoft1.todo_template.user.User;
+import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
+import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
+
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Optional;
 
+@Service
+@Transactional
 public class TournamentService {
     private final TournamentRepository tournamentRepository;
+    private final UserRepository userRepository;
 
-    public TournamentService(TournamentRepository tournamentRepository) {
+    public TournamentService(TournamentRepository tournamentRepository, UserRepository userRepository) {
         this.tournamentRepository = tournamentRepository;
+        this.userRepository = userRepository;
     }
 
     public Tournament createTournament(TournamentCreateDTO dto) {
-        String user = getAuthenticatedUsername();
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
+
         if (tournamentRepository.existsByName(dto.name())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tournament name already exists");
         }
@@ -29,7 +34,7 @@ public class TournamentService {
         tournament.setFormat(dto.format());
         tournament.setStartDate(dto.startDate());
         tournament.setMaxTeams(dto.maxTeams());
-        tournament.setOrganizer(user);
+        tournament.setOrganizer(userRepository.findByUsername(username).get());
         tournament.setOpenInscription(true);
 
         if (dto.endDate() != null) {
@@ -49,7 +54,7 @@ public class TournamentService {
     }
 
     public boolean deleteTournament(Long id) {
-        String username = getAuthenticatedUsername();
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
         Tournament tournament = tournamentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
 
@@ -59,19 +64,22 @@ public class TournamentService {
 
         boolean started = tournamentHasStarted(tournament);
         if (started) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "The tournament has already started and cannot be deleted");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "The tournament has already started and cannot be deleted");
         }
 
         tournamentRepository.delete(tournament);
         return true;
     }
 
-    public Optional<Tournament> updateTournament(Long id, TournamentUpdateDTO dto) {
-        String username = getAuthenticatedUsername();
+    public Tournament updateTournament(Long id, TournamentUpdateDTO dto) {
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
 
         Optional<Tournament> tournamentOpt = tournamentRepository.findById(id);
-        if (tournamentOpt.isEmpty()) return Optional.empty();
 
+        if (!tournamentOpt.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "non-existent tournament");
+        }
         Tournament tournament = tournamentOpt.get();
 
         if (!tournament.getOrganizer().equals(username)) {
@@ -118,12 +126,11 @@ public class TournamentService {
 
         tournament.setOpenInscription(true);
 
-        Tournament updatedTournament = tournamentRepository.save(tournament);
-        return Optional.of(updatedTournament);
+        return tournamentRepository.save(tournament);
     }
 
     public Tournament setOpenInscriptionActiveStatus(Long id, boolean active) {
-        String username = getAuthenticatedUsername();
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
 
         Tournament tournament = tournamentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
@@ -141,8 +148,4 @@ public class TournamentService {
         return !tournament.getStartDate().isAfter(today);
     }
 
-    private String getAuthenticatedUsername() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return ((JwtUserDetails) auth.getPrincipal()).username();
-    }
 }

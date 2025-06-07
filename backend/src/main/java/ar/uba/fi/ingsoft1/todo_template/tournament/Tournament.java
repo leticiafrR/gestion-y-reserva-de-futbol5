@@ -1,10 +1,11 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament;
 
-import ar.uba.fi.ingsoft1.todo_template.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+
+import ar.uba.fi.ingsoft1.todo_template.user.User;
 
 @Entity
 @Getter
@@ -44,5 +45,6 @@ public class Tournament {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "organizer_id", nullable = false)
-    private String organizer;
+    private User organizer;
+
 }
