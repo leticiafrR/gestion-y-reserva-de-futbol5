@@ -24,7 +24,7 @@ public class FieldAvailability {
     private Field field;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar")
     private DayOfWeek dayOfWeek;
 
     @Column(nullable = false)
