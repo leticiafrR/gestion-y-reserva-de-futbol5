@@ -10,8 +10,6 @@ export const ProfileScreen = () => {
   if (isLoading) return <div style={{ textAlign: "center", marginTop: "2rem" }}>Cargando perfil...</div>;
   if (error) return <div style={{ textAlign: "center", marginTop: "2rem", color: "var(--destructive)" }}>Error al cargar el perfil.</div>;
 
-  console.log("Profile data:", profile);
-
   return (
     <div style={{ 
       padding: "2rem", 
