@@ -279,7 +279,7 @@ export const SignupScreen = () => {
       firstName: "",
       lastName: "",
       email: "",
-      photo: undefined,
+      urlProfilePicture: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQdVgSoJ_6jouY4v5cmPt2mlTY7nS7gjMzng&s",
       age: 18,
       gender: "male" as "male" | "female" | "other",
       zone: "",
@@ -344,7 +344,7 @@ export const SignupScreen = () => {
                 </div>
                 <div className={styles.fullWidth}>
                   <formData.AppField
-                    name="photo"
+                    name="urlProfilePicture"
                     children={(field) => <PhotoField field={field} />}
                   />
                 </div>
