@@ -17,6 +17,6 @@ public record UserProfileDTO(
                 @Schema(description = "User gender") @NotBlank(message = "User gender cannot be blank") String gender,
                 @Schema(description = "User zone") @NotBlank(message = "User gender cannot be blank") String zone,
                 @Schema(description = "User role") @NotBlank(message = "User role cannot be blank") String role,
-                @Schema(description = "User profile picture") @NotBlank(message = "User profile picture") @URL String profilePicture) {
+                @Schema(description = "User profile picture") @NotBlank(message = "User profile picture") @URL String profile_picture) {
 
 }
