@@ -27,8 +27,8 @@ public class TeamController {
     @GetMapping
     @Operation(summary = "Listar equipos", description = "Devuelve todos los equipos del sistema")
     @ApiResponse(responseCode = "200", description = "Equipos listados correctamente")
-    public ResponseEntity<List<Team>> getAllTeams() {
-        return ResponseEntity.ok(teamService.getAllTeams());
+    public ResponseEntity<List<TeamDetailsDTO>> getAllTeams() {
+        return ResponseEntity.ok(TeamDetailsDTO.toTeamDetailsDTOS(teamService.getAllTeams()));
     }
 
     @PostMapping
@@ -38,10 +38,9 @@ public class TeamController {
             @ApiResponse(responseCode = "409", description = "Ya existe un equipo con ese nombre", content = @Content),
             @ApiResponse(responseCode = "401", description = "Token inválido", content = @Content)
     })
-    public ResponseEntity<Team> createTeam(@Valid @RequestBody TeamCreateDTO dto) {
-        return ResponseEntity.status(201).body(teamService.createTeam(dto));
+    public ResponseEntity<TeamDetailsDTO> createTeam(@Valid @RequestBody TeamCreateDTO dto) {
+        return ResponseEntity.status(201).body(TeamDetailsDTO.toTeamDetailsDTO(teamService.createTeam(dto)));
     }
-
     @PatchMapping("/{id}")
     @Operation(summary = "Actualizar equipo", description = "Permite modificar los colores o logo de un equipo. Solo el capitán puede hacerlo.")
     @ApiResponses(value = {
@@ -49,11 +48,12 @@ public class TeamController {
             @ApiResponse(responseCode = "403", description = "Solo el capitán puede modificar el equipo"),
             @ApiResponse(responseCode = "404", description = "Equipo no encontrado")
     })
-    public ResponseEntity<Team> updateTeam(
+    public ResponseEntity<TeamDetailsDTO> updateTeam(
             @Parameter(description = "ID del equipo") @PathVariable Long id,
             @Valid @RequestBody TeamUpdateDTO dto
     ) {
         return teamService.updateTeam(id, dto)
+                .map(TeamDetailsDTO::toTeamDetailsDTO)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -71,5 +71,11 @@ public class TeamController {
     }
 
     //metodo para listar a los equipos en los que está un usuario
+    @GetMapping("/myParticipations")
+    @Operation(summary = "Listar equipos de un usuario", description = "Devuelve los equipos en los que el usuario participa")
+    @ApiResponse(responseCode = "200", description = "Equipos listados correctamente")
+    public ResponseEntity<List<TeamDetailsDTO>> getUsersTeams(){
+        return ResponseEntity.ok(TeamDetailsDTO.toTeamDetailsDTOS(teamService.getUsersTeams()));
+    }
 
 }

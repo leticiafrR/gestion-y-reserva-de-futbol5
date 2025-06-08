@@ -28,26 +28,35 @@ public class TeamService {
         return teamRepository.findAll();
     }
 
-    public Team createTeam(TeamCreateDTO dto) {
+    public List<Team> getUsersTeams() {
         String username = getAuthenticatedUsername();
-
-        if (teamRepository.findByName(dto.getName()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Team name already exists");
-        }
-
-        Team team = dto.toTeam(username);
         User user = userRepository
                 .findByUsername(username)
                 .orElseThrow(() -> {
                     var msg = String.format("Username '%s' not found", username);
                     return new UsernameNotFoundException(msg);
                 });
-        team.addMember(user);
+        return teamRepository.findByMembers(user);
+    }
 
+
+    public Team createTeam(TeamCreateDTO dto) {
+        String username = getAuthenticatedUsername();
+
+        if (teamRepository.findByName(dto.getName()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Team name already exists");
+        }
+        User user = userRepository
+                .findByUsername(username)
+                .orElseThrow(() -> {
+                    var msg = String.format("Username '%s' not found", username);
+                    return new UsernameNotFoundException(msg);
+                });
+        Team team = dto.toTeam(user);
         return teamRepository.save(team);
     }
 
-    public Optional<Team> updateTeam(Long id, TeamUpdateDTO dto) {
+    public Optional<TeamDetailsDTO> updateTeam(Long id, TeamUpdateDTO dto) {
         String username = getAuthenticatedUsername();
 
         Optional<Team> teamOpt = teamRepository.findById(id);
@@ -66,7 +75,7 @@ public class TeamService {
             }
         }
 
-        return Optional.of(teamRepository.save(dto.applyTo(team)));
+        return Optional.of(TeamDetailsDTO.toTeamDetailsDTO(teamRepository.save(dto.applyTo(team))));
     }
 
     public void deleteTeam(Long id) {
