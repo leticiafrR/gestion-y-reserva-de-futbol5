@@ -1,4 +1,5 @@
 import { Redirect, Route, Switch } from "wouter";
+import React, { useEffect, useState } from "react";
 
 import { MainScreen as AdminMainScreen } from "@/screens/field-admin/MainScreen";
 import { PlayerMainScreen } from "@/screens/player/MainScreen";
@@ -65,12 +66,28 @@ function PlayerRoutes() {
 
 export const Navigation = () => {
   const [tokenState] = useToken();
-  // Leer el tipo de usuario desde localStorage
-  const userType = typeof window !== "undefined" ? localStorage.getItem("loginUserType") || "user" : "user";
+  // Estado local para el userType
+  const [userType, setUserType] = useState(
+    typeof window !== "undefined" ? localStorage.getItem("loginUserType") || "user" : "user"
+  );
+
+  useEffect(() => {
+    // Handler para cambios en localStorage o evento custom
+    const handleStorage = () => {
+      setUserType(localStorage.getItem("loginUserType") || "user");
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("userTypeChanged", handleStorage);
+    handleStorage();
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("userTypeChanged", handleStorage);
+    };
+  }, []);
 
   switch (tokenState.state) {
     case "LOGGED_IN":
-      if (userType === "admin") {
+      if (userType === "owner") {
         return <AdminRoutes />;
       } else {
         return <PlayerRoutes />;
