@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
+import lombok.Getter;
 
 import org.hibernate.validator.constraints.URL;
 import org.springframework.security.core.GrantedAuthority;
@@ -23,12 +24,14 @@ public class User implements UserDetails, UserCredentials {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter
     private Long id;
 
     @Column(nullable = false)
     private String password;
 
     @Column(nullable = false)
+    @Getter
     private String role;
 
     @Column(unique = true, nullable = false)
@@ -101,30 +104,6 @@ public class User implements UserDetails, UserCredentials {
     public String getPassword() {
         return this.password;
     }
-
-    public String getRole() {
-        return role;
-    }
-
-    // public String getGender() {
-    // return gender;
-    // }
-
-    // public Integer getBirthYear() {
-    // return birthYear;
-    // }
-
-    // public String getZone() {
-    // return zone;
-    // }
-
-    // public String getName() {
-    // return name;
-    // }
-
-    // public String getLastName() {
-    // return last_name;
-    // }
 
     public boolean isEmailVerified() {
         return emailVerified;
