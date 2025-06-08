@@ -13,6 +13,7 @@ import { TeamsScreen } from "@/screens/player/TeamsScreen";
 import { ProfileScreen } from "@/screens/player/ProfileScreen";
 import { ScheduleManagementScreen } from "./screens/field-admin/ScheduleManagementScreen";
 import { MatchesScreen } from "@/screens/player/match/MatchesScreen";
+import { MyTournamentsScreen } from "@/screens/player/MyTournamentsScreen";
 
 function AdminRoutes() {
   return (
@@ -53,6 +54,9 @@ function PlayerRoutes() {
       </Route>
       <Route path="/profile">
         <ProfileScreen />
+      </Route>
+      <Route path="/my-tournaments">
+        <MyTournamentsScreen />
       </Route>
       <Route path="/">
         <Redirect href="/main" />
