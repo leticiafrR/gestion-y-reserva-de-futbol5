@@ -56,7 +56,7 @@ public class TeamService {
         return teamRepository.save(team);
     }
 
-    public Optional<TeamDetailsDTO> updateTeam(Long id, TeamUpdateDTO dto) {
+    public Optional<Team> updateTeam(Long id, TeamUpdateDTO dto) {
         String username = getAuthenticatedUsername();
 
         Optional<Team> teamOpt = teamRepository.findById(id);
@@ -75,7 +75,7 @@ public class TeamService {
             }
         }
 
-        return Optional.of(TeamDetailsDTO.toTeamDetailsDTO(teamRepository.save(dto.applyTo(team))));
+        return Optional.of(teamRepository.save(dto.applyTo(team)));
     }
 
     public void deleteTeam(Long id) {
