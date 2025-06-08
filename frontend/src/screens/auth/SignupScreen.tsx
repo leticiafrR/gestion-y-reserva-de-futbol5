@@ -451,25 +451,6 @@ export const SignupScreen = () => {
                   />
                 </div>
                 <div className={styles.fullWidth}>
-                  <button
-                    type="submit"
-                    disabled={isUploading}
-                    style={{
-                      width: "100%",
-                      padding: "12px",
-                      backgroundColor: "#566c59",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      cursor: isUploading ? "not-allowed" : "pointer",
-                      opacity: isUploading ? 0.7 : 1,
-                      marginTop: "20px"
-                    }}
-                  >
-                    {isUploading ? "Creating account..." : "Create Account"}
-                  </button>
                 </div>
               </div>
             </formData.FormContainer>
