@@ -41,8 +41,8 @@ public class BookingService {
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada o inactiva"));
     }
 
-    public BookingDTO createBooking(Long userId, Long timeslotId, LocalDate date, int hour) {
-        var user = userRepository.findById(userId)
+    public BookingDTO createBooking(String username, Long timeslotId, LocalDate date, int hour) {
+        var user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
         var timeSlot = timeSlotRepository.findById(timeslotId)

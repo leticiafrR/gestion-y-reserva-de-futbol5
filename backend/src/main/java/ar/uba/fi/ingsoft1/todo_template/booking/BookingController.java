@@ -98,12 +98,12 @@ public class BookingController {
             @ApiResponse(responseCode = "400", description = "Invalid user or field", content = @Content)
     })
     public ResponseEntity<BookingDTO> createBooking(
-            @RequestParam @NotNull Long userId,
             @RequestParam @NotNull Long timeslotId,
             @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam @NotNull Integer hour) {
+        String username = getAuthenticatedUser().username();
 
-        BookingDTO createdBooking = bookingService.createBooking(userId, timeslotId, date, hour);
+        BookingDTO createdBooking = bookingService.createBooking(username, timeslotId, date, hour);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdBooking);
     }
 
