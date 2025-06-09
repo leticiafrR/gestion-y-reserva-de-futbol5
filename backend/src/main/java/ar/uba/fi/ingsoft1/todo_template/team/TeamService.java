@@ -118,7 +118,7 @@ public class TeamService {
     }
 
     public Team acceptInvitation(Invitation inv){
-        //tengo que hacer las verificaciones respecto al team al que se va a unir, que no sea miembro ya, que, que ex
+        //tengo que hacer las verificaciones respecto al team al que se va a unir
         User userInvitee = userRepository.findByUsername(getAuthenticatedUsername()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitee not found"));
         Team team = teamRepository.findById(inv.getTeamId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
         //verifico que la invitación coincida con quien está aceptando
