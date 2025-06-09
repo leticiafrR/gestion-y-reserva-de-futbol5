@@ -87,8 +87,8 @@ export const ProfileScreen = () => {
           <ProfileField label="Nombre" value={profile ? `${profile.name} ${profile.lastName}` : ''} />
           <ProfileField label="Email" value={profile?.email || ''} />
           <ProfileField label="Edad" value={profile ? `${profile.age} años` : ''} />
-          <ProfileField label="Género" value={profile?.gender === 'male' ? 'Masculino' : 'Femenino'} />
-          <ProfileField label="Tipo de usuario" value={profile?.userType === 'player' ? 'Jugador' : 'Administrador'} />
+          <ProfileField label="Género" value={profile?.gender === 'male' ? 'Masculino' : profile?.gender === 'female' ? 'Femenino' : 'Otro'} />
+          <ProfileField label="Tipo de usuario" value={profile?.userType === 'user' ? 'Jugador' : 'Administrador de cancha'} />
         </div>
       </div>
     </div>
