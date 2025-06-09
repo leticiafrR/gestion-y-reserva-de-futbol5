@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Plus, ChevronLeft, ChevronRight, Calendar, Clock, Save, Copy, Trash2 } from "lucide-react"
 import { fieldAvailabilityService, TimeSlotDTO, FieldAvailabilityService } from "@/services/fieldAvailabilityService"
+import { bookingService } from "@/services/bookingService"
 
 interface TimeSlot {
   start: string
@@ -18,7 +19,7 @@ interface WeeklySchedule {
 
 interface SpecificDateSchedule {
   date: string
-  timeSlots: TimeSlot[]
+  hour: string
 }
 
 interface Field {
@@ -172,8 +173,10 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
   const [specificDates, setSpecificDates] = useState<SpecificDateSchedule[]>([])
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string>("")
-  const [tempTimeSlots, setTempTimeSlots] = useState<TimeSlot[]>([{ start: "09:00", end: "18:00" }])
+  const [tempHour, setTempHour] = useState<string>("09:00")
   const [currentMonth, setCurrentMonth] = useState(new Date())
+
+  const [ownerBookings, setOwnerBookings] = useState<any[]>([])
 
   const dayNames = {
     sunday: { short: "D", full: "Domingo" },
@@ -270,18 +273,18 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
   }
 
   const applySpecificDate = () => {
-    if (selectedDate && tempTimeSlots.length > 0) {
+    if (selectedDate && tempHour) {
       setSpecificDates((prev) => {
         const existing = prev.find((d) => d.date === selectedDate)
         if (existing) {
-          return prev.map((d) => (d.date === selectedDate ? { ...d, timeSlots: [...tempTimeSlots] } : d))
+          return prev.map((d) => (d.date === selectedDate ? { ...d, hour: tempHour } : d))
         } else {
-          return [...prev, { date: selectedDate, timeSlots: [...tempTimeSlots] }]
+          return [...prev, { date: selectedDate, hour: tempHour }]
         }
       })
       setShowDatePicker(false)
       setSelectedDate("")
-      setTempTimeSlots([{ start: "09:00", end: "18:00" }])
+      setTempHour("09:00")
     }
   }
 
@@ -308,6 +311,17 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
       })
 
       await fieldAvailabilityService.setFieldAvailability(Number(selectedFieldId), availability)
+      
+      // Crear reservas para los horarios específicos
+      for (const specificDate of specificDates) {
+        const hour = FieldAvailabilityService.timeStringToHour(specificDate.hour)
+        // La fecha ya está en formato YYYY-MM-DD, no necesitamos convertirla
+        await bookingService.createBooking(
+          Number(selectedFieldId), // timeslotId
+          specificDate.date, // date ya está en formato correcto
+          hour // hour
+        )
+      }
       
       // Show success toast
       const toast = document.createElement('div')
@@ -396,9 +410,23 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
     }
   }
 
+  const loadOwnerBookings = async () => {
+    try {
+      const bookings = await bookingService.getBookingsForOwner()
+      setOwnerBookings(bookings)
+    } catch (error) {
+      console.error('Error loading owner bookings:', error)
+    }
+  }
+
   // Load availability when field changes
   useEffect(() => {
     loadFieldAvailability()
+  }, [selectedFieldId])
+
+  // Load owner bookings when field changes
+  useEffect(() => {
+    loadOwnerBookings()
   }, [selectedFieldId])
 
   return (
@@ -667,7 +695,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
 
           {/* Lista de fechas específicas */}
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {specificDates.length === 0 ? (
+            {specificDates.length === 0 && ownerBookings.length === 0 ? (
               <div
                 style={{
                   textAlign: "center",
@@ -677,51 +705,51 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                 }}
               >
                 No hay horarios específicos configurados
-              </div>
+                </div>
             ) : (
-              specificDates.map((dateSchedule) => (
-                <div key={dateSchedule.date}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <span style={{ fontWeight: "600", color: "#1f2937", fontSize: "16px" }}>
-                      {new Date(dateSchedule.date).toLocaleDateString("es-ES", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </span>
-                    <button
-                      onClick={() => removeSpecificDate(dateSchedule.date)}
+              <>
+                {/* Mostrar fechas específicas configuradas */}
+                {specificDates.map((dateSchedule) => (
+                  <div key={dateSchedule.date}>
+                    <div
                       style={{
-                        padding: "6px 12px",
-                        backgroundColor: "#ef4444",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: "500",
                         display: "flex",
+                        justifyContent: "space-between",
                         alignItems: "center",
-                        gap: "4px",
+                        marginBottom: "8px",
                       }}
                     >
-                      <Trash2 size={14} />
-                      Eliminar fecha
-                    </button>
-                  </div>
+                      <span style={{ fontWeight: "600", color: "#1f2937", fontSize: "16px" }}>
+                        {new Date(dateSchedule.date).toLocaleDateString("es-ES", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
+                      <button
+                        onClick={() => removeSpecificDate(dateSchedule.date)}
+                        style={{
+                          padding: "6px 12px",
+                          backgroundColor: "#ef4444",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: "500",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        Eliminar fecha
+                      </button>
+                    </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "16px" }}>
-                    {dateSchedule.timeSlots.map((slot, index) => (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "16px" }}>
                       <div
-                        key={index}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -733,18 +761,79 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                         }}
                       >
                         <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
-                          Intervalo especial {index + 1}
+                          Hora disponible para fecha específica
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "14px" }}>{slot.start}</span>
-                          <span style={{ color: "#94a3b8" }}>-</span>
-                          <span style={{ fontSize: "14px" }}>{slot.end}</span>
+                          <span style={{ fontSize: "14px" }}>{dateSchedule.hour}</span>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+
+                {/* Mostrar reservas existentes */}
+                {ownerBookings.map((booking) => (
+                  <div key={booking.id}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <span style={{ fontWeight: "600", color: "#1f2937", fontSize: "16px" }}>
+                        {new Date(booking.date).toLocaleDateString("es-ES", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
+                      <button
+                        onClick={() => bookingService.cancelBooking(booking.id)}
+                        style={{
+                          padding: "6px 12px",
+                          backgroundColor: "#ef4444",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: "500",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        Cancelar reserva
+                      </button>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "12px 16px",
+                          backgroundColor: "#1e293b",
+                          borderRadius: "8px",
+                          color: "white",
+                        }}
+                      >
+                        <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
+                          Reserva existente
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "14px" }}>{FieldAvailabilityService.hourToTimeString(booking.hour)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </div>
@@ -777,7 +866,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
             }}
           >
             <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#1f2937", marginBottom: "16px" }}>
-              Configurar horarios para fecha específica
+              Configurar horario para fecha específica
             </h3>
 
             {/* Calendar Header */}
@@ -865,7 +954,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
               </div>
             </div>
 
-            {/* Time Slots Configuration */}
+            {/* Time Slot Configuration */}
             {selectedDate && (
               <div style={{ marginBottom: "20px", padding: "16px", backgroundColor: "#f9fafb", borderRadius: "8px" }}>
                 <div
@@ -877,87 +966,34 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                   }}
                 >
                   <h4 style={{ fontSize: "16px", fontWeight: "600", color: "#1f2937", margin: 0 }}>
-                    Franjas horarias disponibles
+                    Hora disponible
                   </h4>
-                  <button
-                    onClick={() => setTempTimeSlots((prev) => prev.map((s, i) => (i === 0 ? { ...s, start: "09:00", end: "18:00" } : s)))}
-                    style={{
-                      padding: "6px 12px",
-                      backgroundColor: "#3b82f6",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
-                  >
-                    <Plus size={14} />
-                    Agregar
-                  </button>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {tempTimeSlots.map((slot, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "12px 16px",
-                        backgroundColor: "#1e293b",
-                        borderRadius: "8px",
-                        color: "white",
-                      }}
-                    >
-                      <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
-                        Nuevo intervalo para fecha específica
-                      </div>
-
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <TimeSelect
-                          value={slot.start}
-                          onChange={(value) =>
-                            setTempTimeSlots((prev) => prev.map((s, i) => (i === index ? { ...s, start: value } : s)))
-                          }
-                          isStart={true}
-                          otherTime={slot.end}
-                        />
-                        <span style={{ color: "#94a3b8" }}>-</span>
-                        <TimeSelect
-                          value={slot.end}
-                          onChange={(value) =>
-                            setTempTimeSlots((prev) => prev.map((s, i) => (i === index ? { ...s, end: value } : s)))
-                          }
-                          isStart={false}
-                          otherTime={slot.start}
-                        />
-                      </div>
-
-                      {tempTimeSlots.length > 1 && (
-                        <button
-                          onClick={() => setTempTimeSlots((prev) => prev.filter((_, i) => i !== index))}
-                          style={{
-                            padding: "6px",
-                            backgroundColor: "transparent",
-                            border: "none",
-                            color: "white",
-                            cursor: "pointer",
-                            borderRadius: "4px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "12px 16px",
+                      backgroundColor: "#1e293b",
+                      borderRadius: "8px",
+                      color: "white",
+                    }}
+                  >
+                    <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
+                      Hora disponible para fecha específica
                     </div>
-                  ))}
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <TimeSelect
+                        value={tempHour}
+                        onChange={(value) => setTempHour(value)}
+                        placeholder="Seleccionar hora"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -968,7 +1004,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                 onClick={() => {
                   setShowDatePicker(false)
                   setSelectedDate("")
-                  setTempTimeSlots([{ start: "09:00", end: "18:00" }])
+                  setTempHour("09:00")
                 }}
                 style={{
                   padding: "10px 20px",
@@ -996,7 +1032,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                   fontWeight: "500",
                 }}
               >
-                Aplicar horarios
+                Aplicar horario
               </button>
             </div>
           </div>
