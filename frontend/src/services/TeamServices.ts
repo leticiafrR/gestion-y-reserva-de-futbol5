@@ -61,12 +61,9 @@ export function useDeleteTeam() {
   });
 }
 
-
 async function getAllTeams(token: any): Promise<Team[]> {
   try {
-    const userEmail = localStorage.getItem('userEmail');
-    
-    const response = await fetch(`${BASE_API_URL}/teams`, {
+    const response = await fetch(`${BASE_API_URL}/teams/my-teams`, {
       method: "GET",
       headers: {
         Accept: "application/json",
