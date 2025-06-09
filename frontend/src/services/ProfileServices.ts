@@ -25,7 +25,7 @@ async function getProfile(): Promise<User> {
     throw new Error(`Failed to fetch profile with status ${response.status}: ${await response.text()}`);
   }
 
-
+  const data = await response.json();
   
   // Map the backend DTO to our frontend User type
   const user = {
@@ -39,6 +39,5 @@ async function getProfile(): Promise<User> {
     userType: data.role
   };
   
-
   return user;
 }
