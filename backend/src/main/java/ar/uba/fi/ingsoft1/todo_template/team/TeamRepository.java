@@ -12,9 +12,9 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     Optional<Team> findByName(String name);
     List<Team> findByMembers(User user);
     @Query("""
-    SELECT t 
-      FROM Team t 
-      JOIN FETCH t.members m 
+    SELECT t
+      FROM Team t
+      JOIN FETCH t.members m
      WHERE m.id = :userId
     """)
     List<Team> findAllByMemberIdFetchMembers(@Param("userId") Long userId);

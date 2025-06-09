@@ -4,7 +4,6 @@ import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserAlreadyMem
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.apache.catalina.LifecycleState;
 
 import java.util.ArrayList;
 import java.util.List;
