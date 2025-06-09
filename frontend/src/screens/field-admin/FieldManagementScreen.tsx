@@ -52,7 +52,7 @@ export const FieldManagementScreen = () => {
     try {
       // Primero actualizamos el estado activo/inactivo
       await updateFieldActiveStatusMutation.mutateAsync({ 
-        id: selectedField.id, 
+        id: Number(selectedField.id), 
         active: fieldData.active 
       });
       

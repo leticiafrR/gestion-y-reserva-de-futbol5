@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Plus, ChevronLeft, ChevronRight, Calendar, Clock, Save, Copy, Trash2 } from "lucide-react"
-import { fieldAvailabilityService, FieldAvailabilityDTO, FieldAvailabilityService } from "@/services/fieldAvailabilityService"
+import { fieldAvailabilityService, TimeSlotDTO, FieldAvailabilityService } from "@/services/fieldAvailabilityService"
 
 interface TimeSlot {
   start: string
@@ -33,14 +33,11 @@ interface ScheduleConfigurationProps {
   onFieldChange: (fieldId: string) => void
 }
 
-// Generate time options in 15-minute intervals
 const generateTimeOptions = () => {
   const options = []
   for (let hour = 0; hour < 24; hour++) {
-    for (let minute = 0; minute < 60; minute += 15) {
-      const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`
-      options.push(timeString)
-    }
+    const timeString = `${hour.toString().padStart(2, "0")}:00`
+    options.push(timeString)
   }
   return options
 }
@@ -49,13 +46,28 @@ const TimeSelect = ({
   value,
   onChange,
   placeholder = "Seleccionar hora",
+  isStart = false,
+  otherTime = "",
 }: {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  isStart?: boolean
+  otherTime?: string
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const timeOptions = generateTimeOptions()
+
+  const handleTimeChange = (newTime: string) => {
+    if (isStart && otherTime && newTime >= otherTime) {
+      return // Don't allow start time to be greater than or equal to end time
+    }
+    if (!isStart && otherTime && newTime <= otherTime) {
+      return // Don't allow end time to be less than or equal to start time
+    }
+    onChange(newTime)
+    setIsOpen(false)
+  }
 
   return (
     <div style={{ position: "relative" }}>
@@ -73,8 +85,8 @@ const TimeSelect = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          color: "#1f2937", // Add explicit text color
-          fontWeight: "500", // Add font weight for better visibility
+          color: "#1f2937",
+          fontWeight: "500",
         }}
       >
         <span style={{ color: "#1f2937" }}>{value || placeholder}</span>
@@ -112,10 +124,7 @@ const TimeSelect = ({
             {timeOptions.map((time) => (
               <button
                 key={time}
-                onClick={() => {
-                  onChange(time)
-                  setIsOpen(false)
-                }}
+                onClick={() => handleTimeChange(time)}
                 style={{
                   width: "100%",
                   padding: "8px 12px",
@@ -125,7 +134,7 @@ const TimeSelect = ({
                   textAlign: "left",
                   cursor: "pointer",
                   borderBottom: "1px solid #f3f4f6",
-                  color: "#1f2937", // Add explicit text color for options
+                  color: "#1f2937",
                   fontWeight: value === time ? "600" : "400",
                 }}
                 onMouseEnter={(e) => {
@@ -282,64 +291,115 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
 
   const selectedField = fields.find((f) => f.id === selectedFieldId)
 
+  const handleSave = async () => {
+    try {
+      const availability: TimeSlotDTO[] = []
+      
+      Object.entries(weeklySchedule).forEach(([day, schedule]) => {
+        if (schedule.available) {
+          schedule.timeSlots.forEach((slot) => {
+            availability.push({
+              dayOfWeek: day.toUpperCase() as TimeSlotDTO['dayOfWeek'],
+              openTime: FieldAvailabilityService.timeStringToHour(slot.start),
+              closeTime: FieldAvailabilityService.timeStringToHour(slot.end)
+            })
+          })
+        }
+      })
+
+      await fieldAvailabilityService.setFieldAvailability(Number(selectedFieldId), availability)
+      
+      // Show success toast
+      const toast = document.createElement('div')
+      toast.style.position = 'fixed'
+      toast.style.bottom = '24px'
+      toast.style.left = '24px'
+      toast.style.backgroundColor = '#10b981'
+      toast.style.color = 'white'
+      toast.style.padding = '12px 24px'
+      toast.style.borderRadius = '8px'
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+      toast.style.zIndex = '1000'
+      toast.style.fontSize = '14px'
+      toast.style.fontWeight = '500'
+      toast.textContent = 'Configuración guardada exitosamente'
+      document.body.appendChild(toast)
+
+      setTimeout(() => {
+        toast.style.opacity = '0'
+        toast.style.transition = 'opacity 0.3s ease-out'
+        setTimeout(() => {
+          document.body.removeChild(toast)
+          // Redirigir a la página principal
+          window.location.href = '/'
+        }, 300)
+      }, 3000)
+    } catch (error) {
+      console.error('Error saving availability:', error)
+      // Show error toast
+      const toast = document.createElement('div')
+      toast.style.position = 'fixed'
+      toast.style.bottom = '24px'
+      toast.style.left = '24px'
+      toast.style.backgroundColor = '#ef4444'
+      toast.style.color = 'white'
+      toast.style.padding = '12px 24px'
+      toast.style.borderRadius = '8px'
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+      toast.style.zIndex = '1000'
+      toast.style.fontSize = '14px'
+      toast.style.fontWeight = '500'
+      toast.textContent = 'Error al guardar la configuración'
+      document.body.appendChild(toast)
+      setTimeout(() => {
+        toast.style.opacity = '0'
+        toast.style.transition = 'opacity 0.3s ease-out'
+        setTimeout(() => document.body.removeChild(toast), 300)
+      }, 3000)
+    }
+  }
+
+  const loadFieldAvailability = async () => {
+    try {
+      const availability = await fieldAvailabilityService.getFieldAvailability(Number(selectedFieldId))
+      
+      // Reset weekly schedule
+      const newWeeklySchedule: WeeklySchedule = {
+        sunday: { available: false, timeSlots: [] },
+        monday: { available: false, timeSlots: [] },
+        tuesday: { available: false, timeSlots: [] },
+        wednesday: { available: false, timeSlots: [] },
+        thursday: { available: false, timeSlots: [] },
+        friday: { available: false, timeSlots: [] },
+        saturday: { available: false, timeSlots: [] },
+      }
+
+      // Group time slots by day
+      availability.forEach((slot) => {
+        const day = slot.dayOfWeek.toLowerCase()
+        if (day in newWeeklySchedule) {
+          if (!newWeeklySchedule[day].available) {
+            newWeeklySchedule[day].available = true
+            newWeeklySchedule[day].timeSlots = []
+          }
+          newWeeklySchedule[day].timeSlots.push({
+            start: FieldAvailabilityService.hourToTimeString(slot.openTime),
+            end: FieldAvailabilityService.hourToTimeString(slot.closeTime)
+          })
+        }
+      })
+
+      setWeeklySchedule(newWeeklySchedule)
+    } catch (error) {
+      console.error('Error loading field availability:', error)
+      alert('Error al cargar los horarios')
+    }
+  }
+
   // Load availability when field changes
   useEffect(() => {
-    const loadFieldAvailability = async () => {
-      if (!selectedFieldId) return;
-      
-      try {
-        const availability = await fieldAvailabilityService.getFieldAvailability(Number(selectedFieldId));
-        
-        // Convert API format to weekly schedule format
-        const newWeeklySchedule = { ...weeklySchedule };
-        
-        // Reset all days to not available
-        Object.keys(newWeeklySchedule).forEach(day => {
-          newWeeklySchedule[day] = { available: false, timeSlots: [] };
-        });
-        
-        // Map API data to weekly schedule
-        availability.forEach(avail => {
-          const dayKey = avail.dayOfWeek.toLowerCase();
-          if (newWeeklySchedule[dayKey]) {
-            newWeeklySchedule[dayKey] = {
-              available: true,
-              timeSlots: [{
-                start: FieldAvailabilityService.localTimeToTimeString(avail.startTime),
-                end: FieldAvailabilityService.localTimeToTimeString(avail.endTime)
-              }]
-            };
-          }
-        });
-        
-        setWeeklySchedule(newWeeklySchedule);
-      } catch (error) {
-        console.error('Error loading field availability:', error);
-        // Show error toast
-        const toast = document.createElement('div');
-        toast.style.position = 'fixed';
-        toast.style.bottom = '24px';
-        toast.style.left = '24px';
-        toast.style.backgroundColor = '#ef4444';
-        toast.style.color = 'white';
-        toast.style.padding = '12px 24px';
-        toast.style.borderRadius = '8px';
-        toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-        toast.style.zIndex = '1000';
-        toast.style.fontSize = '14px';
-        toast.style.fontWeight = '500';
-        toast.textContent = 'Error al cargar la disponibilidad';
-        document.body.appendChild(toast);
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          toast.style.transition = 'opacity 0.3s ease-out';
-          setTimeout(() => document.body.removeChild(toast), 300);
-        }, 3000);
-      }
-    };
-
-    loadFieldAvailability();
-  }, [selectedFieldId]);
+    loadFieldAvailability()
+  }, [selectedFieldId])
 
   return (
     <div style={{ padding: "24px", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
@@ -509,11 +569,15 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                           <TimeSelect
                             value={slot.start}
                             onChange={(value) => updateTimeSlot(dayKey, index, "start", value)}
+                            isStart={true}
+                            otherTime={slot.end}
                           />
                           <span style={{ color: "#94a3b8" }}>-</span>
                           <TimeSelect
                             value={slot.end}
                             onChange={(value) => updateTimeSlot(dayKey, index, "end", value)}
+                            isStart={false}
+                            otherTime={slot.start}
                           />
                         </div>
 
@@ -860,6 +924,8 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                           onChange={(value) =>
                             setTempTimeSlots((prev) => prev.map((s, i) => (i === index ? { ...s, start: value } : s)))
                           }
+                          isStart={true}
+                          otherTime={slot.end}
                         />
                         <span style={{ color: "#94a3b8" }}>-</span>
                         <TimeSelect
@@ -867,6 +933,8 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                           onChange={(value) =>
                             setTempTimeSlots((prev) => prev.map((s, i) => (i === index ? { ...s, end: value } : s)))
                           }
+                          isStart={false}
+                          otherTime={slot.start}
                         />
                       </div>
 
@@ -945,88 +1013,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
         }}
       >
         <button
-          onClick={async () => {
-            try {
-              // Convert weekly schedule to API format
-              const availability: FieldAvailabilityDTO[] = [];
-              
-              Object.entries(weeklySchedule).forEach(([day, schedule]) => {
-                if (schedule.available) {
-                  schedule.timeSlots.forEach(slot => {
-                    availability.push({
-                      dayOfWeek: day.toUpperCase() as FieldAvailabilityDTO['dayOfWeek'],
-                      startTime: FieldAvailabilityService.timeStringToLocalTime(slot.start),
-                      endTime: FieldAvailabilityService.timeStringToLocalTime(slot.end)
-                    });
-                  });
-                }
-              });
-
-              // Add specific dates
-              specificDates.forEach(dateSchedule => {
-                const date = new Date(dateSchedule.date);
-                const dayOfWeek = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][date.getDay()] as FieldAvailabilityDTO['dayOfWeek'];
-                
-                dateSchedule.timeSlots.forEach(slot => {
-                  availability.push({
-                    dayOfWeek,
-                    startTime: FieldAvailabilityService.timeStringToLocalTime(slot.start),
-                    endTime: FieldAvailabilityService.timeStringToLocalTime(slot.end)
-                  });
-                });
-              });
-
-              await fieldAvailabilityService.setFieldAvailability(Number(selectedFieldId), availability);
-
-              // Show success toast
-              const toast = document.createElement('div');
-              toast.style.position = 'fixed';
-              toast.style.bottom = '24px';
-              toast.style.left = '24px';
-              toast.style.backgroundColor = '#10b981';
-              toast.style.color = 'white';
-              toast.style.padding = '12px 24px';
-              toast.style.borderRadius = '8px';
-              toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-              toast.style.zIndex = '1000';
-              toast.style.fontSize = '14px';
-              toast.style.fontWeight = '500';
-              toast.textContent = 'Configuración guardada exitosamente';
-              document.body.appendChild(toast);
-
-              setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s ease-out';
-                setTimeout(() => {
-                  document.body.removeChild(toast);
-                  // Redirigir a la página principal
-                  window.location.href = '/';
-                }, 300);
-              }, 3000);
-            } catch (error) {
-              console.error('Error saving availability:', error);
-              // Show error toast
-              const toast = document.createElement('div');
-              toast.style.position = 'fixed';
-              toast.style.bottom = '24px';
-              toast.style.left = '24px';
-              toast.style.backgroundColor = '#ef4444';
-              toast.style.color = 'white';
-              toast.style.padding = '12px 24px';
-              toast.style.borderRadius = '8px';
-              toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-              toast.style.zIndex = '1000';
-              toast.style.fontSize = '14px';
-              toast.style.fontWeight = '500';
-              toast.textContent = 'Error al guardar la configuración';
-              document.body.appendChild(toast);
-              setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s ease-out';
-                setTimeout(() => document.body.removeChild(toast), 300);
-              }, 3000);
-            }
-          }}
+          onClick={handleSave}
           style={{
             display: "flex",
             alignItems: "center",

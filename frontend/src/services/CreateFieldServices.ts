@@ -76,7 +76,7 @@ async function getOwnerFields(): Promise<Field[]> {
   // return mockFields;
   const accessToken = getAuthToken();
   console.log("accessToken", accessToken);
-  const response = await fetch(`${BASE_API_URL}/fields/mine`, {
+  const response = await fetch(`${BASE_API_URL}/fields/own`, {
     method: "GET",
     headers: {
       Accept: "application/json",
@@ -175,16 +175,16 @@ async function updateField(fieldId: string, updates: Omit<Field, "id">) {
 export function useUpdateFieldActiveStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { id: string; active: boolean }) => updateFieldActiveStatus(data.id, data.active),
+    mutationFn: async (data: { id: number; active: boolean }) => updateFieldActiveStatus(data.id, data.active),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-fields"] });
     },
   });
 }
 
-async function updateFieldActiveStatus(fieldId: string, active: boolean) {
+async function updateFieldActiveStatus(fieldId: number, active: boolean) {
   const accessToken = getAuthToken();
-  const endpoint = active ? `${BASE_API_URL}/fields/${fieldId}/activate` : `${BASE_API_URL}/fields/${fieldId}/deactivate`;
+  const endpoint = `${BASE_API_URL}/fields/${fieldId}/${active}`;
   const response = await fetch(endpoint, {
     method: "PATCH",
     headers: {

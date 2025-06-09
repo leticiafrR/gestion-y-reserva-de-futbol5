@@ -69,7 +69,7 @@ export const EditFieldModal = ({ field, onClose, onSubmit }: EditFieldModalProps
     const newActiveStatus = e.target.checked
     console.log("newActiveStatus", newActiveStatus)
     try {
-      await updateFieldActiveStatusMutation.mutateAsync({ id: field.id, active: newActiveStatus })
+      await updateFieldActiveStatusMutation.mutateAsync({ id: Number(field.id), active: newActiveStatus })
       console.log("updateFieldActiveStatusMutation", updateFieldActiveStatusMutation)
       setFormData(prev => ({ ...prev, active: newActiveStatus }))
     } catch (error) {
