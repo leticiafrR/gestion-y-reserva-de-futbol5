@@ -1,11 +1,12 @@
 package ar.uba.fi.ingsoft1.todo_template.config;
 
 import ar.uba.fi.ingsoft1.todo_template.common.exception.ItemNotFoundException;
+import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserAlreadyMemberException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnverifiedAccountException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InavlidCredentialsException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InvalidTokenException;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.UnableToSendMessageException;
+import ar.uba.fi.ingsoft1.todo_template.email.UnableToSendMessageException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -16,7 +17,6 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,7 +34,7 @@ public class GlobalControllerExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
-    @ExceptionHandler({ UnableToSendMessageException.class, DuplicateUsernameException.class })
+    @ExceptionHandler({ UnableToSendMessageException.class, DuplicateUsernameException.class, UserAlreadyMemberException.class })
     public ResponseEntity<IncorrectValueResponse> handleRegistUsernameExceptions(RuntimeException ex) {
         return new ResponseEntity<>(new IncorrectValueResponse("username", ex.getMessage()), HttpStatus.CONFLICT);
     }

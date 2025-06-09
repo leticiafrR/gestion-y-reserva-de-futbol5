@@ -1,5 +1,6 @@
 package ar.uba.fi.ingsoft1.todo_template.user.verification;
 
+import ar.uba.fi.ingsoft1.todo_template.email.EmailService;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InvalidTokenException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,15 +21,18 @@ public class EmailVerificationService {
     private final EmailVerificationTokenRepository tokenRepository;
     private final EmailService emailService;
     private final long tokenExpirationHours;
+    private final VerificationFormatService verificationFormatService;
 
     @Autowired
     public EmailVerificationService(
             EmailVerificationTokenRepository tokenRepository,
             EmailService emailService,
+            VerificationFormatService verificationFormatService,
             @Value("${app.email-verification.expiration-hours:24}") long tokenExpirationHours) {
         this.tokenRepository = tokenRepository;
         this.emailService = emailService;
         this.tokenExpirationHours = tokenExpirationHours;
+        this.verificationFormatService=verificationFormatService;
     }
 
     public void sendVerificationEmail(User user) {
@@ -37,9 +41,8 @@ public class EmailVerificationService {
 
         EmailVerificationToken verificationToken = new EmailVerificationToken(token, user, expiryDate);
         tokenRepository.save(verificationToken);
-        Locale locale = Locale.ENGLISH;
-        emailService.sendVerificationEmail(user, token, locale);
-
+        var contNormalized =verificationFormatService.getContEmailNormalized(user.getUsername(), token, Locale.ENGLISH);
+        emailService.sendMailMessage(contNormalized);
     }
 
     public Optional<User> verifyUserByEmail(String token) {
@@ -55,7 +58,7 @@ public class EmailVerificationService {
 
     private EmailVerificationToken getEmailVerificationToken(String token) {
         return tokenRepository.findByToken(token)
-                .orElseThrow(() -> new InvalidTokenException());
+                .orElseThrow(InvalidTokenException::new);
     }
 
     private String generateVerificationToken() {

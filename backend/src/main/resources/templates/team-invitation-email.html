@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${title}">Email Title</title>
+</head>
+
+<body>
+    <h2 th:text="${title}">Welcome!</h2>
+    <p th:text="${body}">New invitation to a Team:</p>
+    <p>
+        <a th:href="${url}" style="background-color: #e676d7; color: white; padding: 10px 20px; text-decoration: none;">
+            Accept Team Invitation
+        </a>
+    </p>
+</body>
+
+</html>
