@@ -7,7 +7,7 @@ export const UserSchema = z.object({
     email: z.string().email("Email inválido"),
     photo: z.string().url("URL de foto inválida").optional(),
     age: z.number().min(1, "La edad es requerida"),
-    gender: z.enum(["male", "female", "other"]).optional(),
+    gender: z.enum(["M", "F"]).optional(),
     userType: z.enum(["player", "admin"]).optional(),
 });
 
