@@ -10,7 +10,29 @@ export function useLogin() {
   return useMutation<LoginResponse, Error, LoginRequest>({
     mutationFn: async (req: LoginRequest) => {
       const tokenData = await login(req);
+
+      // Fetch user profile to get the role
+      const profileResponse = await fetch(`${BASE_API_URL}/users/me`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenData.accessToken}`,
+        },
+      });
+
+      if (!profileResponse.ok) {
+        throw new Error(`Failed to fetch user profile: ${profileResponse.status}`);
+      }
+
+      const profileData = await profileResponse.json();
+      
+      // Store the role in localStorage - using the role directly from backend
+      localStorage.setItem("loginUserType", profileData.role);
+      window.dispatchEvent(new Event("userTypeChanged"));
+
       setToken({ state: "LOGGED_IN", ...tokenData, email: req.email });
+      
       return tokenData;
     },
   });

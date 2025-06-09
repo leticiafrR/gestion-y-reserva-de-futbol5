@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, X, Upload } from "lucide-react";
 import type { Team } from "@/models/Team";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToken } from "@/services/TokenContext";
+import { uploadTeamLogo } from "@/services/supabaseClient";
 
 export const TeamsScreen = () => {
   const { data: teams, isLoading, error } = useUserTeams();
@@ -210,59 +211,57 @@ export const TeamsScreen = () => {
               ))}
             </div>
 
-            {/* Action buttons - Only show if user is the owner */}
-            {team.ownerId === userEmail && (
-              <div style={{ 
-                display: "flex", 
-                gap: "0.5rem",
-                marginTop: "1rem",
-                width: "100%",
-                justifyContent: "center"
-              }}>
-                <button
-                  onClick={() => {
-                    setSelectedTeam(team);
-                    setShowEditModal(true);
-                  }}
-                  style={{
-                    padding: "8px 16px",
-                    backgroundColor: "var(--secondary)",
-                    color: "var(--secondary-foreground)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius)",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem"
-                  }}
-                >
-                  <Edit size={14} />
-                  Editar
-                </button>
-                <button
-                  onClick={() => {
-                    setTeamToDeleteId(team.id);
-                    setShowDeleteModal(true);
-                  }}
-                  style={{
-                    padding: "8px 16px",
-                    backgroundColor: "var(--destructive)",
-                    color: "var(--destructive-foreground)",
-                    border: "none",
-                    borderRadius: "var(--radius)",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem"
-                  }}
-                >
-                  <Trash2 size={14} />
-                  Eliminar
-                </button>
-              </div>
-            )}
+            {/* Action buttons - Always show since all teams are owned by the user */}
+            <div style={{ 
+              display: "flex", 
+              gap: "0.5rem",
+              marginTop: "1rem",
+              width: "100%",
+              justifyContent: "center"
+            }}>
+              <button
+                onClick={() => {
+                  setSelectedTeam(team);
+                  setShowEditModal(true);
+                }}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "var(--secondary)",
+                  color: "var(--secondary-foreground)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}
+              >
+                <Edit size={14} />
+                Editar
+              </button>
+              <button
+                onClick={() => {
+                  setTeamToDeleteId(team.id);
+                  setShowDeleteModal(true);
+                }}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "var(--destructive)",
+                  color: "var(--destructive-foreground)",
+                  border: "none",
+                  borderRadius: "var(--radius)",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}
+              >
+                <Trash2 size={14} />
+                Eliminar
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -316,14 +315,34 @@ const CreateTeamModal = ({
     primaryColor: "#ff0000",
     secondaryColor: "#ffffff"
   });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Here you would typically upload the file to your server/storage
-      // and get back a URL. For now, we'll just use a local URL
-      setFormData({ ...formData, logo: URL.createObjectURL(file) });
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setUploadError("El archivo debe ser una imagen");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("La imagen no debe superar los 2MB");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const logoUrl = await uploadTeamLogo(file, formData.name);
+      setFormData({ ...formData, logo: logoUrl });
+    } catch (error) {
+      setUploadError("Error al subir la imagen");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -503,12 +522,18 @@ const CreateTeamModal = ({
                       Haz clic para subir una imagen
                     </p>
                     <p style={{ margin: 0, fontSize: "12px" }}>
-                      PNG, JPG o GIF (max. 5MB)
+                      PNG, JPG o GIF (max. 2MB)
                     </p>
                   </div>
                 </>
               )}
             </div>
+            {uploadError && (
+              <p style={{ color: "var(--destructive)", fontSize: "12px", marginTop: "4px" }}>{uploadError}</p>
+            )}
+            {isUploading && (
+              <p style={{ color: "var(--primary)", fontSize: "12px", marginTop: "4px" }}>Subiendo imagen...</p>
+            )}
           </div>
 
           <div style={{ marginBottom: "20px" }}>
@@ -671,14 +696,34 @@ const EditTeamModal = ({
     primaryColor: team.colors?.[0]?.startsWith('#') ? team.colors[0] : `#${team.colors?.[0]}` || "#ff0000",
     secondaryColor: team.colors?.[1]?.startsWith('#') ? team.colors[1] : `#${team.colors?.[1]}` || "#ffffff"
   });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Here you would typically upload the file to your server/storage
-      // and get back a URL. For now, we'll just use a local URL
-      setFormData({ ...formData, logo: URL.createObjectURL(file) });
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setUploadError("El archivo debe ser una imagen");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("La imagen no debe superar los 2MB");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const logoUrl = await uploadTeamLogo(file, formData.name);
+      setFormData({ ...formData, logo: logoUrl });
+    } catch (error) {
+      setUploadError("Error al subir la imagen");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -858,12 +903,18 @@ const EditTeamModal = ({
                       Haz clic para subir una imagen
                     </p>
                     <p style={{ margin: 0, fontSize: "12px" }}>
-                      PNG, JPG o GIF (max. 5MB)
+                      PNG, JPG o GIF (max. 2MB)
                     </p>
                   </div>
                 </>
               )}
             </div>
+            {uploadError && (
+              <p style={{ color: "var(--destructive)", fontSize: "12px", marginTop: "4px" }}>{uploadError}</p>
+            )}
+            {isUploading && (
+              <p style={{ color: "var(--primary)", fontSize: "12px", marginTop: "4px" }}>Subiendo imagen...</p>
+            )}
           </div>
 
           <div style={{ marginBottom: "20px" }}>

@@ -8,7 +8,7 @@ export const UserSchema = z.object({
     photo: z.string().url("URL de foto inválida").optional(),
     age: z.number().min(1, "La edad es requerida"),
     gender: z.enum(["male", "female", "other"]).optional(),
-    userType: z.enum(["player", "admin"]).optional(),
+    userType: z.enum(["user", "owner"]).optional(),
 });
 
 export type User = z.infer<typeof UserSchema>;

@@ -4,7 +4,7 @@ export const SignupRequestSchema = z.object({
   firstName: z.string().min(1, "El nombre es requerido"),
   lastName: z.string().min(1, "El apellido es requerido"),
   email: z.string().email("Email inválido"),
-  urlProfilePicture: z.union([z.string().url(), z.literal("")]).optional(),
+  photo: z.union([z.string(), z.instanceof(File)]).optional(),
   age: z.number().min(18, "Debe ser mayor de 18 años"),
   gender: z.enum(["male", "female", "other"], {
     required_error: "El género es requerido",
