@@ -25,17 +25,20 @@ async function getProfile(): Promise<User> {
     throw new Error(`Failed to fetch profile with status ${response.status}: ${await response.text()}`);
   }
 
-  const data = await response.json();
+
   
   // Map the backend DTO to our frontend User type
-  return {
+  const user = {
     id: data.id || "1", // Backend doesn't return id, but we need it for frontend
     name: data.name,
     lastName: data.last_name,
     email: data.email,
-    photo: data.photo || "https://tr.rbxcdn.com/180DAY-640e7ce81edf999db2182d4847548dc5/420/420/Image/Png/noFilter", // Default photo if none provided
+    photo: data.profile_picture, // Default photo if none provided
     age: parseInt(data.age),
     gender: data.gender,
     userType: data.role
   };
+  
+
+  return user;
 }

@@ -323,7 +323,7 @@ export const SignupScreen = () => {
       firstName: "",
       lastName: "",
       email: "",
-      urlProfilePicture: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQdVgSoJ_6jouY4v5cmPt2mlTY7nS7gjMzng&s",
+      photo: "",
       age: 18,
       gender: "male" as "male" | "female" | "other",
       zone: "",
@@ -350,7 +350,7 @@ export const SignupScreen = () => {
         // Creamos el objeto de request con la URL de la foto
         const signupRequest: SignupRequest = {
           ...value,
-          photo: photoUrl,
+          photo: photoUrl || (typeof value.photo === 'string' ? value.photo : undefined),
         };
         console.log("Sending signup request:", signupRequest);
 
@@ -420,7 +420,7 @@ export const SignupScreen = () => {
                 </div>
                 <div className={styles.fullWidth}>
                   <formData.AppField
-                    name="urlProfilePicture"
+                    name="photo"
                     children={(field) => <PhotoField field={field} />}
                   />
                 </div>
