@@ -1,6 +1,5 @@
 package ar.uba.fi.ingsoft1.todo_template.team;
 
-import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,8 +9,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,7 +25,7 @@ public class TeamController {
     @Operation(summary = "Listar equipos", description = "Devuelve todos los equipos del sistema")
     @ApiResponse(responseCode = "200", description = "Equipos listados correctamente")
     public ResponseEntity<List<TeamDetailsDTO>> getAllTeams() {
-        return ResponseEntity.ok(TeamDetailsDTO.toTeamDetailsDTOS(teamService.getAllTeams()));
+        return ResponseEntity.ok(TeamDetailsDTO.fromTeamList(teamService.getAllTeams()));
     }
 
     @PostMapping
@@ -39,7 +36,7 @@ public class TeamController {
             @ApiResponse(responseCode = "401", description = "Token inválido", content = @Content)
     })
     public ResponseEntity<TeamDetailsDTO> createTeam(@Valid @RequestBody TeamCreateDTO dto) {
-        return ResponseEntity.status(201).body(TeamDetailsDTO.toTeamDetailsDTO(teamService.createTeam(dto)));
+        return ResponseEntity.status(201).body(TeamDetailsDTO.fromTeam(teamService.createTeam(dto)));
     }
     @PatchMapping("/{id}")
     @Operation(summary = "Actualizar equipo", description = "Permite modificar los colores o logo de un equipo. Solo el capitán puede hacerlo.")
@@ -53,7 +50,7 @@ public class TeamController {
             @Valid @RequestBody TeamUpdateDTO dto
     ) {
         return teamService.updateTeam(id, dto)
-                .map(TeamDetailsDTO::toTeamDetailsDTO)
+                .map(TeamDetailsDTO::fromTeam)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -71,11 +68,11 @@ public class TeamController {
     }
 
     //metodo para listar a los equipos en los que está un usuario
-    @GetMapping("/myParticipations")
+    @GetMapping("/my-teams")
     @Operation(summary = "Listar equipos de un usuario", description = "Devuelve los equipos en los que el usuario participa")
     @ApiResponse(responseCode = "200", description = "Equipos listados correctamente")
     public ResponseEntity<List<TeamDetailsDTO>> getUsersTeams(){
-        return ResponseEntity.ok(TeamDetailsDTO.toTeamDetailsDTOS(teamService.getUsersTeams()));
+        return ResponseEntity.ok(TeamDetailsDTO.fromTeamList(teamService.getUsersTeams()));
     }
 
 }

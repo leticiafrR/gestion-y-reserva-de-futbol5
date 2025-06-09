@@ -46,7 +46,7 @@ public class Team {
         if (members == null) {
             members = new ArrayList<>();
         }
-        if (!members.contains(user)) {
+        if (members.contains(user)) {
             var msg = String.format("User '%s' is already a member of the Team '%s'", user.getUsername(), name);
             throw new UserAlreadyMemberException(msg);
         }

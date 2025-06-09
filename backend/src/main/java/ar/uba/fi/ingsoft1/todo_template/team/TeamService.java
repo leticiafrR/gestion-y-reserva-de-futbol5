@@ -1,6 +1,9 @@
 package ar.uba.fi.ingsoft1.todo_template.team;
 
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
+import ar.uba.fi.ingsoft1.todo_template.team.invitation.Invitation;
+import ar.uba.fi.ingsoft1.todo_template.team.invitation.InvitationService;
+import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserAlreadyMemberException;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ public class TeamService {
 
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final InvitationService invitationService;
 
 
     public List<Team> getAllTeams() {
@@ -36,7 +40,7 @@ public class TeamService {
                     var msg = String.format("Username '%s' not found", username);
                     return new UsernameNotFoundException(msg);
                 });
-        return teamRepository.findByMembers(user);
+        return teamRepository.findAllByMemberIdFetchMembers(user.getId());
     }
 
 
@@ -89,6 +93,45 @@ public class TeamService {
         }
 
         teamRepository.delete(team);
+    }
+
+    @Transactional
+    public Invitation inviteMember(Long teamId, String invitee){
+        //verifico que el usuario esté loggeado y sea mi capitan
+        String captain = getAuthenticatedUsername();
+        //verifico que el equipo exista
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+        //que sea el capitan
+        if (!team.getCaptain().equals(captain)){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the captain can generate invitations to the team");
+        }
+        //verifico que el usuario a quien se invita no sea ya parte del equipo
+        if (teamRepository.existsByIdAndMemberUsername(teamId, invitee)){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "The invitee is already a member of the team.");
+        }
+        //verifico que exista el invitado
+        if (!userRepository.existsByUsername(invitee)){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitee not found");
+        }
+        return invitationService.sendInvitationEmail(team,invitee);
+    }
+
+    public Team acceptInvitation(Invitation inv){
+        //tengo que hacer las verificaciones respecto al team al que se va a unir, que no sea miembro ya, que, que ex
+        User userInvitee = userRepository.findByUsername(getAuthenticatedUsername()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitee not found"));
+        Team team = teamRepository.findById(inv.getTeamId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+        //verifico que la invitación coincida con quien está aceptando
+        if (!inv.getInviteeEmail().equals(userInvitee.getUsername())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"User logged is not the user who was invited ");
+        }
+
+        try{
+            team.addMember(userInvitee);
+        } catch (UserAlreadyMemberException e){
+            throw new ResponseStatusException(HttpStatus.CONFLICT,e.getMessage());
+        }
+        return team;
     }
 
     private String getAuthenticatedUsername() {

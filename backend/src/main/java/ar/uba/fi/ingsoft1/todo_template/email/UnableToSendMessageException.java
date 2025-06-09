@@ -1,4 +1,4 @@
-package ar.uba.fi.ingsoft1.todo_template.user.userServiceException;
+package ar.uba.fi.ingsoft1.todo_template.email;
 
 public class UnableToSendMessageException extends RuntimeException {
 

@@ -19,7 +19,7 @@ public class TeamDetailsDTO {
     private String logo;
     private List<String> membersUsernames;
 
-    public static TeamDetailsDTO toTeamDetailsDTO(Team team){
+    public static TeamDetailsDTO fromTeam(Team team){
         return TeamDetailsDTO.builder()
                 .id(team.getId())
                 .name(team.getName())
@@ -31,9 +31,9 @@ public class TeamDetailsDTO {
                 .build();
     }
 
-    public static List<TeamDetailsDTO> toTeamDetailsDTOS(List<Team> teams){
+    public static List<TeamDetailsDTO> fromTeamList(List<Team> teams){
         return teams.stream()
-                .map(TeamDetailsDTO::toTeamDetailsDTO)
+                .map(TeamDetailsDTO::fromTeam)
                 .collect(Collectors.toList());
     }
 }

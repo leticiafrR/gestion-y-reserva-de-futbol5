@@ -6,7 +6,7 @@ import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsern
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnverifiedAccountException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InavlidCredentialsException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InvalidTokenException;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.UnableToSendMessageException;
+import ar.uba.fi.ingsoft1.todo_template.email.UnableToSendMessageException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
