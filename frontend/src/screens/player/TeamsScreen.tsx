@@ -211,57 +211,59 @@ export const TeamsScreen = () => {
               ))}
             </div>
 
-            {/* Action buttons - Always show since all teams are owned by the user */}
-            <div style={{ 
-              display: "flex", 
-              gap: "0.5rem",
-              marginTop: "1rem",
-              width: "100%",
-              justifyContent: "center"
-            }}>
-              <button
-                onClick={() => {
-                  setSelectedTeam(team);
-                  setShowEditModal(true);
-                }}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "var(--secondary)",
-                  color: "var(--secondary-foreground)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius)",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem"
-                }}
-              >
-                <Edit size={14} />
-                Editar
-              </button>
-              <button
-                onClick={() => {
-                  setTeamToDeleteId(team.id);
-                  setShowDeleteModal(true);
-                }}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "var(--destructive)",
-                  color: "var(--destructive-foreground)",
-                  border: "none",
-                  borderRadius: "var(--radius)",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem"
-                }}
-              >
-                <Trash2 size={14} />
-                Eliminar
-              </button>
-            </div>
+            {/* Action buttons - Only show if user is the owner */}
+            {team.ownerId === userEmail && (
+              <div style={{ 
+                display: "flex", 
+                gap: "0.5rem",
+                marginTop: "1rem",
+                width: "100%",
+                justifyContent: "center"
+              }}>
+                <button
+                  onClick={() => {
+                    setSelectedTeam(team);
+                    setShowEditModal(true);
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "var(--secondary)",
+                    color: "var(--secondary-foreground)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius)",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem"
+                  }}
+                >
+                  <Edit size={14} />
+                  Editar
+                </button>
+                <button
+                  onClick={() => {
+                    setTeamToDeleteId(team.id);
+                    setShowDeleteModal(true);
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "var(--destructive)",
+                    color: "var(--destructive-foreground)",
+                    border: "none",
+                    borderRadius: "var(--radius)",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem"
+                  }}
+                >
+                  <Trash2 size={14} />
+                  Eliminar
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

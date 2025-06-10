@@ -88,6 +88,7 @@ async function getAllTeams(token: any): Promise<Team[]> {
       logo: team.logo || "",
       colors: [team.primaryColor, team.secondaryColor],
       ownerId: team.captain,
+      members: team.members || [],
     }));
   } catch (error) {
     throw error;
