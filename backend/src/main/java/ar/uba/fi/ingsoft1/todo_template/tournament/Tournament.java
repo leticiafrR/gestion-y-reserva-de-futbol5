@@ -3,6 +3,7 @@ package ar.uba.fi.ingsoft1.todo_template.tournament;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+
 import java.time.LocalDate;
 
 import ar.uba.fi.ingsoft1.todo_template.user.User;
@@ -25,7 +26,7 @@ public class Tournament {
     private LocalDate startDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar")
     private TournamentFormat format;
 
     @Column(nullable = false)
