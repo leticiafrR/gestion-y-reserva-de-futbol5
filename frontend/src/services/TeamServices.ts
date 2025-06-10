@@ -77,19 +77,26 @@ async function getAllTeams(token: any): Promise<Team[]> {
     }
 
     const teams = await response.json();
+    console.log('Raw teams data from backend:', teams);
     
     if (!Array.isArray(teams)) {
       throw new Error('La respuesta del servidor no tiene el formato esperado');
     }
 
-    return teams.map((team: any) => ({
-      id: team.id.toString(),
-      name: team.name,
-      logo: team.logo || "",
-      colors: [team.primaryColor, team.secondaryColor],
-      ownerId: team.captain,
-      members: team.members || [],
-    }));
+    const mappedTeams = teams.map((team: any) => {
+      console.log('Team members for team', team.name, ':', team.membersUsernames);
+      return {
+        id: team.id.toString(),
+        name: team.name,
+        logo: team.logo || "",
+        colors: [team.primaryColor, team.secondaryColor],
+        ownerId: team.captain,
+        members: team.membersUsernames || [],
+      };
+    });
+
+    console.log('Mapped teams with members:', mappedTeams);
+    return mappedTeams;
   } catch (error) {
     throw error;
   }

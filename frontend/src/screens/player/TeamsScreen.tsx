@@ -1,7 +1,7 @@
 import { useUserTeams, useCreateTeam, useUpdateTeam, useDeleteTeam } from "@/services/TeamServices";
 import { navigate } from "wouter/use-browser-location";
 import { useState, useRef } from "react";
-import { Plus, Edit, Trash2, X, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, X, Upload, Users } from "lucide-react";
 import type { Team } from "@/models/Team";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToken } from "@/services/TokenContext";
@@ -15,6 +15,8 @@ export const TeamsScreen = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [teamToDeleteId, setTeamToDeleteId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedTeamForDetails, setSelectedTeamForDetails] = useState<Team | null>(null);
 
   const createTeamMutation = useCreateTeam();
   const updateTeamMutation = useUpdateTeam();
@@ -156,6 +158,10 @@ export const TeamsScreen = () => {
         {teams?.map((team) => (
           <div
             key={team.id}
+            onClick={() => {
+              setSelectedTeamForDetails(team);
+              setShowDetailsModal(true);
+            }}
             style={{
               border: "1px solid var(--border)",
               borderRadius: "var(--radius-lg)",
@@ -167,6 +173,7 @@ export const TeamsScreen = () => {
               flexDirection: "column",
               alignItems: "center",
               transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              cursor: "pointer",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-2px)";
@@ -298,6 +305,17 @@ export const TeamsScreen = () => {
       {/* Error Popup */}
       {errorMessage && (
         <ErrorPopup message={errorMessage} onClose={() => setErrorMessage(null)} />
+      )}
+
+      {/* Team Details Modal */}
+      {showDetailsModal && selectedTeamForDetails && (
+        <TeamDetailsModal
+          team={selectedTeamForDetails}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedTeamForDetails(null);
+          }}
+        />
       )}
     </div>
   );
@@ -1213,6 +1231,179 @@ const ErrorPopup = ({
         </div>
         <div style={{ 
           padding: "12px 24px",
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          justifyContent: "flex-end"
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "var(--secondary)",
+              color: "var(--secondary-foreground)",
+              border: "1px solid var(--border)",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Team Details Modal Component
+const TeamDetailsModal = ({
+  team,
+  onClose,
+}: {
+  team: Team;
+  onClose: () => void;
+}) => {
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1000,
+      padding: "20px",
+    }}>
+      <div style={{
+        backgroundColor: "white",
+        borderRadius: "8px",
+        width: "100%",
+        maxWidth: "500px",
+        maxHeight: "90vh",
+        overflow: "auto",
+      }}>
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "20px 24px",
+          borderBottom: "1px solid var(--border)",
+        }}>
+          <div>
+            <h2 style={{ fontSize: "18px", fontWeight: "bold", margin: "0 0 4px 0" }}>
+              Detalles del Equipo
+            </h2>
+            <p style={{ color: "var(--muted-foreground)", margin: 0, fontSize: "14px" }}>
+              Información del equipo {team.name}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px",
+              backgroundColor: "transparent",
+              border: "none",
+              cursor: "pointer",
+              borderRadius: "4px",
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div style={{ padding: "24px" }}>
+          {/* Logo */}
+          {team.logo && (
+            <div style={{ textAlign: "center", marginBottom: "24px" }}>
+              <img
+                src={team.logo}
+                alt={team.name}
+                style={{
+                  width: "120px",
+                  height: "120px",
+                  objectFit: "cover",
+                  borderRadius: "50%",
+                  boxShadow: "0 2px 8px var(--border)"
+                }}
+              />
+            </div>
+          )}
+
+          {/* Colores */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3 style={{ fontSize: "16px", fontWeight: "500", marginBottom: "12px" }}>
+              Colores del Equipo
+            </h3>
+            <div style={{ display: "flex", gap: "12px" }}>
+              {team.colors?.map((color, index) => (
+                <div
+                  key={index}
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "8px",
+                    backgroundColor: color,
+                    border: "1px solid var(--border)"
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Miembros */}
+          <div>
+            <h3 style={{ fontSize: "16px", fontWeight: "500", marginBottom: "12px" }}>
+              Miembros del Equipo
+            </h3>
+            <div style={{ 
+              backgroundColor: "var(--secondary)",
+              borderRadius: "8px",
+              padding: "16px"
+            }}>
+              {team.members && team.members.length > 0 ? (
+                <ul style={{ 
+                  listStyle: "none", 
+                  padding: 0, 
+                  margin: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px"
+                }}>
+                  {team.members.map((member, index) => (
+                    <li 
+                      key={index}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px",
+                        backgroundColor: "var(--background)",
+                        borderRadius: "4px"
+                      }}
+                    >
+                      <Users size={16} />
+                      <span>{member}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ 
+                  color: "var(--muted-foreground)",
+                  textAlign: "center",
+                  margin: 0
+                }}>
+                  No hay miembros en el equipo
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ 
+          padding: "16px 24px",
           borderTop: "1px solid var(--border)",
           display: "flex",
           justifyContent: "flex-end"
