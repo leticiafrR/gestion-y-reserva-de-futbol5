@@ -1,79 +1,78 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { X } from "lucide-react"
-
-interface Field {
-  address: string
-  name: string
-  grassType: "natural" | "synthetic"
-  hasLighting: boolean
-  zone: string
-  features: string[]
-  photos: string[]
-  isActive: boolean
-}
+import React, { useState, useRef } from "react"
+import { X, Upload } from "lucide-react"
+import { uploadFieldImage } from "@/services/supabaseClient"
+import type { Field } from "@/models/Field"
+import { useLoadScript, Autocomplete } from "@react-google-maps/api"
 
 interface CreateFieldModalProps {
   onClose: () => void
-  onSubmit: (field: Field) => void
+  onSubmit: (field: Omit<Field, "id">) => void
 }
 
 export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) => {
-  const [formData, setFormData] = useState<Field>({
+  const [formData, setFormData] = useState<Omit<Field, "id">>({
     name: "",
-    grassType: "synthetic",
-    hasLighting: false,
-    zone: "",
+    grassType: "sintetico",
+    lighting: false,
+    roofing: false,
     address: "",
-    features: [],
-    photos: [],
-    isActive: true,
+    zone: "",
+    photoUrl: "",
+    description: "",
+    price: 0,
+    active: true,
+    schedule: []
   })
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [newFeature, setNewFeature] = useState("")
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: "AIzaSyAV-7--jx2dP-MyDxVrhcSYlNnY8KNb8g8",
+    libraries: ["places"],
+  })
 
-    if (!formData.name.trim()) {
-      newErrors.name = "El nombre es obligatorio"
-    }
-    if (!formData.zone.trim()) {
-      newErrors.zone = "La zona es obligatoria"
-    }
-    if (!formData.address.trim()) {
-      newErrors.address = "La dirección es obligatoria"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
+    autocompleteRef.current = autocomplete
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const onPlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace()
+      if (place.formatted_address) {
+        let zone = ""
+        if (place.address_components) {
+          const neighborhood = place.address_components.find(
+            component => component.types.includes("neighborhood")
+          )
+          const locality = place.address_components.find(
+            component => component.types.includes("locality")
+          )
+          zone = neighborhood?.long_name || locality?.long_name || ""
+        }
+        setFormData(prev => ({
+          ...prev,
+          address: place.formatted_address || prev.address,
+          zone: zone || prev.zone
+        }))
+      }
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (validateForm()) {
-      onSubmit(formData)
-    }
-  }
-
-  const addFeature = () => {
-    if (newFeature.trim() && !formData.features.includes(newFeature.trim())) {
-      setFormData({
+    try {
+      const fieldData = {
         ...formData,
-        features: [...formData.features, newFeature.trim()],
-      })
-      setNewFeature("")
+        address: formData.address,
+      }
+      await onSubmit(fieldData)
+    } catch (err: any) {
+      setUploadError(err.message || "Error al crear la cancha")
     }
-  }
-
-  const removeFeature = (feature: string) => {
-    setFormData({
-      ...formData,
-      features: formData.features.filter((f) => f !== feature),
-    })
   }
 
   return (
@@ -107,11 +106,18 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            padding: "20px",
-            borderBottom: "1px solid #e5e7eb",
+            padding: "20px 24px",
+            borderBottom: "1px solid #e9ecef",
           }}
         >
-          <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#111827" }}>Nueva Cancha</h2>
+          <div>
+            <h2 style={{ fontSize: "18px", fontWeight: "bold", color: "#212529", margin: "0 0 4px 0" }}>
+              Nueva Cancha
+            </h2>
+            <p style={{ color: "#6c757d", margin: 0, fontSize: "14px" }}>
+              Completa la información para crear una nueva cancha
+            </p>
+          </div>
           <button
             onClick={onClose}
             style={{
@@ -122,187 +128,388 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
               borderRadius: "4px",
             }}
           >
-            <X size={20} color="#6b7280" />
+            <X size={20} color="#6c757d" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: "20px" }}>
+        <form onSubmit={handleSubmit} style={{ padding: "24px" }}>
+          {uploadError && (
+            <div
+              style={{
+                backgroundColor: "#fff5f5",
+                color: "#dc3545",
+                padding: "12px",
+                borderRadius: "6px",
+                marginBottom: "20px",
+                fontSize: "14px",
+              }}
+            >
+              {uploadError}
+            </div>
+          )}
+
           <div style={{ marginBottom: "20px" }}>
             <label
-              style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#374151", marginBottom: "8px" }}
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
             >
               Nombre de la Cancha *
             </label>
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                setUploadError(null)
+                setFormData({ ...formData, name: e.target.value })
+              }}
+              placeholder="Ej: Cancha Principal"
+              required
               style={{
                 width: "100%",
-                padding: "10px",
-                border: `1px solid ${errors.name ? "#ef4444" : "#d1d5db"}`,
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
               }}
-              placeholder="Ej: Cancha Principal"
             />
-            {errors.name && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{errors.name}</p>}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-            <div>
-              <label
-                style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#374151", marginBottom: "8px" }}
-              >
-                Zona *
-              </label>
-              <input
-                type="text"
-                value={formData.zone}
-                onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: `1px solid ${errors.zone ? "#ef4444" : "#d1d5db"}`,
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
-                placeholder="Ej: Centro, Norte, Sur"
-              />
-              {errors.zone && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{errors.zone}</p>}
-            </div>
-
-            <div>
-              <label
-                style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#374151", marginBottom: "8px" }}
-              >
-                Tipo de Césped
-              </label>
-              <select
-                value={formData.grassType}
-                onChange={(e) => setFormData({ ...formData, grassType: e.target.value as "natural" | "synthetic" })}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
-              >
-                <option value="synthetic">Sintético</option>
-                <option value="natural">Natural</option>
-              </select>
-            </div>
           </div>
 
           <div style={{ marginBottom: "20px" }}>
             <label
-              style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#374151", marginBottom: "8px" }}
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
             >
-              Dirección *
+              Tipo de Césped *
+            </label>
+            <select
+              value={formData.grassType}
+              onChange={(e) => setFormData({ ...formData, grassType: e.target.value as "natural" | "sintetico" })}
+              required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
+              }}
+            >
+              <option value="sintetico">Sintético</option>
+              <option value="natural">Natural</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Ubicación *
+            </label>
+            {isLoaded ? (
+              <Autocomplete
+                onLoad={onLoad}
+                onPlaceChanged={onPlaceChanged}
+                restrictions={{ country: "ar" }}
+              >
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    address: e.target.value
+                  }))}
+                  placeholder="Ej: Av. Principal 123"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    border: "1px solid #ced4da",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    backgroundColor: "white",
+                    color: "#212529",
+                  }}
+                />
+              </Autocomplete>
+            ) : (
+              <div>Cargando...</div>
+            )}
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Zona *
             </label>
             <input
               type="text"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              value={formData.zone}
+              onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
+              placeholder="Ej: Centro"
+              required
               style={{
                 width: "100%",
-                padding: "10px",
-                border: `1px solid ${errors.address ? "#ef4444" : "#d1d5db"}`,
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
                 borderRadius: "6px",
                 fontSize: "14px",
                 boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
               }}
-              placeholder="Ej: Av. Principal 123"
             />
-            {errors.address && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{errors.address}</p>}
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={formData.hasLighting}
-                onChange={(e) => setFormData({ ...formData, hasLighting: e.target.checked })}
-                style={{ width: "16px", height: "16px" }}
-              />
-              <span style={{ fontSize: "14px", color: "#374151" }}>Cuenta con iluminación</span>
-            </label>
           </div>
 
           <div style={{ marginBottom: "20px" }}>
             <label
-              style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#374151", marginBottom: "8px" }}
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
             >
-              Características Adicionales
+              Precio por Hora ($)
             </label>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+            <input
+              type="number"
+              min="1"
+              value={formData.price}
+              onChange={(e) => {
+                const value = Number(e.target.value)
+                if (value > 0) {
+                  setFormData({ ...formData, price: value })
+                }
+              }}
+              placeholder="50"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                backgroundColor: "white",
+                color: "#212529",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Descripción
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe las características de la cancha"
+              rows={3}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                resize: "vertical",
+                backgroundColor: "white",
+                color: "#212529",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
               <input
-                type="text"
-                value={newFeature}
-                onChange={(e) => setNewFeature(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addFeature())}
-                style={{
-                  flex: 1,
-                  padding: "8px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                }}
-                placeholder="Ej: Vestuarios, Bar, Estacionamiento"
+                type="checkbox"
+                checked={formData.lighting}
+                onChange={(e) => setFormData({ ...formData, lighting: e.target.checked })}
+                style={{ width: "16px", height: "16px" }}
               />
-              <button
-                type="button"
-                onClick={addFeature}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#3b82f6",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
+              <span style={{ fontSize: "14px", color: "#495057" }}>Tiene iluminación</span>
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={formData.roofing}
+                onChange={(e) => setFormData({ ...formData, roofing: e.target.checked })}
+                style={{ width: "16px", height: "16px" }}
+              />
+              <span style={{ fontSize: "14px", color: "#495057" }}>Cancha techada</span>
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={formData.active}
+                onChange={(e) => {
+                  setFormData({ ...formData, active: e.target.checked })
                 }}
-              >
-                Agregar
-              </button>
-            </div>
-            {formData.features.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {formData.features.map((feature, index) => (
-                  <span
-                    key={index}
+                style={{ width: "16px", height: "16px" }}
+              />
+              <span style={{ fontSize: "14px", color: "#212529" }}>Cancha activa</span>
+            </label>
+          </div>
+
+          <div style={{ marginBottom: "24px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#212529",
+                marginBottom: "6px",
+              }}
+            >
+              Foto de la Cancha
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                if (!file.type.startsWith("image/")) {
+                  setUploadError("El archivo debe ser una imagen")
+                  return
+                }
+                if (file.size > 2 * 1024 * 1024) {
+                  setUploadError("La imagen no debe superar los 2MB")
+                  return
+                }
+                setIsUploading(true)
+                setUploadError(null)
+                try {
+                  const photoUrl = await uploadFieldImage(file, formData.name)
+                  setFormData({ ...formData, photoUrl })
+                } catch (error) {
+                  setUploadError("Error al subir la imagen")
+                } finally {
+                  setIsUploading(false)
+                }
+              }}
+              style={{ display: "none" }}
+            />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: "2px dashed #e2e8f0",
+                borderRadius: "8px",
+                padding: "20px",
+                textAlign: "center",
+                cursor: "pointer",
+                backgroundColor: formData.photoUrl ? "transparent" : "#f8fafc",
+                transition: "all 0.2s ease",
+                position: "relative",
+                minHeight: "150px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
+              {formData.photoUrl ? (
+                <>
+                  <img
+                    src={formData.photoUrl}
+                    alt="Preview"
                     style={{
+                      maxWidth: "100%",
+                      maxHeight: "200px",
+                      borderRadius: "4px",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <button
+                    onClick={e => {
+                      e.stopPropagation()
+                      setFormData({ ...formData, photoUrl: "" })
+                      if (fileInputRef.current) fileInputRef.current.value = ""
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
                       display: "flex",
                       alignItems: "center",
-                      gap: "4px",
-                      padding: "4px 8px",
-                      backgroundColor: "#f3f4f6",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      color: "#374151",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseOver={e => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.7)"
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.5)"
                     }}
                   >
-                    {feature}
-                    <button
-                      type="button"
-                      onClick={() => removeFeature(feature)}
-                      style={{
-                        backgroundColor: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "0",
-                        color: "#6b7280",
-                      }}
-                    >
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))}
-              </div>
+                    <X size={14} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Upload size={32} color="#64748b" />
+                  <div style={{ color: "#64748b" }}>
+                    <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "500" }}>
+                      Haz clic para subir una foto
+                    </p>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8" }}>
+                      PNG, JPG o JPEG (max. 2MB)
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            {uploadError && (
+              <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{uploadError}</p>
+            )}
+            {isUploading && (
+              <p style={{ color: "#3b82f6", fontSize: "12px", marginTop: "4px" }}>Subiendo foto...</p>
             )}
           </div>
 
@@ -312,7 +519,7 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
               gap: "12px",
               justifyContent: "flex-end",
               paddingTop: "20px",
-              borderTop: "1px solid #e5e7eb",
+              borderTop: "1px solid #e9ecef",
             }}
           >
             <button
@@ -321,8 +528,8 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
               style={{
                 padding: "10px 20px",
                 backgroundColor: "white",
-                color: "#374151",
-                border: "1px solid #d1d5db",
+                color: "#6c757d",
+                border: "1px solid #ced4da",
                 borderRadius: "6px",
                 cursor: "pointer",
                 fontSize: "14px",
@@ -334,7 +541,7 @@ export const CreateFieldModal = ({ onClose, onSubmit }: CreateFieldModalProps) =
               type="submit"
               style={{
                 padding: "10px 20px",
-                backgroundColor: "#3b82f6",
+                backgroundColor: "#212529",
                 color: "white",
                 border: "none",
                 borderRadius: "6px",

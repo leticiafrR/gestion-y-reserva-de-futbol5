@@ -6,10 +6,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
+import lombok.Getter;
 
+import org.hibernate.validator.constraints.URL;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import ar.uba.fi.ingsoft1.todo_template.user.dto.UserProfileDTO;
 
 import java.time.Year;
 import java.util.Collection;
@@ -20,12 +24,14 @@ public class User implements UserDetails, UserCredentials {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter
     private Long id;
 
     @Column(nullable = false)
     private String password;
 
     @Column(nullable = false)
+    @Getter
     private String role;
 
     @Column(unique = true, nullable = false)
@@ -53,11 +59,15 @@ public class User implements UserDetails, UserCredentials {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(nullable = false)
+    @URL
+    private String profilePicture;
+
     public User() {
     }
 
     public User(String username, String password, String role, String gender, String age,
-            String zone, String name, String last_name) {
+            String zone, String name, String last_name, String profilePicture) {
         this.username = username;
         this.password = password;
         this.birthYear = BirthYearFromStringAge(age);
@@ -66,6 +76,7 @@ public class User implements UserDetails, UserCredentials {
         this.role = role;
         this.name = name;
         this.last_name = last_name;
+        this.profilePicture = profilePicture;
     }
 
     private Integer BirthYearFromStringAge(String age) {
@@ -94,30 +105,6 @@ public class User implements UserDetails, UserCredentials {
         return this.password;
     }
 
-    public String getRole() {
-        return role;
-    }
-
-    public String getGender() {
-        return gender;
-    }
-
-    public Integer getBirthYear() {
-        return birthYear;
-    }
-
-    public String getZone() {
-        return zone;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getLastName() {
-        return last_name;
-    }
-
     public boolean isEmailVerified() {
         return emailVerified;
     }
@@ -128,6 +115,21 @@ public class User implements UserDetails, UserCredentials {
 
     public boolean isActive() {
         return active;
+    }
+
+    public UserProfileDTO toUserProfileDTO() {
+        int currentYear = Year.now().getValue();
+        String age = String.valueOf(currentYear - this.birthYear);
+
+        return new UserProfileDTO(
+                this.username,
+                this.name,
+                this.last_name,
+                age,
+                this.gender,
+                this.zone,
+                this.role,
+                this.profilePicture);
     }
 
     @Override

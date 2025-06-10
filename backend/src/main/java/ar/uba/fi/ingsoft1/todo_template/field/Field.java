@@ -43,4 +43,5 @@ public class Field {
     @ManyToOne(optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
+
 }

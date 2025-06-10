@@ -1,8 +1,6 @@
 package ar.uba.fi.ingsoft1.todo_template.field;
 
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
-import ar.uba.fi.ingsoft1.todo_template.field.availability.FieldAvailabilityDTO;
-import ar.uba.fi.ingsoft1.todo_template.field.availability.FieldAvailabilityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,11 +21,10 @@ import java.util.List;
 public class FieldController {
 
     private final FieldService fieldService;
-    private final FieldAvailabilityService availabilityService;
 
-    public FieldController(FieldService fieldService, FieldAvailabilityService availabilityService) {
+
+    public FieldController(FieldService fieldService) {
         this.fieldService = fieldService;
-        this.availabilityService = availabilityService;
     }
 
     @PostMapping
@@ -43,7 +40,7 @@ public class FieldController {
         return ResponseEntity.ok(field);
     }
 
-    @GetMapping("/mine")
+    @GetMapping("/own")
     @Operation(summary = "Listar canchas propias", description = "Obtiene todas las canchas asociadas al usuario actual")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Listado de canchas obtenido exitosamente")
@@ -80,41 +77,16 @@ public class FieldController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/deactivate")
-    @Operation(summary = "Desactivar cancha", description = "Marca la cancha como inactiva")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Cancha desactivada correctamente"),
-            @ApiResponse(responseCode = "404", description = "Cancha no encontrada o no pertenece al usuario")
-    })
-    public ResponseEntity<Field> deactivateField(@PathVariable Long id) {
-        String username = getAuthenticatedUser().username();
-        Field updated = fieldService.setFieldActiveStatus(id, username, false);
-        return ResponseEntity.ok(updated);
-    }
-
-    @PatchMapping("/{id}/activate")
-    @Operation(summary = "Activar cancha", description = "Marca la cancha como activa nuevamente")
+    @PatchMapping("/{id}/{active}")
+    @Operation(summary = "Activar /desactivar cancha", description = "Marca la cancha como activa nuevamente")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cancha activada correctamente"),
             @ApiResponse(responseCode = "404", description = "Cancha no encontrada o no pertenece al usuario")
     })
-    public ResponseEntity<Field> activateField(@PathVariable Long id) {
+    public ResponseEntity<Field> setStatusField(@PathVariable Long id, @PathVariable boolean active) {
         String username = getAuthenticatedUser().username();
-        Field updated = fieldService.setFieldActiveStatus(id, username, true);
+        Field updated = fieldService.setFieldActiveStatus(id, username, active);
         return ResponseEntity.ok(updated);
-    }
-
-    @PostMapping("/{fieldId}/availability")
-    @Operation(summary = "Configurar disponibilidad", description = "Define los horarios disponibles semanales para la cancha")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Disponibilidad guardada correctamente"),
-            @ApiResponse(responseCode = "404", description = "Cancha no encontrada")
-    })
-    public ResponseEntity<Void> setAvailability(
-            @PathVariable Long fieldId,
-            @RequestBody List<@Valid FieldAvailabilityDTO> slots) {
-        availabilityService.setAvailability(fieldId, slots);
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/all")
@@ -127,16 +99,7 @@ public class FieldController {
         return ResponseEntity.ok(activeFields);
     }
 
-    @GetMapping("/{fieldId}/availability")
-    @Operation(summary = "Ver disponibilidad", description = "Obtiene los horarios disponibles configurados para la cancha")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Disponibilidad obtenida correctamente"),
-            @ApiResponse(responseCode = "404", description = "Cancha no encontrada")
-    })
-    public ResponseEntity<List<FieldAvailabilityDTO>> getAvailability(@PathVariable Long fieldId) {
-        return ResponseEntity.ok(availabilityService.getAvailability(fieldId));
-    }
-    
+
     private JwtUserDetails getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (JwtUserDetails) authentication.getPrincipal();

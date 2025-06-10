@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Email;
 
 import java.util.function.Function;
 
+import org.hibernate.validator.constraints.URL;
+
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.UserCredentials;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -17,14 +19,15 @@ public record UserCreateDTO(
         @Schema(description = "User's role") @NotBlank(message = "The user role cannot be empty to register a user.") String role,
         @Schema(description = "User's gender") @NotBlank(message = "The user gender cannot be empty to register a user.") String gender,
         @Schema(description = "User's age") @NotBlank(message = "The user age cannot be empty to register a user.") String age,
-        @Schema(description = "User's zone") @NotBlank(message = "The user address cannot be empty to register a user.") String zone)
+        @Schema(description = "User's zone") @NotBlank(message = "The user zone cannot be empty to register a user.") String zone,
+        @Schema(description = "User profile picture") @NotBlank(message = "The user profile picture cannot be empty to register a user.") @URL String urlProfilePicture)
 
         implements UserCredentials {
 
     public User asUser(Function<String, String> encryptPassword) {
         return new User(username,
                 encryptPassword.apply(password), role, gender,
-                age, zone, name, last_name);
+                age, zone, name, last_name, urlProfilePicture);
     }
 
 }

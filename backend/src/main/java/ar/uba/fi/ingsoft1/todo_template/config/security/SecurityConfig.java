@@ -22,7 +22,7 @@ import java.util.List;
 public class SecurityConfig {
 
     public static final String[] PUBLIC_ENDPOINTS = { "/", "/users", "/sessions", "/users/register", "/users/verify",
-            "users/login" };
+            "users/login","/timeslots"};
 
     private final JwtAuthFilter authFilter;
 

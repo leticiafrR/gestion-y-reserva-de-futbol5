@@ -23,11 +23,9 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "1 - Usuarios", description = "User management endpoints")
 public class UserRestController {
         private UserService userService;
-        private final UserMapper userMapper;
 
-        public UserRestController(UserService userService, UserMapper userMapper) {
+        public UserRestController(UserService userService) {
                 this.userService = userService;
-                this.userMapper = userMapper;
         }
 
         @GetMapping("/verify")
@@ -44,7 +42,7 @@ public class UserRestController {
         @PostMapping("/register")
         @Operation(summary = "Register user", description = "Create a new user account")
         @ApiResponse(responseCode = "201", description = "User created successfully", content = @Content(schema = @Schema(implementation = TokenDTO.class), mediaType = "application/json"))
-        @ApiResponse(responseCode = "409", description = "Some field has a useless information ", content = @Content(schema = @Schema(implementation = IncorrectValueResponse.class), mediaType = "application/json"))
+        @ApiResponse(responseCode = "409", description = "Some field has a useless information. Maybe information nota provided, an invalid email, an invalid URL.", content = @Content(schema = @Schema(implementation = IncorrectValueResponse.class), mediaType = "application/json"))
         @ApiResponse(responseCode = "400", description = "Validation errors. The body is a JSON with dynamic keys corresponding to the form fields, for example: { \"username\": \"The username cannot be empty to register a user.\" }", content = @Content(mediaType = "application/json"))
         public ResponseEntity<TokenDTO> register(
                         @Parameter(description = "User registration data") @Valid @RequestBody UserCreateDTO userData) {
@@ -68,7 +66,7 @@ public class UserRestController {
         })
         public ResponseEntity<UserProfileDTO> getCurrentUserProfile() {
                 User user = (User) userService.getAuthenticatedUser();
-                return ResponseEntity.ok(userMapper.toUserProfileDTO(user));
+                return ResponseEntity.ok(user.toUserProfileDTO());
         }
 
 }
