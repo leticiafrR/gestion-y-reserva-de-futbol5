@@ -3,7 +3,6 @@ package ar.uba.fi.ingsoft1.todo_template.team;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import ar.uba.fi.ingsoft1.todo_template.team.invitation.Invitation;
 import ar.uba.fi.ingsoft1.todo_template.team.invitation.InvitationService;
-import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserAlreadyMemberException;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -117,20 +116,22 @@ public class TeamService {
         return invitationService.sendInvitationEmail(team,invitee);
     }
 
+    public List<Invitation> getPendingInvitations(Long teamId){
+        String captain = getAuthenticatedUsername();
+        Team team = teamRepository.findById(teamId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+        if (!team.getCaptain().equals(captain)){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the captain can to the pending invitations to a team");
+        }
+        return invitationService.getPendingInvitations(team);
+    }
+    @Transactional
     public Team acceptInvitation(Invitation inv){
-        //tengo que hacer las verificaciones respecto al team al que se va a unir
         User userInvitee = userRepository.findByUsername(getAuthenticatedUsername()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitee not found"));
         Team team = teamRepository.findById(inv.getTeamId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
-        //verifico que la invitación coincida con quien está aceptando
         if (!inv.getInviteeEmail().equals(userInvitee.getUsername())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"User logged is not the user who was invited ");
         }
-
-        try{
-            team.addMember(userInvitee);
-        } catch (UserAlreadyMemberException e){
-            throw new ResponseStatusException(HttpStatus.CONFLICT,e.getMessage());
-        }
+        team.addMember(userInvitee);
         return team;
     }
 

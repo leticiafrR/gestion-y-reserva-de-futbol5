@@ -4,6 +4,7 @@ import ar.uba.fi.ingsoft1.todo_template.team.TeamDetailsDTO;
 import ar.uba.fi.ingsoft1.todo_template.team.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/invitations")
@@ -46,6 +48,22 @@ public class InvitationController {
                 .body(InvitationDTO.fromInvitation(inv));
     }
 
+    @GetMapping("/teams/{teamId}/pending")
+    @Operation(summary = "get pending invitations to a Team", description = "Allows the captain of the indicated team to get the pending invitations that have been to join the indicated team")
+    @ApiResponse(responseCode = "200",
+            description = "Invitations listed successfully",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = InvitationDTO.class)))
+    )
+    @ApiResponse(responseCode = "404", description = "Team indicated was not an existing Team in the system.", content = @Content)
+    @ApiResponse(responseCode = "401", description = "Unauthorized user: Only the captain can to the pending invitations to a team", content = @Content)
+    public ResponseEntity<List<InvitationDTO>> getPendingInvitation(
+            @Parameter(description = "ID of the Team") @PathVariable Long teamId
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(InvitationDTO.fromInvitations(teamService.getPendingInvitations(teamId)));
+    }
+
     @PatchMapping("/teams/accept")
     @Operation(summary = "Accept an invitation to join a team", description = "Allows an invited user to accept an existing and yet pending invitation to join a Team")
     @ApiResponse(responseCode = "200", description = "Invitation accepted successfully", content = @Content(schema = @Schema(implementation = TeamDetailsDTO.class), mediaType = "application/json"))
@@ -63,7 +81,9 @@ public class InvitationController {
         Invitation invitation = invitationService.getPendientInvitation(token);
         TeamDetailsDTO teamDetails = TeamDetailsDTO.fromTeam(teamService.acceptInvitation(invitation));
         invitationService.settleAcceptance(invitation);
-        return ResponseEntity.status(200).body(teamDetails);
+        return ResponseEntity.status(HttpStatus.OK).body(teamDetails);
     }
+
+
 
 }
