@@ -29,7 +29,7 @@ public class TeamService {
 
 
     public List<Team> getAllTeams() {
-        return teamRepository.findAll();
+        return teamRepository.findAllWithMembers();
     }
 
     public List<Team> getUsersTeams() {
