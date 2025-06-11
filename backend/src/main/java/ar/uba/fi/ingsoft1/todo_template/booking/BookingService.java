@@ -1,7 +1,7 @@
 package ar.uba.fi.ingsoft1.todo_template.booking;
 
-import ar.uba.fi.ingsoft1.todo_template.timeslot.TimeSlotRepository;
-import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
+import ar.uba.fi.ingsoft1.todo_template.timeslot.TimeSlotService;
+import ar.uba.fi.ingsoft1.todo_template.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,8 +13,8 @@ import java.util.List;
 public class BookingService {
 
     private final BookingRepository bookingRepository;
-    private final UserRepository userRepository;
-    private final TimeSlotRepository timeSlotRepository;
+    private final UserService userService;
+    private final TimeSlotService timeSlotService;
 
     public List<BookingDTO> getBookingsByField(Long fieldId) {
         return bookingRepository.findByTimeSlot_Field_IdAndActiveTrue(fieldId).stream()
@@ -38,15 +38,12 @@ public class BookingService {
         return bookingRepository.findById(id)
                 .filter(Booking::isActive)
                 .map(this::toDTO)
-                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada o inactiva"));
+                .orElseThrow(() -> new IllegalArgumentException("No active booking found"));
     }
 
     public BookingDTO createBooking(String username, Long timeslotId, LocalDate date, int hour) {
-        var user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
-
-        var timeSlot = timeSlotRepository.findById(timeslotId)
-                .orElseThrow(() -> new IllegalArgumentException("Franja horaria no encontrada"));
+        var user = userService.findByUsernameOrThrow(username);
+        var timeSlot = timeSlotService.findByIdOrThrow(timeslotId);
 
         var booking = new Booking(user, timeSlot, date, hour);
         bookingRepository.save(booking);
@@ -56,10 +53,10 @@ public class BookingService {
 
     public void cancelBooking(Long id) {
         var booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
+                .orElseThrow(() -> new IllegalArgumentException("No active booking found"));
 
         if (!booking.isActive()) {
-            throw new IllegalStateException("La reserva ya está cancelada");
+            throw new IllegalStateException("Booking is already cancelled");
         }
 
         booking.cancel();
