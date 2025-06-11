@@ -1,4 +1,4 @@
-import { useUserTeams, useCreateTeam, useUpdateTeam, useDeleteTeam, useInviteToTeam } from "@/services/TeamServices";
+import { useUserTeams, useCreateTeam, useUpdateTeam, useDeleteTeam, useInviteToTeam, usePendingInvitations } from "@/services/TeamServices";
 import { navigate } from "wouter/use-browser-location";
 import { useState, useRef } from "react";
 import { Plus, Edit, Trash2, X, Upload, Users, Crown } from "lucide-react";
@@ -214,6 +214,11 @@ export const TeamsScreen = () => {
                   }}
                 />
               ))}
+            </div>
+            {/* Cantidad de miembros */}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", color: "var(--muted-foreground)", fontSize: "1rem" }}>
+              <Users size={18} />
+              <span>{(team.members?.length || 0)} {((team.members?.length || 0) === 1 ? 'miembro' : 'miembros')}</span>
             </div>
             {/* Action buttons - Only show if user is the owner */}
             {team.ownerId === userEmail && (
@@ -1268,6 +1273,7 @@ const TeamDetailsModal = ({
   const inviteToTeamMutation = useInviteToTeam();
   const [inviteInputs, setInviteInputs] = useState(["", "", "", ""]);
   const [inviteFeedback, setInviteFeedback] = useState<(string|null)[]>([null, null, null, null]);
+  const { data: pendingInvitations = [], refetch: refetchPendingInvitations } = usePendingInvitations(team.id);
 
   // Construir los slots: owner + hasta 4 miembros
   const slots: string[] = [team.ownerId, ...(team.members?.filter(m => m !== team.ownerId) || [])];
@@ -1280,6 +1286,8 @@ const TeamDetailsModal = ({
       await inviteToTeamMutation.mutateAsync({ teamId: team.id, inviteeEmail: email });
       setInviteFeedback(fb => fb.map((f, i) => i === index-1 ? "Invitación enviada" : f));
       setInviteInputs(inputs => inputs.map((v, i) => i === index-1 ? "" : v));
+      // Refetch pending invitations after successful invite
+      refetchPendingInvitations();
     } catch (e: any) {
       setInviteFeedback(fb => fb.map((f, i) => i === index-1 ? (e?.message || "Error al invitar") : f));
     }
@@ -1377,6 +1385,41 @@ const TeamDetailsModal = ({
               ))}
             </div>
           </div>
+
+          {/* Invitaciones Pendientes */}
+          {isOwner && pendingInvitations.length > 0 && (
+            <div style={{ marginTop: "24px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "500", marginBottom: "12px" }}>Invitaciones Pendientes</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {pendingInvitations.map((email, index) => (
+                  <div 
+                    key={index} 
+                    style={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: "8px", 
+                      background: "var(--secondary)", 
+                      borderRadius: "8px", 
+                      padding: "8px 12px",
+                      border: "1px solid var(--border)"
+                    }}
+                  >
+                    <Users size={16} />
+                    <span style={{ flex: 1 }}>{email}</span>
+                    <span style={{ 
+                      fontSize: "12px", 
+                      color: "var(--muted-foreground)",
+                      backgroundColor: "var(--background)",
+                      padding: "2px 8px",
+                      borderRadius: "4px"
+                    }}>
+                      Pendiente
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end" }}>
           <button onClick={onClose} style={{ padding: "8px 16px", backgroundColor: "var(--secondary)", color: "var(--secondary-foreground)", border: "1px solid var(--border)", borderRadius: "4px", cursor: "pointer", fontSize: "14px" }}>Cerrar</button>

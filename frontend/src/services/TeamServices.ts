@@ -73,6 +73,15 @@ export function useInviteToTeam() {
   });
 }
 
+export function usePendingInvitations(teamId: string) {
+  const [token] = useToken();
+  return useQuery({
+    queryKey: ["pendingInvitations", teamId],
+    queryFn: () => getPendingInvitations(teamId, token),
+    enabled: !!teamId && token.state === "LOGGED_IN",
+  });
+}
+
 async function getAllTeams(token: any): Promise<Team[]> {
   try {
     const response = await fetch(`${BASE_API_URL}/teams/my-teams`, {
@@ -83,6 +92,7 @@ async function getAllTeams(token: any): Promise<Team[]> {
         ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
       },
     });
+
 
     if (!response.ok) {
       throw new Error(`Error al obtener equipos: ${response.status}`);
@@ -194,6 +204,28 @@ async function inviteToTeam(teamId: string, inviteeEmail: string, token: any): P
   }
 
   return { success: true };
+}
+
+export async function getPendingInvitations(teamId: string, token: any): Promise<string[]> {
+  const response = await fetch(`${BASE_API_URL}/invitations/teams/${teamId}/pending`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+  });
+
+  console.log("response pending invitations", response);
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al obtener invitaciones pendientes: ${response.status}`);
+  }
+
+  const invitations = await response.json();
+  console.log("pending invitations body", invitations);
+  return invitations.map((inv: { inviteeEmail: string }) => inv.inviteeEmail);
 }
 
 
