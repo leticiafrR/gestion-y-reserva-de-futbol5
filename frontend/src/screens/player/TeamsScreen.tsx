@@ -1,7 +1,7 @@
 import { useUserTeams, useCreateTeam, useUpdateTeam, useDeleteTeam, useInviteToTeam } from "@/services/TeamServices";
 import { navigate } from "wouter/use-browser-location";
 import { useState, useRef } from "react";
-import { Plus, Edit, Trash2, X, Upload, Users } from "lucide-react";
+import { Plus, Edit, Trash2, X, Upload, Users, Crown } from "lucide-react";
 import type { Team } from "@/models/Team";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToken } from "@/services/TokenContext";
@@ -25,9 +25,6 @@ export const TeamsScreen = () => {
   const queryClient = useQueryClient();
   const [token] = useToken();
   const userEmail = token.state === "LOGGED_IN" ? token.email : null;
-
-  console.log('Current user email:', userEmail);
-  console.log('Teams:', teams?.map(t => ({ id: t.id, name: t.name, owner: t.ownerId })));
 
   const handleCreateTeam = async (teamData: { name: string; logo?: string; primaryColor: string; secondaryColor: string }) => {
     try {
@@ -1347,7 +1344,10 @@ const TeamDetailsModal = ({
                 <div key={idx} style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--secondary)", borderRadius: "8px", padding: "10px 16px" }}>
                   <Users size={16} />
                   {idx === 0 ? (
-                    <span style={{ fontWeight: "bold" }}>{member} (Owner)</span>
+                    <>
+                      <Crown size={18} color="#FFD700" style={{ marginRight: 3, verticalAlign: "middle" }} />
+                      <span>{member}</span>
+                    </>
                   ) : member ? (
                     <span>{member}</span>
                   ) : isOwner ? (

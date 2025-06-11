@@ -6,7 +6,6 @@ export const bookingService = {
     // Create a new booking
     createBooking: async (timeslotId: number, date: string, hour: number): Promise<BookingDTO> => {
         const accessToken = getAuthToken();
-        console.log(timeslotId, date, hour)
         const response = await axios.post(`${BASE_API_URL}/bookings`, null, {
             params: {
                 timeslotId,
@@ -17,7 +16,6 @@ export const bookingService = {
                 Authorization: `Bearer ${accessToken}`
             }
         });
-        console.log("response", response)
         return response.data;
     },
 

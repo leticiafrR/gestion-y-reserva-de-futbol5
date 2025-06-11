@@ -75,7 +75,6 @@ let mockFields: Field[] = [
 async function getOwnerFields(): Promise<Field[]> {
   // return mockFields;
   const accessToken = getAuthToken();
-  console.log("accessToken", accessToken);
   const response = await fetch(`${BASE_API_URL}/fields/own`, {
     method: "GET",
     headers: {
@@ -84,7 +83,6 @@ async function getOwnerFields(): Promise<Field[]> {
       Authorization: `Bearer ${accessToken}`, 
     },
   });
-  console.log("response", response);
   if (response.ok) {
     return response.json();
   } else {
@@ -93,7 +91,6 @@ async function getOwnerFields(): Promise<Field[]> {
 }
 
 async function createField(data: Omit<Field, "id">) {
-  console.log("data", data);
   const accessToken = getAuthToken();
   const response = await fetch(`${BASE_API_URL}/fields`, {
     method: "POST",
@@ -104,8 +101,7 @@ async function createField(data: Omit<Field, "id">) {
     },
     body: JSON.stringify(data),
   });
-  console.log("response", response);
-
+    
   if (response.ok) {
     return response.json();
   } else {
@@ -133,7 +129,6 @@ async function deleteField(fieldId: string) {
       Authorization: `Bearer ${accessToken}`,
     },
   });
-  console.log("response", response);
 
 
   if (response.ok) {
@@ -193,7 +188,6 @@ async function updateFieldActiveStatus(fieldId: number, active: boolean) {
       Authorization: `Bearer ${accessToken}`,
     },
   });
-  console.log("response", response);
 
   if (response.ok) {
     return response.json();

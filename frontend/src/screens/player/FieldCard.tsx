@@ -6,11 +6,6 @@ interface FieldCardProps {
 }
 
 export const FieldCard = ({ field, onClick }: FieldCardProps) => {
-  console.log("FieldCard field:", field);
-  console.log("typeof field.active:", typeof field.active, "value:", field.active);
-
-  // Asegurarse de que isActive sea booleano y no undefined
-  // const isActive = field.active === undefined ? true : Boolean(field.active);
 
   return (
     <div

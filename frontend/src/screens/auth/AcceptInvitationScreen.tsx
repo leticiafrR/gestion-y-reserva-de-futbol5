@@ -24,7 +24,6 @@ export const AcceptInvitationScreen = () => {
     if (token.state !== "LOGGED_IN") {
       setTimeout(() => setLocation("/login"), 100);
       localStorage.setItem("pendingInvitationToken", invitationToken);
-      console.log("Se redirigio a login");
       return;
     }
     // Si está logueado, aceptar la invitación

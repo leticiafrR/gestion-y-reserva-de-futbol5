@@ -33,7 +33,7 @@ public class Team {
 
     private String logo;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "team_members",
             joinColumns = @JoinColumn(name = "team_id"),

@@ -91,7 +91,6 @@ export const FieldManagementScreen = () => {
     }
   };
 
-  console.log("FieldManagementScreen mounted")
 
   return (
     <div
