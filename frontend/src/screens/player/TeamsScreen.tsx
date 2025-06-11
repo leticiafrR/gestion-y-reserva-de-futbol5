@@ -1,4 +1,4 @@
-import { useUserTeams, useCreateTeam, useUpdateTeam, useDeleteTeam } from "@/services/TeamServices";
+import { useUserTeams, useCreateTeam, useUpdateTeam, useDeleteTeam, useInviteToTeam } from "@/services/TeamServices";
 import { navigate } from "wouter/use-browser-location";
 import { useState, useRef } from "react";
 import { Plus, Edit, Trash2, X, Upload, Users } from "lucide-react";
@@ -21,6 +21,7 @@ export const TeamsScreen = () => {
   const createTeamMutation = useCreateTeam();
   const updateTeamMutation = useUpdateTeam();
   const deleteTeamMutation = useDeleteTeam();
+  const inviteToTeamMutation = useInviteToTeam();
   const queryClient = useQueryClient();
   const [token] = useToken();
   const userEmail = token.state === "LOGGED_IN" ? token.email : null;
@@ -217,7 +218,6 @@ export const TeamsScreen = () => {
                 />
               ))}
             </div>
-
             {/* Action buttons - Only show if user is the owner */}
             {team.ownerId === userEmail && (
               <div style={{ 
@@ -228,7 +228,8 @@ export const TeamsScreen = () => {
                 justifyContent: "center"
               }}>
                 <button
-                  onClick={() => {
+                  onClick={e => {
+                    e.stopPropagation();
                     setSelectedTeam(team);
                     setShowEditModal(true);
                   }}
@@ -249,7 +250,8 @@ export const TeamsScreen = () => {
                   Editar
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={e => {
+                    e.stopPropagation();
                     setTeamToDeleteId(team.id);
                     setShowDeleteModal(true);
                   }}
@@ -1263,57 +1265,41 @@ const TeamDetailsModal = ({
   team: Team;
   onClose: () => void;
 }) => {
+  const [token] = useToken();
+  const userEmail = token.state === "LOGGED_IN" ? token.email : null;
+  const isOwner = userEmail === team.ownerId;
+  const inviteToTeamMutation = useInviteToTeam();
+  const [inviteInputs, setInviteInputs] = useState(["", "", "", ""]);
+  const [inviteFeedback, setInviteFeedback] = useState<(string|null)[]>([null, null, null, null]);
+
+  // Construir los slots: owner + hasta 4 miembros
+  const slots: string[] = [team.ownerId, ...(team.members?.filter(m => m !== team.ownerId) || [])];
+  while (slots.length < 5) slots.push("");
+
+  const handleInvite = async (index: number) => {
+    const email = inviteInputs[index-1];
+    if (!email) return;
+    try {
+      await inviteToTeamMutation.mutateAsync({ teamId: team.id, inviteeEmail: email });
+      setInviteFeedback(fb => fb.map((f, i) => i === index-1 ? "Invitación enviada" : f));
+      setInviteInputs(inputs => inputs.map((v, i) => i === index-1 ? "" : v));
+    } catch (e: any) {
+      setInviteFeedback(fb => fb.map((f, i) => i === index-1 ? (e?.message || "Error al invitar") : f));
+    }
+  };
+
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 1000,
-      padding: "20px",
-    }}>
-      <div style={{
-        backgroundColor: "white",
-        borderRadius: "8px",
-        width: "100%",
-        maxWidth: "500px",
-        maxHeight: "90vh",
-        overflow: "auto",
-      }}>
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "20px 24px",
-          borderBottom: "1px solid var(--border)",
-        }}>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+      <div style={{ backgroundColor: "white", borderRadius: "8px", width: "100%", maxWidth: "500px", maxHeight: "90vh", overflow: "auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: "1px solid var(--border)" }}>
           <div>
-            <h2 style={{ fontSize: "18px", fontWeight: "bold", margin: "0 0 4px 0" }}>
-              Detalles del Equipo
-            </h2>
-            <p style={{ color: "var(--muted-foreground)", margin: 0, fontSize: "14px" }}>
-              Información del equipo {team.name}
-            </p>
+            <h2 style={{ fontSize: "18px", fontWeight: "bold", margin: "0 0 4px 0" }}>Detalles del Equipo</h2>
+            <p style={{ color: "var(--muted-foreground)", margin: 0, fontSize: "14px" }}>Información del equipo {team.name}</p>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              padding: "8px",
-              backgroundColor: "transparent",
-              border: "none",
-              cursor: "pointer",
-              borderRadius: "4px",
-            }}
-          >
+          <button onClick={onClose} style={{ padding: "8px", backgroundColor: "transparent", border: "none", cursor: "pointer", borderRadius: "4px" }}>
             <X size={20} />
           </button>
         </div>
-
         <div style={{ padding: "24px" }}>
           {/* Logo */}
           {team.logo && (
@@ -1353,75 +1339,47 @@ const TeamDetailsModal = ({
             </div>
           </div>
 
-          {/* Miembros */}
+          {/* Slots de miembros */}
           <div>
-            <h3 style={{ fontSize: "16px", fontWeight: "500", marginBottom: "12px" }}>
-              Miembros del Equipo
-            </h3>
-            <div style={{ 
-              backgroundColor: "var(--secondary)",
-              borderRadius: "8px",
-              padding: "16px"
-            }}>
-              {team.members && team.members.length > 0 ? (
-                <ul style={{ 
-                  listStyle: "none", 
-                  padding: 0, 
-                  margin: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px"
-                }}>
-                  {team.members.map((member, index) => (
-                    <li 
-                      key={index}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "8px",
-                        backgroundColor: "var(--background)",
-                        borderRadius: "4px"
-                      }}
-                    >
-                      <Users size={16} />
-                      <span>{member}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p style={{ 
-                  color: "var(--muted-foreground)",
-                  textAlign: "center",
-                  margin: 0
-                }}>
-                  No hay miembros en el equipo
-                </p>
-              )}
+            <h3 style={{ fontSize: "16px", fontWeight: "500", marginBottom: "12px" }}>Miembros del Equipo</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {slots.map((member, idx) => (
+                <div key={idx} style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--secondary)", borderRadius: "8px", padding: "10px 16px" }}>
+                  <Users size={16} />
+                  {idx === 0 ? (
+                    <span style={{ fontWeight: "bold" }}>{member} (Owner)</span>
+                  ) : member ? (
+                    <span>{member}</span>
+                  ) : isOwner ? (
+                    <>
+                      <input
+                        type="email"
+                        placeholder="Invitar por email"
+                        value={inviteInputs[idx-1]}
+                        onChange={e => setInviteInputs(inputs => inputs.map((v, i) => i === idx-1 ? e.target.value : v))}
+                        style={{ flex: 1, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "4px" }}
+                      />
+                      <button
+                        onClick={() => handleInvite(idx)}
+                        style={{ padding: "6px 12px", backgroundColor: "var(--primary)", color: "var(--primary-foreground)", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "14px" }}
+                        disabled={inviteToTeamMutation.status === 'pending'}
+                      >
+                        Invitar
+                      </button>
+                      {inviteFeedback[idx-1] && (
+                        <span style={{ marginLeft: 8, color: inviteFeedback[idx-1] === "Invitación enviada" ? "green" : "red" }}>{inviteFeedback[idx-1]}</span>
+                      )}
+                    </>
+                  ) : (
+                    <span style={{ color: "var(--muted-foreground)" }}>Vacío</span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
-
-        <div style={{ 
-          padding: "16px 24px",
-          borderTop: "1px solid var(--border)",
-          display: "flex",
-          justifyContent: "flex-end"
-        }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "var(--secondary)",
-              color: "var(--secondary-foreground)",
-              border: "1px solid var(--border)",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Cerrar
-          </button>
+        <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", backgroundColor: "var(--secondary)", color: "var(--secondary-foreground)", border: "1px solid var(--border)", borderRadius: "4px", cursor: "pointer", fontSize: "14px" }}>Cerrar</button>
         </div>
       </div>
     </div>

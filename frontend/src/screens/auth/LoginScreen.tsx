@@ -3,9 +3,14 @@ import { useAppForm } from "@/config/use-app-form";
 import { LoginRequestSchema } from "@/models/Login";
 import { useLogin } from "@/services/UserServices";
 import styles from "./LoginScreen.module.css";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { useToken } from "@/services/TokenContext";
 
 export const LoginScreen = () => {
   const { mutate, error } = useLogin();
+  const [, setLocation] = useLocation();
+  const [token] = useToken();
 
   const formData = useAppForm({
     defaultValues: {

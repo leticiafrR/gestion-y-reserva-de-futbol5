@@ -61,6 +61,18 @@ export function useDeleteTeam() {
   });
 }
 
+export function useInviteToTeam() {
+  const queryClient = useQueryClient();
+  const [token] = useToken();
+  return useMutation({
+    mutationFn: ({ teamId, inviteeEmail }: { teamId: string; inviteeEmail: string }) =>
+      inviteToTeam(teamId, inviteeEmail, token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userTeams"] });
+    },
+  });
+}
+
 async function getAllTeams(token: any): Promise<Team[]> {
   try {
     const response = await fetch(`${BASE_API_URL}/teams/my-teams`, {
@@ -163,6 +175,25 @@ async function deleteTeam(teamId: string, token: any): Promise<{ success: boolea
   if (!response.ok) {
     const errorData = await response.text();
     throw new Error(errorData || `Error al eliminar equipo: ${response.status}`);
+  }
+
+  return { success: true };
+}
+
+async function inviteToTeam(teamId: string, inviteeEmail: string, token: any): Promise<{ success: boolean }> {
+  const response = await fetch(`${BASE_API_URL}/invitations/teams/${teamId}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+    body: JSON.stringify({ inviteeEmail }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al invitar usuario: ${response.status}`);
   }
 
   return { success: true };
