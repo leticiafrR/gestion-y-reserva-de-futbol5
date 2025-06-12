@@ -71,12 +71,21 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    TokenDTO createUser(UserCreateDTO data) {
+    public TokenDTO createUser(UserCreateDTO data) {
         checkUnicValuesToCreateUser(data);
         var user = data.asUser(passwordEncoder::encode);
         userRepository.save(user);
         emailVerificationService.sendVerificationEmail(user);
         return generateTokens(user);
+    }
+
+    private TokenDTO generateTokens(User user) {
+        String accessToken = jwtService.createToken(new JwtUserDetails(
+                user.getUsername(),
+                user.getRole()));
+
+        RefreshToken refreshToken = refreshTokenService.createFor(user);
+        return new TokenDTO(accessToken, refreshToken.value());
     }
 
     public User matchCredentials(UserCredentials data) {
@@ -97,15 +106,6 @@ public class UserService implements UserDetailsService {
         return refreshTokenService.findByValue(data.refreshToken())
                 .map(RefreshToken::user)
                 .map(this::generateTokens);
-    }
-
-    private TokenDTO generateTokens(User user) {
-        String accessToken = jwtService.createToken(new JwtUserDetails(
-                user.getUsername(),
-                user.getRole()));
-
-        RefreshToken refreshToken = refreshTokenService.createFor(user);
-        return new TokenDTO(accessToken, refreshToken.value());
     }
 
     private void checkUnicValuesToCreateUser(UserCreateDTO data) {
