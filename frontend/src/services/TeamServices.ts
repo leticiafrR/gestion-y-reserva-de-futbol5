@@ -61,6 +61,27 @@ export function useDeleteTeam() {
   });
 }
 
+export function useInviteToTeam() {
+  const queryClient = useQueryClient();
+  const [token] = useToken();
+  return useMutation({
+    mutationFn: ({ teamId, inviteeEmail }: { teamId: string; inviteeEmail: string }) =>
+      inviteToTeam(teamId, inviteeEmail, token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userTeams"] });
+    },
+  });
+}
+
+export function usePendingInvitations(teamId: string) {
+  const [token] = useToken();
+  return useQuery({
+    queryKey: ["pendingInvitations", teamId],
+    queryFn: () => getPendingInvitations(teamId, token),
+    enabled: !!teamId && token.state === "LOGGED_IN",
+  });
+}
+
 async function getAllTeams(token: any): Promise<Team[]> {
   try {
     const response = await fetch(`${BASE_API_URL}/teams/my-teams`, {
@@ -72,6 +93,7 @@ async function getAllTeams(token: any): Promise<Team[]> {
       },
     });
 
+
     if (!response.ok) {
       throw new Error(`Error al obtener equipos: ${response.status}`);
     }
@@ -82,13 +104,18 @@ async function getAllTeams(token: any): Promise<Team[]> {
       throw new Error('La respuesta del servidor no tiene el formato esperado');
     }
 
-    return teams.map((team: any) => ({
-      id: team.id.toString(),
-      name: team.name,
-      logo: team.logo || "",
-      colors: [team.primaryColor, team.secondaryColor],
-      ownerId: team.captain,
-    }));
+    const mappedTeams = teams.map((team: any) => {
+      return {
+        id: team.id.toString(),
+        name: team.name,
+        logo: team.logo || "",
+        colors: [team.primaryColor, team.secondaryColor],
+        ownerId: team.captain,
+        members: team.membersUsernames || [],
+      };
+    });
+
+    return mappedTeams;
   } catch (error) {
     throw error;
   }
@@ -158,6 +185,47 @@ async function deleteTeam(teamId: string, token: any): Promise<{ success: boolea
   }
 
   return { success: true };
+}
+
+async function inviteToTeam(teamId: string, inviteeEmail: string, token: any): Promise<{ success: boolean }> {
+  const response = await fetch(`${BASE_API_URL}/invitations/teams/${teamId}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+    body: JSON.stringify({ inviteeEmail }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al invitar usuario: ${response.status}`);
+  }
+
+  return { success: true };
+}
+
+export async function getPendingInvitations(teamId: string, token: any): Promise<string[]> {
+  const response = await fetch(`${BASE_API_URL}/invitations/teams/${teamId}/pending`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+  });
+
+  console.log("response pending invitations", response);
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al obtener invitaciones pendientes: ${response.status}`);
+  }
+
+  const invitations = await response.json();
+  console.log("pending invitations body", invitations);
+  return invitations.map((inv: { inviteeEmail: string }) => inv.inviteeEmail);
 }
 
 

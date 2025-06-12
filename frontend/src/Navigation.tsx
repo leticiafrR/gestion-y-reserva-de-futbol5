@@ -1,4 +1,4 @@
-import { Redirect, Route, Switch } from "wouter";
+import { Redirect, Route, Switch, useLocation } from "wouter";
 import React, { useEffect, useState } from "react";
 
 import { MainScreen as AdminMainScreen } from "@/screens/field-admin/MainScreen";
@@ -9,67 +9,16 @@ import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
 import { VerifyEmailScreen } from "./screens/auth/VerifyEmailScreen";
 import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
-import { TeamsScreen } from "@/screens/player/TeamsScreen";
+import { TeamsScreen } from "@/screens/player/team/TeamsScreen";
 import { ProfileScreen } from "@/screens/player/ProfileScreen";
 import { ScheduleManagementScreen } from "./screens/field-admin/ScheduleManagementScreen";
 import { MatchesScreen } from "@/screens/player/match/MatchesScreen";
 import { MyTournamentsScreen } from "@/screens/player/MyTournamentsScreen";
-
-function AdminRoutes() {
-  return (
-    <Switch>
-      <Route path="/main">
-        <AdminMainScreen />
-      </Route>
-      <Route path="/canchas">
-        <FieldManagementScreen />
-      </Route>
-      <Route path="/horarios">
-        <ScheduleManagementScreen />
-      </Route>
-      <Route path="/">
-        <Redirect href="/main" />
-      </Route>
-      <Route>
-        <Redirect href="/main" />
-      </Route>
-    </Switch>
-  );
-}
-
-function PlayerRoutes() {
-  return (
-    <Switch>
-      <Route path="/main">
-        <PlayerMainScreen />
-      </Route>
-      <Route path="/available-fields">
-        <AvailableFieldsScreen />
-      </Route>
-      <Route path="/matches">
-        <MatchesScreen />
-      </Route>
-      <Route path="/teams">
-        <TeamsScreen />
-      </Route>
-      <Route path="/profile">
-        <ProfileScreen />
-      </Route>
-      <Route path="/my-tournaments">
-        <MyTournamentsScreen />
-      </Route>
-      <Route path="/">
-        <Redirect href="/main" />
-      </Route>
-      <Route>
-        <Redirect href="/main" />
-      </Route>
-    </Switch>
-  );
-}
+import { AcceptInvitationScreen } from "./screens/auth/AcceptInvitationScreen";
 
 export const Navigation = () => {
   const [tokenState] = useToken();
+  const [location] = useLocation();
   // Estado local para el userType
   const [userType, setUserType] = useState(
     typeof window !== "undefined" ? localStorage.getItem("loginUserType") || "user" : "user"
@@ -89,12 +38,74 @@ export const Navigation = () => {
     };
   }, []);
 
+  // Rutas de invitación SIEMPRE disponibles
+  if (location.startsWith("/invitation-email") || location.startsWith("/invitation-team")) {
+    return <AcceptInvitationScreen />;
+  }
+
+  function AdminRoutesWithLog() {
+    return (
+      <Switch>
+        <Route path="/main">
+          {() => {
+            return <AdminMainScreen />;
+          }}
+        </Route>
+        <Route path="/canchas">
+          <FieldManagementScreen />
+        </Route>
+        <Route path="/horarios">
+          <ScheduleManagementScreen />
+        </Route>
+        <Route path="/">
+          <Redirect href="/main" />
+        </Route>
+        <Route>
+          <Redirect href="/main" />
+        </Route>
+      </Switch>
+    );
+  }
+
+  function PlayerRoutesWithLog() {
+    return (
+      <Switch>
+        <Route path="/main">
+          {() => {
+            return <PlayerMainScreen />;
+          }}
+        </Route>
+        <Route path="/available-fields">
+          <AvailableFieldsScreen />
+        </Route>
+        <Route path="/matches">
+          <MatchesScreen />
+        </Route>
+        <Route path="/teams">
+          <TeamsScreen />
+        </Route>
+        <Route path="/profile">
+          <ProfileScreen />
+        </Route>
+        <Route path="/my-tournaments">
+          <MyTournamentsScreen />
+        </Route>
+        <Route path="/">
+          <Redirect href="/main" />
+        </Route>
+        <Route>
+          <Redirect href="/main" />
+        </Route>
+      </Switch>
+    );
+  }
+
   switch (tokenState.state) {
     case "LOGGED_IN":
       if (userType === "owner") {
-        return <AdminRoutes />;
+        return <AdminRoutesWithLog />;
       } else {
-        return <PlayerRoutes />;
+        return <PlayerRoutesWithLog />;
       }
     case "LOGGED_OUT":
       return (

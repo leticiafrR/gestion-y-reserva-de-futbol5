@@ -2,7 +2,9 @@ package ar.uba.fi.ingsoft1.todo_template.team;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,7 +25,7 @@ public class TeamController {
 
     @GetMapping
     @Operation(summary = "List Teams", description = "Returns all the teams registered in the system")
-    @ApiResponse(responseCode = "200", description = "Correctly listed equipment")
+    @ApiResponse(responseCode = "200", description = "Correctly listed equipment", content = @Content(schema = @Schema(implementation = TeamDetailsDTO.class), mediaType = "application/json"))
     public ResponseEntity<List<TeamDetailsDTO>> getAllTeams() {
         return ResponseEntity.ok(TeamDetailsDTO.fromTeamList(teamService.getAllTeams()));
     }
@@ -31,19 +33,20 @@ public class TeamController {
     @PostMapping
     @Operation(summary = "Create team", description = "Allows the authenticated user to create a new team and be its captain.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Team created successfully"),
+            @ApiResponse(responseCode = "201", description = "Team created successfully", content = @Content(schema = @Schema(implementation = TeamDetailsDTO.class), mediaType = "application/json")),
             @ApiResponse(responseCode = "409", description = "Conflict: A team with that name already exists.", content = @Content),
             @ApiResponse(responseCode = "401", description = "Invalid Token", content = @Content)
     })
     public ResponseEntity<TeamDetailsDTO> createTeam(@Valid @RequestBody TeamCreateDTO dto) {
         return ResponseEntity.status(201).body(TeamDetailsDTO.fromTeam(teamService.createTeam(dto)));
     }
+
     @PatchMapping("/{id}")
     @Operation(summary = "Update Team", description = "Allows the captain to modify the colors or the logo of the indicated Team.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Team updated successfully"),
-            @ApiResponse(responseCode = "403", description = "Unauthorized, only the captain can perform the operation"),
-            @ApiResponse(responseCode = "404", description = "Team not found")
+            @ApiResponse(responseCode = "200", description = "Team updated successfully", content = @Content(schema = @Schema(implementation = TeamDetailsDTO.class), mediaType = "application/json")),
+            @ApiResponse(responseCode = "403", description = "Unauthorized, only the captain can perform the operation", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Team not found", content = @Content)
     })
     public ResponseEntity<TeamDetailsDTO> updateTeam(
             @Parameter(description = "ID of the Team") @PathVariable Long id,
@@ -70,7 +73,11 @@ public class TeamController {
     @GetMapping("/my-teams")
     @Operation(summary = "List teams where the user is member", description = "Returns a list of the teams (TeamDetailsDTO) where the user is a member")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Teams listed succesfully"),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Teams listed successfully",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = TeamDetailsDTO.class)))
+            ),
             @ApiResponse(responseCode = "403", description = "UserNotFound, invalid session")
     })
     public ResponseEntity<List<TeamDetailsDTO>> getUsersTeams(){

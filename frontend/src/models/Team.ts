@@ -6,6 +6,7 @@ export const TeamSchema = z.object({
   logo: z.string().url("URL de logo inválida").optional(),
   colors: z.tuple([z.string(), z.string()]).optional(),
   ownerId: z.string(),
+  members: z.array(z.string()).optional(),
 });
 
 export type Team = z.infer<typeof TeamSchema>;

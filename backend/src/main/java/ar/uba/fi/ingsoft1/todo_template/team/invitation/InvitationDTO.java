@@ -1,6 +1,8 @@
 package ar.uba.fi.ingsoft1.todo_template.team.invitation;
 
 import lombok.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -23,5 +25,9 @@ public class InvitationDTO {
                 .pending(inv.isPending())
                 .token(inv.getToken())
                 .build();
+    }
+
+    public static List<InvitationDTO> fromInvitations(List<Invitation> invs){
+        return invs.stream().map(InvitationDTO::fromInvitation).collect(Collectors.toList());
     }
 }

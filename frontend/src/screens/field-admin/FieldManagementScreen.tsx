@@ -34,7 +34,6 @@ export const FieldManagementScreen = () => {
   const { data: fields = [], isLoading } = useGetOwnerFields()
   const createFieldMutation = useCreateField()
 
-  console.log("fields", fields);
 
   const handleCreateField = async (fieldData: Omit<Field, "id" | "status" | "isAvailable">) => {
     try {
@@ -92,7 +91,6 @@ export const FieldManagementScreen = () => {
     }
   };
 
-  console.log("FieldManagementScreen mounted")
 
   return (
     <div

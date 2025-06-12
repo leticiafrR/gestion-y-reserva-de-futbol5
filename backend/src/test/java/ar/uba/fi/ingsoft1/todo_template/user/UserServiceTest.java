@@ -1,6 +1,8 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import ar.uba.fi.ingsoft1.todo_template.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

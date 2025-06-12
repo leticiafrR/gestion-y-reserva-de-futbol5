@@ -29,6 +29,7 @@ export const TokenProvider = ({ children }: React.PropsWithChildren) => {
     } else {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem("loginUserType");
+      localStorage.removeItem("userEmail");
     }
   }, [state]);
 

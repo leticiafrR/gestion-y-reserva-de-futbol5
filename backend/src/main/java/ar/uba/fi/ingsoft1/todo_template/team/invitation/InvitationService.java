@@ -7,10 +7,9 @@ import org.springframework.stereotype.Service;
 import ar.uba.fi.ingsoft1.todo_template.team.Team;
 import ar.uba.fi.ingsoft1.todo_template.email.EmailService;
 import org.springframework.web.server.ResponseStatusException;
-
 import java.util.Locale;
 import java.util.UUID;
-
+import java.util.List;
 
 @Service
 @Transactional
@@ -42,7 +41,6 @@ public class InvitationService {
     }
 
     public Invitation sendInvitationEmail(Team team, String to) {
-        //verifico que no haya una invitación penidente
         if (invitationRepository.existsByTeamAndInviteeEmailAndPending(team, to, true)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "There is already a pending invitation to the user to the indicated team.");
         }
@@ -55,4 +53,9 @@ public class InvitationService {
         emailService.sendMailMessage(invitationFormater.getContEmailNormalized(team.getName(),to, invitation.getToken(), Locale.ENGLISH));
         return invitation;
     }
+
+    public List<Invitation> getPendingInvitations(Team team){
+        return invitationRepository.findByTeamAndPendingIsTrue(team);
+    }
+
 }

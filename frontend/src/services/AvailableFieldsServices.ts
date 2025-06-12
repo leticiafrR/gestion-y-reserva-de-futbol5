@@ -55,7 +55,6 @@ let mockFields: Field[] = [
 async function getAvailableFields(): Promise<Field[]> {
   // return mockFields;
   const accessToken = getAuthToken();
-  console.log("accessToken", accessToken);
   const response = await fetch(`${BASE_API_URL}/fields/all`, {
     method: "GET",
     headers: {
@@ -66,11 +65,9 @@ async function getAvailableFields(): Promise<Field[]> {
   });
 
 
-  console.log(response);
 
   if (response.ok) {
     const data = await response.json();
-    console.log(data);
     return data;
 π
   } else {

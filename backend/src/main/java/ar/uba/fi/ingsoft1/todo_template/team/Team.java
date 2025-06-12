@@ -1,5 +1,6 @@
 package ar.uba.fi.ingsoft1.todo_template.team;
 
+import ar.uba.fi.ingsoft1.todo_template.team.invitation.Invitation;
 import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserAlreadyMemberException;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import jakarta.persistence.*;
@@ -32,7 +33,7 @@ public class Team {
 
     private String logo;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "team_members",
             joinColumns = @JoinColumn(name = "team_id"),
@@ -40,7 +41,9 @@ public class Team {
     )
     private List<User> members = new ArrayList<>();
 
-    // Agregar usuario existente al equipo, lanza excepción si el usuario ya pertenecía al equipo
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Invitation> invitations = new ArrayList<>();
+
     public void addMember(User user) throws UserAlreadyMemberException{
         if (members == null) {
             members = new ArrayList<>();
@@ -52,20 +55,10 @@ public class Team {
         members.add(user);
     }
 
-    // Obtener nombres de los miembros
     public List<String> getMemberNames() {
         return members.stream()
                 .map(User::getUsername)
                 .collect(Collectors.toList());
     }
 
-//    public void removeMember(User user) {
-//        if (members != null) {
-//            members.remove(user);
-//        }
-//    }
-//
-//    public boolean removeMember(String username) {
-//        return members.removeIf(user -> user.getUsername().equals(username));
-//    }
 }

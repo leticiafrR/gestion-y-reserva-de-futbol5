@@ -10,13 +10,23 @@ import java.util.Optional;
 
 public interface TeamRepository extends JpaRepository<Team, Long> {
     Optional<Team> findByName(String name);
+
     List<Team> findByMembers(User user);
+
+    @Query("SELECT DISTINCT t FROM Team t JOIN FETCH t.members")
+    List<Team> findAllWithMembers();
+
     @Query("""
-    SELECT t
-      FROM Team t
-      JOIN FETCH t.members m
-     WHERE m.id = :userId
-    """)
+    SELECT DISTINCT t
+    FROM Team t
+    JOIN FETCH t.members
+    WHERE t IN (
+        SELECT t2
+        FROM Team t2
+        JOIN t2.members m2
+        WHERE m2.id = :userId
+    )
+""")
     List<Team> findAllByMemberIdFetchMembers(@Param("userId") Long userId);
 
     @Query("SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END " +
