@@ -3,13 +3,11 @@ package ar.uba.fi.ingsoft1.todo_template.timeslot;
 import ar.uba.fi.ingsoft1.todo_template.booking.Booking;
 import ar.uba.fi.ingsoft1.todo_template.booking.BookingRepository;
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
-import ar.uba.fi.ingsoft1.todo_template.field.FieldRepository;
 
+import ar.uba.fi.ingsoft1.todo_template.field.FieldRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -19,12 +17,12 @@ import java.util.stream.Collectors;
 @Service
 public class TimeSlotService {
 
-    private final TimeSlotRepository repository;
+    private final TimeSlotRepository timeslotRepository;
     private final FieldRepository fieldRepository;
 
 
     public TimeSlotService(TimeSlotRepository repository, FieldRepository fieldRepository) {
-        this.repository = repository;
+        this.timeslotRepository = repository;
         this.fieldRepository = fieldRepository;
     }
 
@@ -34,7 +32,7 @@ public class TimeSlotService {
 
     public Map<LocalDate, List<Integer>> getAvailableHours(Long fieldId, int daysAhead) {
         Field field = fieldRepository.findById(fieldId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada"));
+                .orElseThrow(() -> new IllegalArgumentException("Field not found"));
 
         Map<LocalDate, List<Integer>> availability = new LinkedHashMap<>();
         LocalDate today = LocalDate.now();
@@ -43,7 +41,11 @@ public class TimeSlotService {
             LocalDate date = today.plusDays(i);
             DayOfWeek day = date.getDayOfWeek();
 
-            TimeSlot timeslot = repository.findByFieldIdAndDayOfWeek(fieldId, day);
+            TimeSlot timeslot = timeslotRepository.findByFieldIdAndDayOfWeek(fieldId, day);
+            if (timeslot == null) {
+                availability.put(date, List.of());
+                continue;
+            }
 
             Set<Integer> reservedHours = bookingRepository.findByTimeSlot_Field_IdAndActiveTrue(fieldId).stream()
                     .filter(b -> b.getBookingDate().isEqual(date))
@@ -63,13 +65,27 @@ public class TimeSlotService {
         return availability;
     }
 
+    public int countAvailableHoursInDateRange(List<Long> fieldIds, int daysAhead) {
+        int total = 0;
+
+        for (Long fieldId : fieldIds) {
+            Map<LocalDate, List<Integer>> availability = getAvailableHours(fieldId, daysAhead);
+            for (List<Integer> hours : availability.values()) {
+                total += hours.size();
+            }
+        }
+
+        return total;
+    }
+
+
 
     public List<TimeSlot> getTimeSlotsByField(Long fieldId) {
-        return repository.findByFieldIdOrderByDayOfWeekAscOpenTimeAsc(fieldId);
+        return timeslotRepository.findByFieldIdOrderByDayOfWeekAscOpenTimeAsc(fieldId);
     }
 
     public TimeSlot getTimeSlotByFieldAndDay(Long fieldId, DayOfWeek day) {
-        return repository.findByFieldIdAndDayOfWeek(fieldId, day);
+        return timeslotRepository.findByFieldIdAndDayOfWeek(fieldId, day);
     }
 
     @Transactional
@@ -77,9 +93,9 @@ public class TimeSlotService {
         newSlots.forEach(this::validateSlot);
 
         Field field = fieldRepository.findById(fieldId)
-                .orElseThrow(() -> new IllegalArgumentException("Cancha no encontrada"));
+                .orElseThrow(() -> new IllegalArgumentException("Field not found"));
 
-        repository.deleteByFieldId(fieldId);
+        timeslotRepository.deleteByFieldId(fieldId);
 
         List<TimeSlot> slots = newSlots.stream()
                 .map(dto -> TimeSlot.builder()
@@ -91,14 +107,15 @@ public class TimeSlotService {
                 .toList();
 
 
-        repository.saveAll(slots);
+        timeslotRepository.saveAll(slots);
     }
 
     @Transactional
     public void replaceDayTimeSlot(Long fieldId, DayOfWeek day, TimeSlotDTO dto) {
         validateSlot(dto);
-        repository.deleteByFieldIdAndDayOfWeek(fieldId, day);
-        Field field = fieldRepository.getReferenceById(fieldId);
+        timeslotRepository.deleteByFieldIdAndDayOfWeek(fieldId, day);
+        Field field = fieldRepository.findById(fieldId)
+                .orElseThrow(() -> new IllegalArgumentException("Field not found"));
 
         TimeSlot slot = TimeSlot.builder()
                 .field(field)
@@ -107,13 +124,18 @@ public class TimeSlotService {
                 .closeTime(dto.closeTime())
                 .build();
 
-        repository.save(slot);
+        timeslotRepository.save(slot);
     }
 
 
     private void validateSlot(TimeSlotDTO dto) {
         if (dto.closeTime() <= dto.openTime()) {
-            throw new IllegalArgumentException("closeTime debe ser mayor que openTime");
+            throw new IllegalArgumentException("Opening time must be before closing time.");
         }
+    }
+
+    public TimeSlot findByIdOrThrow(Long id) {
+        return timeslotRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
     }
 }
