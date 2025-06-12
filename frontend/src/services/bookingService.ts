@@ -3,6 +3,15 @@ import { BookingDTO } from '@/models/BookingDTO';
 import { BASE_API_URL, getAuthToken } from '@/config/app-query-client';
 import { useQuery } from "@tanstack/react-query";
 
+export interface OwnerBooking {
+  id: number;
+  userId: number;
+  timeSlotId: number;
+  bookingDate: string; // 'YYYY-MM-DD'
+  bookingHour: number;
+  active: boolean;
+}
+
 export const bookingService = {
     // Create a new booking
     createBooking: async (timeslotId: number, date: string, hour: number): Promise<BookingDTO> => {
@@ -104,4 +113,14 @@ export function useFieldAvailableHours(fieldId: string | number | undefined, day
     },
     enabled: !!fieldId,
   });
-} 
+}
+
+export const getOwnerBookings = async (): Promise<OwnerBooking[]> => {
+  const accessToken = getAuthToken();
+  const response = await axios.get(`${BASE_API_URL}/bookings/owner`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  return response.data;
+}; 

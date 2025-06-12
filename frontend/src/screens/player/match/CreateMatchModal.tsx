@@ -4,7 +4,8 @@ import { useState } from "react"
 import { X, ArrowLeft, ArrowRight, MapPin, Clock, DollarSign, Calendar } from "lucide-react"
 import { createMatch } from "@/services/MatchServices"
 import type { CreateMatchData, Field, AvailableSlot } from "@/models/Match"
-import { useFieldAvailableHours } from "@/services/bookingService"
+import { useFieldAvailableHours, bookingService } from "@/services/bookingService"
+import { fieldAvailabilityService } from "@/services/fieldAvailabilityService"
 
 interface CreateMatchModalProps {
   onClose: () => void
@@ -97,7 +98,10 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
   const { data: availableHours, isLoading: loadingSlots, error: errorSlots } = useFieldAvailableHours(selectedField?.id)
 
   const getAvailableDates = () => {
-    return availableHours ? Object.keys(availableHours) : []
+    if (!availableHours) return []
+    return Object.keys(availableHours).filter(date => 
+      Array.isArray(availableHours[date]) && availableHours[date].length > 0
+    )
   }
 
   const getAvailableHoursForDate = (date: string) => {
@@ -133,7 +137,25 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
         selectedTeams: formData.type === "closed" ? formData.selectedTeams : undefined,
       }
 
-      await createMatch(matchData)
+      // await createMatch(matchData)
+      
+      // Get the day of week from the selected date
+      const date = new Date(selectedDate)
+      const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()
+      
+      // Get the timeslot for this day
+      const timeslot = await fieldAvailabilityService.getDayAvailability(
+        Number(selectedField.id),
+        dayOfWeek as any
+      )
+      
+      // Create booking with the timeslot ID
+      await bookingService.createBooking(
+        timeslot.id,
+        selectedDate,
+        selectedHour
+      )
+      
       onClose()
       // Aquí podrías mostrar una notificación de éxito
     } catch (error) {

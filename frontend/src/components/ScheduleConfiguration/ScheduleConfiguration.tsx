@@ -267,10 +267,9 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
   const handleSave = async () => {
     try {
       const availability: TimeSlotDTO[] = []
-      
       Object.entries(weeklySchedule).forEach(([day, schedule]) => {
         if (schedule.available && schedule.timeSlots.length > 0) {
-          const slot = schedule.timeSlots[0] // Only use the first (and only) time slot
+          const slot = schedule.timeSlots[0]
           availability.push({
             dayOfWeek: day.toUpperCase() as TimeSlotDTO['dayOfWeek'],
             openTime: FieldAvailabilityService.timeStringToHour(slot.start),
@@ -279,26 +278,44 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
         }
       })
 
-      await fieldAvailabilityService.setFieldAvailability(Number(selectedFieldId), availability)
-      
+      // Obtener todos los bookings activos de la cancha
+      const bookings = await bookingService.getBookingsByField(Number(selectedFieldId))
+      // Obtener los timeslots actuales
+      const currentSlots = await fieldAvailabilityService.getFieldAvailability(Number(selectedFieldId))
+      // Filtrar los timeslots que NO tienen bookings asociados
+      const slotsWithBookings = new Set(bookings.map(b => b.timeSlotId))
+      const slotsToKeep = currentSlots.filter(slot => slotsWithBookings.has(slot.id))
+      // Solo enviar a setFieldAvailability los slots nuevos y los que no tienen bookings
+      const safeAvailability = [
+        ...slotsToKeep.map(slot => ({
+          dayOfWeek: slot.dayOfWeek,
+          openTime: slot.openTime,
+          closeTime: slot.closeTime
+        })),
+        ...availability.filter(newSlot =>
+          !slotsToKeep.some(slot =>
+            slot.dayOfWeek === newSlot.dayOfWeek &&
+            slot.openTime === newSlot.openTime &&
+            slot.closeTime === newSlot.closeTime
+          )
+        )
+      ]
+      await fieldAvailabilityService.setFieldAvailability(Number(selectedFieldId), safeAvailability)
+
       // Crear reservas para los horarios específicos
       for (const specificDate of specificDates) {
         const hour = FieldAvailabilityService.timeStringToHour(specificDate.hour)
-        // Get the day of week from the specific date
         const [year, month, day] = specificDate.date.split('-').map(Number)
         const localDate = new Date(year, month - 1, day)
         const dayOfWeek = localDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()
-        
         // Get the timeslot for this day of week
         const timeslot = await fieldAvailabilityService.getDayAvailability(
           Number(selectedFieldId),
           dayOfWeek as TimeSlotDTO['dayOfWeek']
         )
-        console.log("timeslot", timeslot)
-        
         // Create the booking with the timeslot ID
         await bookingService.createBooking(
-          timeslot.id, // Use the timeslot ID instead of field ID
+          timeslot.id,
           specificDate.date,
           hour
         )
@@ -702,9 +719,9 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
 
                 {/* Mostrar eventos existentes */}
                 {ownerBookings.map((booking) => {
-                  if (!booking.date) return null;
+                  if (!booking.bookingDate) return null;
 
-                  const [byear, bmonth, bday] = booking.date.split('-').map(Number);
+                  const [byear, bmonth, bday] = booking.bookingDate.split('-').map(Number);
                   const bookingDate = new Date(byear, bmonth - 1, bday);
                   const formattedBookingDate = bookingDate.toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
@@ -758,7 +775,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                             Evento
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "14px" }}>{booking.hour !== undefined ? FieldAvailabilityService.hourToTimeString(booking.hour) : "Sin hora"}</span>
+                            <span style={{ fontSize: "14px" }}>{booking.bookingHour !== undefined ? FieldAvailabilityService.hourToTimeString(booking.bookingHour) : "Sin hora"}</span>
                           </div>
                         </div>
                       </div>
