@@ -1,4 +1,5 @@
 import { BASE_API_URL, getAuthToken } from "@/config/app-query-client";
+import { useQuery } from "@tanstack/react-query";
 
 // Types based on the API schema
 export interface TimeSlotDTO {
@@ -158,6 +159,17 @@ export class FieldAvailabilityService {
 }
 
 export const fieldAvailabilityService = new FieldAvailabilityService();
+
+export function useFieldAvailability(fieldId: number | string | undefined) {
+  return useQuery({
+    queryKey: ["field-availability", fieldId],
+    queryFn: () => {
+      if (!fieldId) return Promise.resolve([]);
+      return fieldAvailabilityService.getFieldAvailability(Number(fieldId));
+    },
+    enabled: !!fieldId,
+  });
+}
 
 /*
 // Example usage with hardcoded data for testing:

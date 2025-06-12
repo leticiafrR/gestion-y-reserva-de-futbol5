@@ -10,7 +10,6 @@ import type { Match } from "@/models/Match"
 
 export const MatchesScreen = () => {
   const [activeTab, setActiveTab] = useState<"available" | "my-matches" | "history">("available")
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [showFilters, setShowFilters] = useState(false)
 
@@ -85,27 +84,6 @@ export const MatchesScreen = () => {
           </div>
 
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "10px 16px",
-                backgroundColor: "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "500",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <Plus size={16} />
-              Crear Partido
-            </button>
-
             <button
               onClick={() => (window.location.href = "/main")}
               style={{
@@ -452,8 +430,6 @@ export const MatchesScreen = () => {
       </div>
 
       {/* Modals */}
-      {showCreateModal && <CreateMatchModal onClose={() => setShowCreateModal(false)} />}
-
       {selectedMatch && <MatchDetailsModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />}
     </div>
   )

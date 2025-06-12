@@ -4,9 +4,11 @@ import { useState } from "react"
 import { X, ArrowLeft, ArrowRight, MapPin, Clock, DollarSign, Calendar } from "lucide-react"
 import { createMatch } from "@/services/MatchServices"
 import type { CreateMatchData, Field, AvailableSlot } from "@/models/Match"
+import { useFieldAvailableHours } from "@/services/bookingService"
 
 interface CreateMatchModalProps {
   onClose: () => void
+  preselectedField?: Field
 }
 
 // Mock data para canchas disponibles
@@ -71,10 +73,11 @@ const mockAvailableSlots: AvailableSlot[] = [
   },
 ]
 
-export const CreateMatchModal = ({ onClose }: CreateMatchModalProps) => {
+export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModalProps) => {
   const [step, setStep] = useState(1)
-  const [selectedField, setSelectedField] = useState<Field | null>(null)
-  const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
+  const [selectedField, setSelectedField] = useState<Field | null>(preselectedField || null)
+  const [selectedDate, setSelectedDate] = useState<string>("")
+  const [selectedHour, setSelectedHour] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   // Form data
@@ -90,31 +93,38 @@ export const CreateMatchModal = ({ onClose }: CreateMatchModalProps) => {
     },
   })
 
-  const handleFieldSelect = (field: Field) => {
-    setSelectedField(field)
+  // Obtener los horarios disponibles reales
+  const { data: availableHours, isLoading: loadingSlots, error: errorSlots } = useFieldAvailableHours(selectedField?.id)
+
+  const getAvailableDates = () => {
+    return availableHours ? Object.keys(availableHours) : []
   }
 
-  const handleSlotSelect = (slot: AvailableSlot) => {
-    setSelectedSlot(slot)
+  const getAvailableHoursForDate = (date: string) => {
+    return availableHours && availableHours[date] ? availableHours[date] : []
+  }
+
+  const handleFieldSelect = (field: Field) => {
+    if (!preselectedField) setSelectedField(field)
   }
 
   const calculatePricePerPlayer = () => {
-    if (!selectedSlot) return 0
-    const totalHours = 2 // Asumimos 2 horas por defecto
-    const totalCost = selectedSlot.pricePerHour * totalHours
+    if (!selectedField || !selectedDate || !selectedHour) return 0
+    const totalHours = selectedHour
+    const totalCost = (selectedField.pricePerHour || 0) * totalHours
     return Math.ceil(totalCost / formData.maxPlayers)
   }
 
   const handleSubmit = async () => {
-    if (!selectedField || !selectedSlot) return
+    if (!selectedField || !selectedDate || !selectedHour) return
 
     setIsLoading(true)
     try {
       const matchData: CreateMatchData = {
         type: formData.type,
         title: formData.title,
-        date: selectedSlot.date,
-        time: `${selectedSlot.startTime} - ${selectedSlot.endTime}`,
+        date: selectedDate,
+        time: `${selectedHour}:00`,
         field: selectedField,
         minPlayers: formData.minPlayers,
         maxPlayers: formData.maxPlayers,
@@ -209,35 +219,64 @@ export const CreateMatchModal = ({ onClose }: CreateMatchModalProps) => {
                 <div
                   style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px" }}
                 >
-                  {mockFields.map((field) => (
+                  {preselectedField ? (
                     <div
-                      key={field.id}
-                      onClick={() => handleFieldSelect(field)}
+                      key={preselectedField.id}
                       style={{
                         padding: "16px",
-                        border: selectedField?.id === field.id ? "2px solid #007bff" : "1px solid #dee2e6",
+                        border: "2px solid #007bff",
                         borderRadius: "12px",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        backgroundColor: selectedField?.id === field.id ? "#f8f9ff" : "white",
+                        backgroundColor: "#f8f9ff",
+                        opacity: 0.7,
+                        pointerEvents: "none",
                       }}
                     >
                       <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "600", color: "#212529" }}>
-                        {field.name}
+                        {preselectedField.name}
                       </h4>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
                         <MapPin size={14} style={{ color: "#6c757d" }} />
-                        <span style={{ fontSize: "13px", color: "#6c757d" }}>{field.location}</span>
+                        <span style={{ fontSize: "13px", color: "#6c757d" }}>{preselectedField.location}</span>
                       </div>
-                      <div style={{ fontSize: "13px", color: "#6c757d", marginBottom: "8px" }}>{field.surface}</div>
+                      <div style={{ fontSize: "13px", color: "#6c757d", marginBottom: "8px" }}>{preselectedField.surface}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <DollarSign size={14} style={{ color: "#28a745" }} />
                         <span style={{ fontSize: "13px", color: "#28a745", fontWeight: "500" }}>
-                          ${field.pricePerHour?.toLocaleString()}/hora
+                          ${preselectedField.pricePerHour ? preselectedField.pricePerHour.toLocaleString() : "-"}/hora
                         </span>
                       </div>
                     </div>
-                  ))}
+                  ) : (
+                    mockFields.map((field) => (
+                      <div
+                        key={field.id}
+                        onClick={() => handleFieldSelect(field)}
+                        style={{
+                          padding: "16px",
+                          border: selectedField?.id === field.id ? "2px solid #007bff" : "1px solid #dee2e6",
+                          borderRadius: "12px",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          backgroundColor: selectedField?.id === field.id ? "#f8f9ff" : "white",
+                        }}
+                      >
+                        <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "600", color: "#212529" }}>
+                          {field.name}
+                        </h4>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                          <MapPin size={14} style={{ color: "#6c757d" }} />
+                          <span style={{ fontSize: "13px", color: "#6c757d" }}>{field.location}</span>
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#6c757d", marginBottom: "8px" }}>{field.surface}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <DollarSign size={14} style={{ color: "#28a745" }} />
+                          <span style={{ fontSize: "13px", color: "#28a745", fontWeight: "500" }}>
+                            ${field.pricePerHour ? field.pricePerHour.toLocaleString() : "-"}/hora
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -247,41 +286,45 @@ export const CreateMatchModal = ({ onClose }: CreateMatchModalProps) => {
                   <h3 style={{ margin: "0 0 16px 0", fontSize: "16px", fontWeight: "600", color: "#212529" }}>
                     Horarios Disponibles
                   </h3>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                      gap: "12px",
-                    }}
-                  >
-                    {mockAvailableSlots
-                      .filter((slot) => slot.field.id === selectedField.id)
-                      .map((slot) => (
-                        <div
-                          key={slot.id}
-                          onClick={() => handleSlotSelect(slot)}
-                          style={{
-                            padding: "16px",
-                            border: selectedSlot?.id === slot.id ? "2px solid #007bff" : "1px solid #dee2e6",
-                            borderRadius: "12px",
-                            cursor: "pointer",
-                            transition: "all 0.2s ease",
-                            backgroundColor: selectedSlot?.id === slot.id ? "#f8f9ff" : "white",
+                  {loadingSlots ? (
+                    <div style={{ color: "#6c757d", marginBottom: 12 }}>Cargando horarios...</div>
+                  ) : errorSlots ? (
+                    <div style={{ color: "#ef4444", marginBottom: 12 }}>Error al cargar horarios</div>
+                  ) : (
+                    <>
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ fontWeight: 500, marginRight: 8 }}>Fecha:</label>
+                        <select
+                          value={selectedDate}
+                          onChange={e => {
+                            setSelectedDate(e.target.value)
+                            setSelectedHour(null)
                           }}
+                          style={{ padding: "8px", borderRadius: "6px", border: "1px solid #ccc" }}
                         >
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                            <Calendar size={14} style={{ color: "#6c757d" }} />
-                            <span style={{ fontSize: "14px", color: "#212529", fontWeight: "500" }}>{slot.date}</span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            <Clock size={14} style={{ color: "#6c757d" }} />
-                            <span style={{ fontSize: "14px", color: "#6c757d" }}>
-                              {slot.startTime} - {slot.endTime}
-                            </span>
-                          </div>
+                          <option value="">Seleccionar fecha</option>
+                          {getAvailableDates().map(date => (
+                            <option key={date} value={date}>{date}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {selectedDate && (
+                        <div style={{ marginBottom: 16 }}>
+                          <label style={{ fontWeight: 500, marginRight: 8 }}>Hora de inicio:</label>
+                          <select
+                            value={selectedHour ?? ""}
+                            onChange={e => setSelectedHour(Number(e.target.value))}
+                            style={{ padding: "8px", borderRadius: "6px", border: "1px solid #ccc" }}
+                          >
+                            <option value="">Seleccionar hora</option>
+                            {getAvailableHoursForDate(selectedDate).map((hour: number) => (
+                              <option key={hour} value={hour}>{hour}:00</option>
+                            ))}
+                          </select>
                         </div>
-                      ))}
-                  </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -289,6 +332,33 @@ export const CreateMatchModal = ({ onClose }: CreateMatchModalProps) => {
             <div>
               {/* Match Configuration */}
               <div style={{ display: "grid", gap: "24px" }}>
+                {/* Selected Field Info */}
+                {selectedField && (
+                  <div
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: "8px",
+                      border: "1px solid #dee2e6",
+                    }}
+                  >
+                    <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "600", color: "#212529" }}>
+                      Cancha Seleccionada
+                    </h4>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                      <MapPin size={14} style={{ color: "#6c757d" }} />
+                      <span style={{ fontSize: "13px", color: "#6c757d" }}>{selectedField.name}</span>
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#6c757d", marginBottom: "8px" }}>{selectedField.surface}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <DollarSign size={14} style={{ color: "#28a745" }} />
+                      <span style={{ fontSize: "13px", color: "#28a745", fontWeight: "500" }}>
+                        ${selectedField.pricePerHour ? selectedField.pricePerHour.toLocaleString() : "-"}/hora
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Match Type */}
                 <div>
                   <label
@@ -437,7 +507,7 @@ export const CreateMatchModal = ({ onClose }: CreateMatchModalProps) => {
                     Cálculo de Precio
                   </h4>
                   <div style={{ fontSize: "13px", color: "#6c757d", marginBottom: "8px" }}>
-                    Costo total: ${selectedSlot ? (selectedSlot.pricePerHour * 2).toLocaleString() : 0}
+                    Costo total: ${selectedDate && selectedHour && selectedField?.pricePerHour ? (selectedField.pricePerHour * 2).toLocaleString() : 0}
                   </div>
                   <div style={{ fontSize: "16px", fontWeight: "600", color: "#28a745" }}>
                     Precio por jugador: ${calculatePricePerPlayer().toLocaleString()}
@@ -597,17 +667,17 @@ export const CreateMatchModal = ({ onClose }: CreateMatchModalProps) => {
             {step === 1 ? (
               <button
                 onClick={() => setStep(2)}
-                disabled={!selectedField || !selectedSlot}
+                disabled={!selectedField || !selectedDate || !selectedHour}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "6px",
                   padding: "10px 16px",
-                  backgroundColor: selectedField && selectedSlot ? "#007bff" : "#6c757d",
+                  backgroundColor: selectedField && selectedDate && selectedHour ? "#007bff" : "#6c757d",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
-                  cursor: selectedField && selectedSlot ? "pointer" : "not-allowed",
+                  cursor: selectedField && selectedDate && selectedHour ? "pointer" : "not-allowed",
                   fontSize: "14px",
                   fontWeight: "500",
                 }}
