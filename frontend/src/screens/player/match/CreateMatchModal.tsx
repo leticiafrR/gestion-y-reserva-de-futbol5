@@ -6,6 +6,7 @@ import { createMatch } from "@/services/MatchServices"
 import type { CreateMatchData, Field, AvailableSlot } from "@/models/Match"
 import { useFieldAvailableHours, bookingService } from "@/services/bookingService"
 import { fieldAvailabilityService } from "@/services/fieldAvailabilityService"
+import { CalendarTimePicker } from "@/components/ScheduleConfiguration/CalendarTimePicker"
 
 interface CreateMatchModalProps {
   onClose: () => void
@@ -113,6 +114,11 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
     if (!preselectedField) setSelectedField(field)
   }
 
+  const handleDateTimeSelect = (date: string, hour: number) => {
+    setSelectedDate(date)
+    setSelectedHour(hour)
+  }
+
   const calculatePricePerPlayer = () => {
     if (!selectedField || !selectedDate || !selectedHour) return 0
     const totalHours = selectedHour
@@ -143,7 +149,7 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
       const date = new Date(selectedDate)
       const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()
       // Get the timeslot for this day
-      const timeslot = await fieldAvailabilityService.getDayAvailability(
+        const timeslot = await fieldAvailabilityService.getDayAvailability(
         Number(selectedField.id),
         dayOfWeek as any
       )
@@ -322,49 +328,43 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                 </div>
 
                 {/* Time Slot Selection */}
+                {/* Calendar Time Picker */}
                 {selectedField && (
                   <div>
                     <h3 style={{ margin: "0 0 16px 0", fontSize: "16px", fontWeight: "600", color: "#212529" }}>
-                      Horarios Disponibles
+                      Seleccionar Fecha y Horario
                     </h3>
                     {loadingSlots ? (
-                      <div style={{ color: "#6c757d", marginBottom: 12 }}>Cargando horarios...</div>
+                      <div
+                        style={{
+                          padding: "40px",
+                          textAlign: "center",
+                          color: "#6c757d",
+                          border: "1px solid #dee2e6",
+                          borderRadius: "12px",
+                        }}
+                      >
+                        Cargando horarios disponibles...
+                      </div>
                     ) : errorSlots ? (
-                      <div style={{ color: "#ef4444", marginBottom: 12 }}>Error al cargar horarios</div>
+                      <div
+                        style={{
+                          padding: "40px",
+                          textAlign: "center",
+                          color: "#ef4444",
+                          border: "1px solid #dee2e6",
+                          borderRadius: "12px",
+                        }}
+                      >
+                        Error al cargar horarios disponibles
+                      </div>
                     ) : (
-                      <>
-                        <div style={{ marginBottom: 16 }}>
-                          <label style={{ fontWeight: 500, marginRight: 8 }}>Fecha:</label>
-                          <select
-                            value={selectedDate}
-                            onChange={e => {
-                              setSelectedDate(e.target.value)
-                              setSelectedHour(null)
-                            }}
-                            style={{ padding: "8px", borderRadius: "6px", border: "1px solid #ccc" }}
-                          >
-                            <option value="">Seleccionar fecha</option>
-                            {getAvailableDates().map(date => (
-                              <option key={date} value={date}>{date}</option>
-                            ))}
-                          </select>
-                        </div>
-                        {selectedDate && (
-                          <div style={{ marginBottom: 16 }}>
-                            <label style={{ fontWeight: 500, marginRight: 8 }}>Hora de inicio:</label>
-                            <select
-                              value={selectedHour ?? ""}
-                              onChange={e => setSelectedHour(Number(e.target.value))}
-                              style={{ padding: "8px", borderRadius: "6px", border: "1px solid #ccc" }}
-                            >
-                              <option value="">Seleccionar hora</option>
-                              {getAvailableHoursForDate(selectedDate).map((hour: number) => (
-                                <option key={hour} value={hour}>{hour}:00</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                      </>
+                      <CalendarTimePicker
+                        availableHours={availableHours}
+                        selectedDate={selectedDate}
+                        selectedHour={selectedHour}
+                        onDateTimeSelect={handleDateTimeSelect}
+                      />
                     )}
                   </div>
                 )}

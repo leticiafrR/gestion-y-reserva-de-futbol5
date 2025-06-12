@@ -20,11 +20,9 @@ export const getFieldSummary = async (date: Date, days: number = 1): Promise<Fie
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     }
   });
-  const res = await response.json()
-  console.log("response", res)
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Failed to fetch field summary: ${response.status} - ${errorText}`);
   }
-  return res;
+  return response.json();
 }; 
