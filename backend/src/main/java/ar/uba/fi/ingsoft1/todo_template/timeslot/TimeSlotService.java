@@ -3,14 +3,11 @@ package ar.uba.fi.ingsoft1.todo_template.timeslot;
 import ar.uba.fi.ingsoft1.todo_template.booking.Booking;
 import ar.uba.fi.ingsoft1.todo_template.booking.BookingRepository;
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
-import ar.uba.fi.ingsoft1.todo_template.field.FieldRepository;
 
-import ar.uba.fi.ingsoft1.todo_template.field.FieldService;
+import ar.uba.fi.ingsoft1.todo_template.field.FieldRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -21,12 +18,12 @@ import java.util.stream.Collectors;
 public class TimeSlotService {
 
     private final TimeSlotRepository timeslotRepository;
-    private final FieldService fieldService;
+    private final FieldRepository fieldRepository;
 
 
-    public TimeSlotService(TimeSlotRepository repository, FieldService fieldService) {
+    public TimeSlotService(TimeSlotRepository repository, FieldRepository fieldRepository) {
         this.timeslotRepository = repository;
-        this.fieldService = fieldService;
+        this.fieldRepository = fieldRepository;
     }
 
 
@@ -34,7 +31,8 @@ public class TimeSlotService {
     private BookingRepository bookingRepository;
 
     public Map<LocalDate, List<Integer>> getAvailableHours(Long fieldId, int daysAhead) {
-        Field field = fieldService.getFieldByIdOrThrow(fieldId);
+        Field field = fieldRepository.findById(fieldId)
+                .orElseThrow(() -> new IllegalArgumentException("Field not found"));
 
         Map<LocalDate, List<Integer>> availability = new LinkedHashMap<>();
         LocalDate today = LocalDate.now();
@@ -67,6 +65,20 @@ public class TimeSlotService {
         return availability;
     }
 
+    public int countAvailableHoursInDateRange(List<Long> fieldIds, int daysAhead) {
+        int total = 0;
+
+        for (Long fieldId : fieldIds) {
+            Map<LocalDate, List<Integer>> availability = getAvailableHours(fieldId, daysAhead);
+            for (List<Integer> hours : availability.values()) {
+                total += hours.size();
+            }
+        }
+
+        return total;
+    }
+
+
 
     public List<TimeSlot> getTimeSlotsByField(Long fieldId) {
         return timeslotRepository.findByFieldIdOrderByDayOfWeekAscOpenTimeAsc(fieldId);
@@ -80,7 +92,8 @@ public class TimeSlotService {
     public void replaceAllTimeSlots(Long fieldId, List<TimeSlotDTO> newSlots) {
         newSlots.forEach(this::validateSlot);
 
-        Field field = fieldService.getFieldByIdOrThrow(fieldId);
+        Field field = fieldRepository.findById(fieldId)
+                .orElseThrow(() -> new IllegalArgumentException("Field not found"));
 
         timeslotRepository.deleteByFieldId(fieldId);
 
@@ -101,7 +114,8 @@ public class TimeSlotService {
     public void replaceDayTimeSlot(Long fieldId, DayOfWeek day, TimeSlotDTO dto) {
         validateSlot(dto);
         timeslotRepository.deleteByFieldIdAndDayOfWeek(fieldId, day);
-        Field field = fieldService.getFieldByIdOrThrow(fieldId);
+        Field field = fieldRepository.findById(fieldId)
+                .orElseThrow(() -> new IllegalArgumentException("Field not found"));
 
         TimeSlot slot = TimeSlot.builder()
                 .field(field)

@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -14,7 +16,7 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final UserService userService;
-    private final TimeSlotService timeSlotService;
+    private final TimeSlotService timeslotService;
 
     public List<BookingDTO> getBookingsByField(Long fieldId) {
         return bookingRepository.findByTimeSlot_Field_IdAndActiveTrue(fieldId).stream()
@@ -43,7 +45,7 @@ public class BookingService {
 
     public BookingDTO createBooking(String username, Long timeslotId, LocalDate date, int hour) {
         var user = userService.findByUsernameOrThrow(username);
-        var timeSlot = timeSlotService.findByIdOrThrow(timeslotId);
+        var timeSlot = timeslotService.findByIdOrThrow(timeslotId);
 
         var booking = new Booking(user, timeSlot, date, hour);
         bookingRepository.save(booking);
@@ -63,11 +65,39 @@ public class BookingService {
         bookingRepository.save(booking);
     }
 
+    public int countBookingsForFieldsOnDate(List<Long> fieldIds, LocalDate date) {
+        return bookingRepository.findByTimeSlot_Field_IdInAndActiveTrue(fieldIds).stream()
+                .filter(b -> b.getBookingDate().isEqual(date))
+                .toList()
+                .size();
+    }
+
+    public int countBookingsForFieldsInDateRange(List<Long> fieldIds, int daysAhead) {
+        LocalDate today = LocalDate.now();
+        LocalDate end = today.plusDays(daysAhead);
+
+        return bookingRepository.findByTimeSlot_Field_IdInAndActiveTrue(fieldIds).stream()
+                .filter(b -> !b.getBookingDate().isBefore(today) && !b.getBookingDate().isAfter(end))
+                .toList()
+                .size();
+    }
+
+    public Set<Integer> getReservedHoursForFieldAndDate(Long fieldId, LocalDate date) {
+        return bookingRepository.findByTimeSlot_Field_IdAndActiveTrue(fieldId).stream()
+                .filter(b -> b.getBookingDate().isEqual(date))
+                .map(Booking::getBookingHour)
+                .collect(Collectors.toSet());
+    }
+
+
+
     private BookingDTO toDTO(Booking booking) {
         return new BookingDTO(
                 booking.getId(),
                 booking.getUser().getId(),
                 booking.getTimeSlot().getId(),
+                booking.getBookingDate(),
+                booking.getBookingHour(),
                 booking.isActive()
         );
     }
