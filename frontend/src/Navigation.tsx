@@ -9,7 +9,7 @@ import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
 import { VerifyEmailScreen } from "./screens/auth/VerifyEmailScreen";
 import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
-import { TeamsScreen } from "@/screens/player/TeamsScreen";
+import { TeamsScreen } from "@/screens/player/team/TeamsScreen";
 import { ProfileScreen } from "@/screens/player/ProfileScreen";
 import { ScheduleManagementScreen } from "./screens/field-admin/ScheduleManagementScreen";
 import { MatchesScreen } from "@/screens/player/match/MatchesScreen";
