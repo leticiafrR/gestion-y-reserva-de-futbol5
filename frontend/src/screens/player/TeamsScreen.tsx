@@ -1229,7 +1229,7 @@ const ErrorPopup = ({
           </button>
         </div>
         <div style={{ padding: "20px 24px" }}>
-          <p style={{ margin: 0, color: "var(--foreground)", fontSize: "14px" }}>
+          <p style={{ margin: 0, color: "var(--foreground)", fontSize: "18px" }}>
             {message}
           </p>
         </div>
@@ -1274,24 +1274,74 @@ const TeamDetailsModal = ({
   const [inviteInputs, setInviteInputs] = useState(["", "", "", ""]);
   const [inviteFeedback, setInviteFeedback] = useState<(string|null)[]>([null, null, null, null]);
   const { data: pendingInvitations = [], refetch: refetchPendingInvitations } = usePendingInvitations(team.id);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Construir los slots: owner + hasta 4 miembros
   const slots: string[] = [team.ownerId, ...(team.members?.filter(m => m !== team.ownerId) || [])];
   while (slots.length < 5) slots.push("");
 
   const handleInvite = async (index: number) => {
-    const email = inviteInputs[index-1];
+    const email = inviteInputs[index - 1];
     if (!email) return;
     try {
       await inviteToTeamMutation.mutateAsync({ teamId: team.id, inviteeEmail: email });
-      setInviteFeedback(fb => fb.map((f, i) => i === index-1 ? "Invitación enviada" : f));
-      setInviteInputs(inputs => inputs.map((v, i) => i === index-1 ? "" : v));
-      // Refetch pending invitations after successful invite
+      // Crear y mostrar el toast de éxito
+      const toast = document.createElement('div');
+      toast.style.position = 'fixed';
+      toast.style.top = '20px';
+      toast.style.right = '20px';
+      toast.style.backgroundColor = '#22c55e';
+      toast.style.color = 'white';
+      toast.style.padding = '12px 24px';
+      toast.style.borderRadius = '8px';
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+      toast.style.zIndex = '2000';
+      toast.style.fontSize = '16px';
+      toast.style.fontWeight = '500';
+      toast.textContent = 'Invitación enviada';
+      document.body.appendChild(toast);
+
+      // Limpiar el input
+      setInviteInputs(inputs => inputs.map((v, i) => i === index - 1 ? "" : v));
       refetchPendingInvitations();
+
+      // Remover el toast después de 3 segundos
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
     } catch (e: any) {
-      setInviteFeedback(fb => fb.map((f, i) => i === index-1 ? (e?.message || "Error al invitar") : f));
+      // Crear y mostrar el toast de error
+      const toast = document.createElement('div');
+      toast.style.position = 'fixed';
+      toast.style.top = '20px';
+      toast.style.right = '20px';
+      toast.style.backgroundColor = '#ef4444';
+      toast.style.color = 'white';
+      toast.style.padding = '12px 24px';
+      toast.style.borderRadius = '8px';
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+      toast.style.zIndex = '2000';
+      toast.style.fontSize = '16px';
+      toast.style.fontWeight = '500';
+      
+      let errorMsg = "Error al invitar";
+      if (e?.response?.data?.message?.includes("not found") || e?.message?.includes("not found")) {
+        errorMsg = "Usuario no encontrado";
+      }
+      toast.textContent = errorMsg;
+      document.body.appendChild(toast);
+
+      // Remover el toast después de 3 segundos
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
     }
   };
+  
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
@@ -1374,9 +1424,6 @@ const TeamDetailsModal = ({
                       >
                         Invitar
                       </button>
-                      {inviteFeedback[idx-1] && (
-                        <span style={{ marginLeft: 8, color: inviteFeedback[idx-1] === "Invitación enviada" ? "green" : "red" }}>{inviteFeedback[idx-1]}</span>
-                      )}
                     </>
                   ) : (
                     <span style={{ color: "var(--muted-foreground)" }}>Vacío</span>
@@ -1425,6 +1472,9 @@ const TeamDetailsModal = ({
           <button onClick={onClose} style={{ padding: "8px 16px", backgroundColor: "var(--secondary)", color: "var(--secondary-foreground)", border: "1px solid var(--border)", borderRadius: "4px", cursor: "pointer", fontSize: "14px" }}>Cerrar</button>
         </div>
       </div>
+      {errorMessage && (
+        <ErrorPopup message={errorMessage} onClose={() => setErrorMessage(null)} />
+      )}
     </div>
   );
 }; 
