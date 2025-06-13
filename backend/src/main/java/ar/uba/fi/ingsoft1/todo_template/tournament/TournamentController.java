@@ -7,10 +7,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import ar.uba.fi.ingsoft1.todo_template.booking.BookingDTO;
 import ar.uba.fi.ingsoft1.todo_template.config.GlobalControllerExceptionHandler.IncorrectValueResponse;
 
 @RestController
@@ -37,7 +42,7 @@ public class TournamentController {
         return tournamentService.createTournament(dto);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id_tournament}")
     @Operation(summary = "Delete a tournament", description = "Allows a tournament organizer to delete an unstarted tournament from the database")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Tournament deleted successfully"),
@@ -46,12 +51,12 @@ public class TournamentController {
             @ApiResponse(responseCode = "404", description = "Tournament not found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class))),
             @ApiResponse(responseCode = "409", description = "Tournament has already started and cannot be deleted", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
     })
-    public ResponseEntity<Void> deleteField(@PathVariable Long id) {
-        tournamentService.deleteTournament(id);
+    public ResponseEntity<Void> deleteField(@PathVariable Long id_tournament) {
+        tournamentService.deleteTournament(id_tournament);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping("/{id_tournament}")
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Update details of a tournament", description = "Allows updating one or more details of a tournament")
     @ApiResponses(value = {
@@ -63,9 +68,67 @@ public class TournamentController {
             @ApiResponse(responseCode = "404", description = "Tournament with given ID not found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class))),
     })
     public Tournament updateFieldDetails(
-            @PathVariable Long id,
+            @PathVariable Long id_tournament,
             @RequestBody TournamentUpdateDTO updateRequest) {
-        return tournamentService.updateTournament(id, updateRequest);
+        return tournamentService.updateTournament(id_tournament, updateRequest.toCommands());
+    }
+
+    @GetMapping("/all")
+    @Operation(summary = "Get all active tournaments", description = "Returns a list of all active tournaments (open for registration and closed)")
+    @ApiResponse(responseCode = "200", description = "List of all tournaments", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TournamentSummaryDTO.class)))
+    @ApiResponse(responseCode = "401", description = "User not authenticated", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "404", description = "No tournament found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
+    public ResponseEntity<List<TournamentSummaryDTO>> getAlltTournaments() {
+        List<TournamentSummaryDTO> allTournaments = tournamentService.getAllTournaments();
+        if (allTournaments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No active tournaments found");
+        }
+        return ResponseEntity.ok(allTournaments);
+    }
+
+    @GetMapping("/all/open_to_registration")
+    @Operation(summary = "Get all active tournaments", description = "Returns a list of all active tournaments")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of active tournaments", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TournamentSummaryDTO.class))),
+            @ApiResponse(responseCode = "404", description = "No active tournaments found", content = @Content(mediaType = "text/plain"))
+    })
+    public ResponseEntity<List<TournamentSummaryDTO>> getAllTournamentsOpenForRegistration() {
+        List<TournamentSummaryDTO> activeTournaments = tournamentService
+                .getFilteredByStateTournaments(TournamentState.OPEN_TO_REGISTER);
+        if (activeTournaments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No active tournaments found");
+        }
+        return ResponseEntity.ok(activeTournaments);
+    }
+
+    @GetMapping("/all/finished")
+    @Operation(summary = "Get all active tournaments", description = "Returns a list of all active tournaments")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of active tournaments", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TournamentSummaryDTO.class))),
+            @ApiResponse(responseCode = "404", description = "No active tournaments found", content = @Content(mediaType = "text/plain"))
+    })
+    public ResponseEntity<List<TournamentSummaryDTO>> getAllTournamentsFinished() {
+        List<TournamentSummaryDTO> activeTournaments = tournamentService
+                .getFilteredByStateTournaments(TournamentState.FINISHED);
+        if (activeTournaments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No active tournaments found");
+        }
+        return ResponseEntity.ok(activeTournaments);
+    }
+
+    @GetMapping("/all/in_progress")
+    @Operation(summary = "Get all active tournaments", description = "Returns a list of all active tournaments")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of active tournaments", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TournamentSummaryDTO.class))),
+            @ApiResponse(responseCode = "404", description = "No active tournaments found", content = @Content(mediaType = "text/plain"))
+    })
+    public ResponseEntity<List<TournamentSummaryDTO>> getAllTournamentsInProgress() {
+        List<TournamentSummaryDTO> activeTournaments = tournamentService
+                .getFilteredByStateTournaments(TournamentState.IN_PROGRESS);
+        if (activeTournaments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No active tournaments found");
+        }
+        return ResponseEntity.ok(activeTournaments);
     }
 
 }
