@@ -3,9 +3,11 @@ import { useMutation } from "@tanstack/react-query";
 import { LoginRequest, LoginResponse, LoginResponseSchema } from "@/models/Login";
 import { useToken } from "@/services/TokenContext";
 import { BASE_API_URL } from "@/config/app-query-client";
+import { useLocation } from "wouter";
 
 export function useLogin() {
   const [, setToken] = useToken();
+  const [, setLocation] = useLocation();
 
   return useMutation<LoginResponse, Error, LoginRequest>({
     mutationFn: async (req: LoginRequest) => {
@@ -32,6 +34,13 @@ export function useLogin() {
       window.dispatchEvent(new Event("userTypeChanged"));
 
       setToken({ state: "LOGGED_IN", ...tokenData, email: req.email });
+
+      // Check for pending invitation token
+      const pendingInvitationToken = localStorage.getItem("pendingInvitationToken");
+      if (pendingInvitationToken) {
+        localStorage.removeItem("pendingInvitationToken"); // Clean up
+        setLocation(`/invitation-team?token=${pendingInvitationToken}`);
+      }
       
       return tokenData;
     },

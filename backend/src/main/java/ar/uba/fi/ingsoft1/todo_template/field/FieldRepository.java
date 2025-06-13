@@ -12,5 +12,6 @@ public interface FieldRepository extends JpaRepository<Field, Long> {
     Optional<Field> findByIdAndOwner(Long id, User owner);
     List<Field> findByOwner(User owner);
     List<Field> findByActiveTrue();
+    Field findById(long id);
 
 }

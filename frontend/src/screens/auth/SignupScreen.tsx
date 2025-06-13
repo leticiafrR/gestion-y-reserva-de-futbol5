@@ -313,7 +313,6 @@ interface SignupRequest {
 }
 
 export const SignupScreen = () => {
-  console.log("SignupScreen mounted");
   const { mutate, error, isSuccess, data } = useSignup();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<Error | null>(null);
@@ -334,7 +333,6 @@ export const SignupScreen = () => {
       onSubmit: SignupRequestSchema as any,
     },
     onSubmit: async ({ value }: { value: FormValues }) => {
-      console.log("Form submitted with values:", value);
       try {
         setIsUploading(true);
         setUploadError(null);
@@ -342,9 +340,7 @@ export const SignupScreen = () => {
         // Si hay una foto seleccionada, la subimos primero
         let photoUrl: string | undefined;
         if (value.photo instanceof File) {
-          console.log("Uploading photo...");
           photoUrl = await uploadImageProfile(value.photo, value.email);
-          console.log("Photo uploaded successfully:", photoUrl);
         }
 
         // Creamos el objeto de request con la URL de la foto
@@ -352,13 +348,10 @@ export const SignupScreen = () => {
           ...value,
           photo: photoUrl || (typeof value.photo === 'string' ? value.photo : undefined),
         };
-        console.log("Sending signup request:", signupRequest);
 
         // Llamamos a la mutación con los datos actualizados
         await mutate(signupRequest);
-        console.log("Signup mutation completed");
       } catch (error) {
-        console.error("Error during form submission:", error);
         const errorMessage = error instanceof Error ? error.message : "Failed to upload image";
         setUploadError(new Error(errorMessage));
         throw new Error(errorMessage);

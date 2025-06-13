@@ -8,11 +8,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -50,6 +53,17 @@ public class FieldController {
         List<Field> fields = fieldService.getFieldsOf(username);
         return ResponseEntity.ok(fields);
     }
+
+    @GetMapping("/owner/summary")
+    @Operation(summary = "Resumen para dueño de canchas", description = "Cantidad de canchas, reservas de hoy y porcentaje de ocupación")
+    public ResponseEntity<OwnerSummaryDTO> getOwnerSummary(
+            @RequestParam(defaultValue = "10") int days,
+            @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        String username = getAuthenticatedUser().username();
+        return ResponseEntity.ok(fieldService.getSummaryForOwner(username, days, date));
+    }
+
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar cancha", description = "Actualiza los datos de una cancha que pertenece al usuario")

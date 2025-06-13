@@ -1,6 +1,8 @@
-package ar.uba.fi.ingsoft1.todo_template;
+package ar.uba.fi.ingsoft1.todo_template.user;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import ar.uba.fi.ingsoft1.todo_template.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -10,9 +12,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
-import ar.uba.fi.ingsoft1.todo_template.user.User;
-import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
-import ar.uba.fi.ingsoft1.todo_template.user.UserService;
 import ar.uba.fi.ingsoft1.todo_template.user.dto.TokenDTO;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshTokenService;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnverifiedAccountException;

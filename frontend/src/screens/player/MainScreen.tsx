@@ -32,7 +32,7 @@ export const PlayerMainScreen = () => {
     {
       title: "Mis reservas",
       description: "Gestiona tus reservas activas",
-      path: "/reservations",
+      path: "/bookings",
       emoji: "📅"
     },
     {

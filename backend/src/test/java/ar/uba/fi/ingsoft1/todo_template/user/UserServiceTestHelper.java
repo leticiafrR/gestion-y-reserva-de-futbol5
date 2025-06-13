@@ -1,4 +1,4 @@
-package ar.uba.fi.ingsoft1.todo_template;
+package ar.uba.fi.ingsoft1.todo_template.user;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -10,9 +10,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
-import ar.uba.fi.ingsoft1.todo_template.user.User;
-import ar.uba.fi.ingsoft1.todo_template.user.UserCredentials;
-import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshToken;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshTokenService;
 
@@ -85,17 +82,17 @@ public class UserServiceTestHelper {
 
     private User createUser(String username, String password) {
         return new User(
-            username,
-            password,
-            "USER",
-            "F",
-            "25",
-            "Zone123",
-            "Leticia",
-            "Figueroa",
-            "https://example.com/profile.jpg" // <-- Valor válido para @URL
-        );
+                username,
+                password,
+                "USER",
+                "F",
+                "25",
+                "Zone123",
+                "Leticia",
+                "Figueroa",
+                "https://example.com/profile.jpg");
     }
+
     public UserCredentials createCredentials(String username, String password) {
         return new UserCredentials() {
             public String username() {

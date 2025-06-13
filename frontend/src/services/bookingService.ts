@@ -1,12 +1,22 @@
 import axios from 'axios';
 import { BookingDTO } from '@/models/BookingDTO';
 import { BASE_API_URL, getAuthToken } from '@/config/app-query-client';
+import { useQuery } from "@tanstack/react-query";
+
+export interface OwnerBooking {
+  id: number;
+  userId: number;
+  timeSlotId: number;
+  bookingDate: string; // 'YYYY-MM-DD'
+  bookingHour: number;
+  active: boolean;
+}
 
 export const bookingService = {
     // Create a new booking
     createBooking: async (timeslotId: number, date: string, hour: number): Promise<BookingDTO> => {
-        const accessToken = getAuthToken();
         console.log(timeslotId, date, hour)
+        const accessToken = getAuthToken();
         const response = await axios.post(`${BASE_API_URL}/bookings`, null, {
             params: {
                 timeslotId,
@@ -50,6 +60,7 @@ export const bookingService = {
                 Authorization: `Bearer ${accessToken}`
             }
         });
+        console.log("response", response)
         return response.data;
     },
 
@@ -85,5 +96,42 @@ export const bookingService = {
             }
         });
         return response.data;
+    },
+
+    // Get user's all bookings (active and inactive)
+    getAllMyBookings: async (): Promise<BookingDTO[]> => {
+        const accessToken = getAuthToken();
+        const response = await axios.get(`${BASE_API_URL}/bookings/my/all`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+        return response.data;
     }
+};
+
+export function useFieldAvailableHours(fieldId: string | number | undefined, days: number = 10) {
+  return useQuery({
+    queryKey: ["field-available-hours", fieldId, days],
+    queryFn: async () => {
+      if (!fieldId) return {};
+      const accessToken = getAuthToken();
+      const response = await fetch(`${BASE_API_URL}/bookings/availability/${fieldId}?days=${days}`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (!response.ok) throw new Error("Error fetching available hours");
+      return response.json();
+    },
+    enabled: !!fieldId,
+  });
+}
+
+export const getOwnerBookings = async (): Promise<OwnerBooking[]> => {
+  const accessToken = getAuthToken();
+  const response = await axios.get(`${BASE_API_URL}/bookings/owner`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  return response.data;
 }; 

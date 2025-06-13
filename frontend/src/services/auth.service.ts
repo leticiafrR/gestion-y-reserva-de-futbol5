@@ -20,6 +20,26 @@ class AuthService {
       throw error;
     }
   }
+
+  async acceptInvitation(token: string, accessToken: string): Promise<string> {
+    try {
+      const response = await axios.patch(`${BASE_API_URL}/invitations/teams/accept`, null, {
+        params: { token },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+      // El backend devuelve el equipo, devolver el nombre
+      return response.data?.name || '';
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data || 'Error al aceptar la invitación');
+      }
+      throw error;
+    }
+  }
 }
 
 export const authService = new AuthService(); 
