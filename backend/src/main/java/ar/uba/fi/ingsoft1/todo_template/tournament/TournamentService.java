@@ -1,6 +1,7 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament;
 
 import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
+import ar.uba.fi.ingsoft1.todo_template.tournament.update.TournamentUpdateCommand;
 import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
 
 import org.springframework.http.HttpStatus;
@@ -9,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.util.Optional;
+import java.util.List;
 
 @Service
 @Transactional
@@ -58,12 +59,11 @@ public class TournamentService {
         Tournament tournament = tournamentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
 
-        if (!tournament.getOrganizer().equals(username)) {
+        if (!tournament.getOrganizer().username().equals(username)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the organizer can delete the tournament");
         }
 
-        boolean started = tournamentHasStarted(tournament);
-        if (started) {
+        if (tournament.hasStarted()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "The tournament has already started and cannot be deleted");
         }
@@ -72,80 +72,46 @@ public class TournamentService {
         return true;
     }
 
-    public Tournament updateTournament(Long id, TournamentUpdateDTO dto) {
+    private Tournament getTournament(Long id) {
+        return tournamentRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
+    }
+
+    private void checkActionCarriedOutByOrganizer(String usernameOrganizer) {
         String username = HelperAuthenticatedUser.getAuthenticatedUsername();
-
-        Optional<Tournament> tournamentOpt = tournamentRepository.findById(id);
-
-        if (!tournamentOpt.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "non-existent tournament");
+        if (!usernameOrganizer.equals(username)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the organizer can perform this action");
         }
-        Tournament tournament = tournamentOpt.get();
+    }
 
-        if (!tournament.getOrganizer().equals(username)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the organizer can update the tournament");
+    private void checkStillModifiable(Tournament tournament) {
+        if (!tournament.isStillModifiable()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Tournament is not modifiable, it has already started or inscriptions are closed");
         }
+    }
 
-        boolean started = tournamentHasStarted(tournament);
-
-        // Validar cambio de formato si ya comenzó
-        if (started && dto.format() != null && !dto.format().equals(tournament.getFormat())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Can't change format of tournament after begin");
-        } else if (!started && dto.format() != null) {
-            tournament.setFormat(dto.format());
+    public Tournament updateTournament(Long id_tournament, List<TournamentUpdateCommand> updateCommnads) {
+        Tournament current = getTournament(id_tournament);
+        checkActionCarriedOutByOrganizer(current.getOrganizer().username());
+        checkStillModifiable(current);
+        for (TournamentUpdateCommand command : updateCommnads) {
+            current = command.apply(current);
         }
-
-        // No permitir cambio de startDate si ya comenzó
-        if (started && dto.startDate() != null && !dto.startDate().equals(tournament.getStartDate())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start date cannot change after begin");
-        }
-
-        if (dto.endDate() != null) {
-            LocalDate newEnd = dto.endDate();
-            LocalDate currentStart = dto.startDate() != null ? dto.startDate() : tournament.getStartDate();
-            if (newEnd.isBefore(currentStart)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date cannot be before start date");
-            }
-            tournament.setEndDate(dto.endDate());
-        }
-
-        if (!tournament.getName().equals(dto.name()) && tournamentRepository.existsByName(dto.name())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tournament name already exists");
-        }
-
-        tournament.setName(dto.name());
-
-        if (dto.startDate() != null && !started) {
-            tournament.setStartDate(dto.startDate());
-        }
-
-        tournament.setMaxTeams(dto.maxTeams());
-        tournament.setDescription(dto.description());
-        tournament.setPrizes(dto.prizes());
-        tournament.setRegistrationFee(dto.registrationFee());
-
-        tournament.setOpenInscription(true);
-
-        return tournamentRepository.save(tournament);
+        tournamentRepository.save(current);
+        return current;
     }
 
     public Tournament setOpenInscriptionActiveStatus(Long id, boolean active) {
-        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
-
-        Tournament tournament = tournamentRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
-
-        if (!tournament.getOrganizer().equals(username)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the organizer can change the tournament");
+        Tournament tournament = getTournament(id);
+        checkActionCarriedOutByOrganizer(tournament.getOrganizer().username());
+        if (tournament.hasStarted()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Cannot modify inscription status after the tournament has started");
         }
 
         tournament.setOpenInscription(active);
         return tournamentRepository.save(tournament);
-    }
-
-    private boolean tournamentHasStarted(Tournament tournament) {
-        LocalDate today = LocalDate.now();
-        return !tournament.getStartDate().isAfter(today);
     }
 
 }
