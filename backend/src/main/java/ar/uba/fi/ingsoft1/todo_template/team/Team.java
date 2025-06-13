@@ -60,5 +60,20 @@ public class Team {
                 .map(User::getUsername)
                 .collect(Collectors.toList());
     }
+
+    public void removeMember(User user) {
+        if (members != null) {
+            members.remove(user);
+        }
+    }
+    public void clearMembers() {
+        if (members != null) {
+            members.clear();
+        }
+    }
+
+//    public boolean removeMember(String username) {
+//        return members.removeIf(user -> user.getUsername().equals(username));
+//    }
 }
 
