@@ -23,7 +23,7 @@ public class Tournament {
     private String name;
 
     @Column(nullable = false)
-    private LocalDate startDate;
+    private LocalDate startDate;// fecha limite de inscripción
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "varchar")
@@ -48,4 +48,21 @@ public class Tournament {
     @JoinColumn(name = "organizer_id", nullable = false)
     private User organizer;
 
+    public Tournament(String name, LocalDate startDate, TournamentFormat format, int maxTeams, User organizer) {
+        this.name = name;
+        this.startDate = startDate;
+        this.format = format;
+        this.maxTeams = maxTeams;
+        this.organizer = organizer;
+        this.openInscription = true;
+    }
+
+    public boolean hasStarted() {
+        LocalDate today = LocalDate.now();
+        return !startDate.isAfter(today);
+    }
+
+    public boolean isStillModifiable() {
+        return openInscription && !hasStarted();
+    }
 }
