@@ -15,6 +15,7 @@ import { ScheduleManagementScreen } from "./screens/field-admin/ScheduleManageme
 import { MatchesScreen } from "@/screens/player/match/MatchesScreen";
 import { MyTournamentsScreen } from "@/screens/player/MyTournamentsScreen";
 import { AcceptInvitationScreen } from "./screens/auth/AcceptInvitationScreen";
+import { BookingsScreen } from "@/screens/player/bookings/BookingsScreen";
 
 export const Navigation = () => {
   const [tokenState] = useToken();
@@ -89,6 +90,9 @@ export const Navigation = () => {
         </Route>
         <Route path="/my-tournaments">
           <MyTournamentsScreen />
+        </Route>
+        <Route path="/bookings">
+          <BookingsScreen />
         </Route>
         <Route path="/">
           <Redirect href="/main" />

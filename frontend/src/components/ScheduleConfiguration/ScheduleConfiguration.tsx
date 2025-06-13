@@ -25,7 +25,6 @@ interface SpecificDateSchedule {
 interface Field {
   id: string
   name: string
-  type: string
 }
 
 interface ScheduleConfigurationProps {
@@ -480,7 +479,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
         >
           {fields.map((field) => (
             <option key={field.id} value={field.id}>
-              {field.name} ({field.type})
+              {field.name}
             </option>
           ))}
         </select>
