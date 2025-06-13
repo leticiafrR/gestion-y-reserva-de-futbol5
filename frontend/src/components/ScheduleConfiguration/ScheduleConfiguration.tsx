@@ -175,8 +175,6 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
   const [tempHour, setTempHour] = useState<string>("09:00")
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
-  const [ownerBookings, setOwnerBookings] = useState<any[]>([])
-
   const dayNames = {
     sunday: { short: "D", full: "Domingo" },
     monday: { short: "L", full: "Lunes" },
@@ -410,24 +408,9 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
     }
   }
 
-  const loadOwnerBookings = async () => {
-    try {
-      const bookings = await bookingService.getBookingsForOwner()
-      setOwnerBookings(bookings)
-    } catch (error) {
-      console.error('Error loading owner bookings:', error)
-    }
-  }
-
   // Load availability when field changes
   useEffect(() => {
     loadFieldAvailability()
-  }, [selectedFieldId])
-
-  // Load owner bookings when field changes
-  useEffect(() => {
-    console.log("loadOwnerBookings")
-    loadOwnerBookings()
   }, [selectedFieldId])
 
   return (
@@ -639,7 +622,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
 
           {/* Lista de fechas específicas */}
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {specificDates.length === 0 && ownerBookings.length === 0 ? (
+            {specificDates.length === 0 ? (
               <div
                 style={{
                   textAlign: "center",
@@ -709,72 +692,6 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                             <span style={{ fontSize: "14px" }}>{dateSchedule.hour}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {/* Mostrar eventos existentes */}
-                {ownerBookings.map((booking) => {
-                  if (!booking.bookingDate) return null;
-
-                  const [byear, bmonth, bday] = booking.bookingDate.split('-').map(Number);
-                  const bookingDate = new Date(byear, bmonth - 1, bday);
-                  const formattedBookingDate = bookingDate.toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-
-                  return (
-                    <div key={booking.id}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        <span style={{ fontWeight: "600", color: "#1f2937", fontSize: "16px" }}>
-                          {formattedBookingDate}
-                        </span>
-                        <button
-                          onClick={() => bookingService.cancelBooking(booking.id)}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#ef4444",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            fontWeight: "500",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          <Trash2 size={14} />
-                          Cancelar evento
-                        </button>
-                      </div>
-
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "16px" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            padding: "12px 16px",
-                            backgroundColor: "#1e293b",
-                            borderRadius: "8px",
-                            color: "white",
-                          }}
-                        >
-                          <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
-                            Evento
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "14px" }}>{booking.bookingHour !== undefined ? FieldAvailabilityService.hourToTimeString(booking.bookingHour) : "Sin hora"}</span>
                           </div>
                         </div>
                       </div>

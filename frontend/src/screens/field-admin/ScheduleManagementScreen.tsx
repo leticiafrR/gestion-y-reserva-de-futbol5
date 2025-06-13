@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react"
 import { ScheduleConfiguration } from "@/components/ScheduleConfiguration/ScheduleConfiguration"
 import { useGetOwnerFields } from "@/services/CreateFieldServices"
 import type { Field as ApiField } from "@/models/Field"
+import { navigate } from "wouter/use-browser-location"
 
 interface Field {
   id: string
@@ -87,7 +88,7 @@ export const ScheduleManagementScreen = () => {
           </div>
 
           <button
-            onClick={() => (window.location.href = "/")}
+            onClick={() => navigate("/main")}
             style={{
               display: "flex",
               alignItems: "center",
