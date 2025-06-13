@@ -96,6 +96,17 @@ export const bookingService = {
             }
         });
         return response.data;
+    },
+
+    // Get user's all bookings (active and inactive)
+    getAllMyBookings: async (): Promise<BookingDTO[]> => {
+        const accessToken = getAuthToken();
+        const response = await axios.get(`${BASE_API_URL}/bookings/my/all`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+        return response.data;
     }
 };
 

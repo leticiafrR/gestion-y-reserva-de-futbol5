@@ -85,6 +85,15 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getBookingsByUser(userId));
     }
 
+    @GetMapping("/my/all")
+    @Operation(summary = "Todas las reservas propias del usuario logueado (activas e inactivas)")
+    public ResponseEntity<List<BookingDTO>> getAllMyBookings() {
+        String username = getAuthenticatedUser().username();
+        Long userId = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)).getId();
+        return ResponseEntity.ok(bookingService.getAllBookingsByUser(userId));
+    }
+
     private JwtUserDetails getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (JwtUserDetails) authentication.getPrincipal();

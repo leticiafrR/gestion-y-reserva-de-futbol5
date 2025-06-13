@@ -89,7 +89,11 @@ public class BookingService {
                 .collect(Collectors.toSet());
     }
 
-
+    public List<BookingDTO> getAllBookingsByUser(Long userId) {
+        return bookingRepository.findByUser_Id(userId).stream()
+                .map(this::toDTO)
+                .toList();
+    }
 
     private BookingDTO toDTO(Booking booking) {
         return new BookingDTO(
