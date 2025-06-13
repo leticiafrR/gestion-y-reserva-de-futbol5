@@ -1,5 +1,6 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
+import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import ar.uba.fi.ingsoft1.todo_template.user.dto.RefreshDTO;
@@ -60,8 +61,7 @@ public class UserService implements UserDetailsService {
     }
 
     User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = ((JwtUserDetails) authentication.getPrincipal()).username();
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
