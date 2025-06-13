@@ -62,7 +62,22 @@ public class Tournament {
         return !startDate.isAfter(today);
     }
 
-    public boolean isStillModifiable() {
+    public boolean hasFinished() {
+        LocalDate today = LocalDate.now();
+        return (endDate != null && today.isAfter(endDate));
+    }
+
+    public boolean isStillOpenForRegistration() {
         return openInscription && !hasStarted();
+    }
+
+    public TournamentState getState() {
+        if (hasFinished()) {
+            return TournamentState.FINISHED;
+        }
+        if (isStillOpenForRegistration()) {
+            return TournamentState.OPEN_TO_REGISTER;
+        }
+        return TournamentState.IN_PROGRESS;
     }
 }

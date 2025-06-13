@@ -85,7 +85,7 @@ public class TournamentService {
     }
 
     private void checkStillModifiable(Tournament tournament) {
-        if (!tournament.isStillModifiable()) {
+        if (!tournament.isStillOpenForRegistration()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Tournament is not modifiable, it has already started or inscriptions are closed");
         }
@@ -112,6 +112,27 @@ public class TournamentService {
 
         tournament.setOpenInscription(active);
         return tournamentRepository.save(tournament);
+    }
+
+    public List<TournamentSummaryDTO> getAllTournaments() {
+        return tournamentRepository.findAll().stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    public List<TournamentSummaryDTO> getFilteredByStateTournaments(TournamentState state) {
+        return tournamentRepository.findAll().stream()
+                .filter(tournament -> tournament.getState() == state)
+                .map(this::toDTO)
+                .toList();
+    }
+
+    private TournamentSummaryDTO toDTO(Tournament tournament) {
+        return new TournamentSummaryDTO(
+                tournament.getName(),
+                tournament.getStartDate(),
+                tournament.getFormat(),
+                tournament.getState());
     }
 
 }
