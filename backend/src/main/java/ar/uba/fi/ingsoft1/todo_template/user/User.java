@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
 import lombok.Getter;
+import lombok.Setter;
 
 import org.hibernate.validator.constraints.URL;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,6 +20,9 @@ import java.time.Year;
 import java.util.Collection;
 import java.util.List;
 
+
+@Setter
+@Getter
 @Entity(name = "users")
 public class User implements UserDetails, UserCredentials {
 
@@ -105,6 +109,9 @@ public class User implements UserDetails, UserCredentials {
         return this.password;
     }
 
+    public Integer getBirthYear() {
+        return this.birthYear;
+    }
     public boolean isEmailVerified() {
         return emailVerified;
     }

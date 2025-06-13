@@ -31,7 +31,7 @@ public class FieldService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ya existe una cancha con ese nombre y dirección.");
         }
 
-        User owner = userService.getByUsername(ownerUsername);
+        User owner = userService.findByUsernameOrThrow(ownerUsername);
 
         Field field = new Field();
         field.setName(dto.name());
@@ -47,7 +47,7 @@ public class FieldService {
     }
 
     public Field updateField(Long id, FieldUpdateDTO dto, String ownerUsername) {
-        User owner = userService.getByUsername(ownerUsername);
+        User owner = userService.findByUsernameOrThrow(ownerUsername);
 
         Field field = fieldRepository.findByIdAndOwner(id, owner)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Field not found or does not belong to user."));
