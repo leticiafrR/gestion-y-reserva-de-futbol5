@@ -77,13 +77,6 @@ public class TournamentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
     }
 
-    private void checkActionCarriedOutByOrganizer(String usernameOrganizer) {
-        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
-        if (!usernameOrganizer.equals(username)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the organizer can perform this action");
-        }
-    }
-
     private void checkStillModifiable(Tournament tournament) {
         if (!tournament.isStillOpenForRegistration()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -129,10 +122,35 @@ public class TournamentService {
 
     private TournamentSummaryDTO toDTO(Tournament tournament) {
         return new TournamentSummaryDTO(
+                tournament.getId(),
                 tournament.getName(),
                 tournament.getStartDate(),
                 tournament.getFormat(),
                 tournament.getState());
     }
 
+    public Tournament getTournamentByName(String name) {
+        Tournament tournament = tournamentRepository.findByName(name)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Tournament not found with name: " + name));
+        return tournament;
+    }
+
+    private void checkActionCarriedOutByOrganizer(String usernameOrganizer) {
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
+        if (!usernameOrganizer.equals(username)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the organizer can perform this action");
+        }
+    }
+
+    public void closeRegistration(Long id_tournament) {
+        Tournament tournament = getTournament(id_tournament);
+        checkActionCarriedOutByOrganizer(tournament.getOrganizer().username());
+        if (tournament.getState() != TournamentState.OPEN_TO_REGISTER) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Tournament is not open for registration, cannot close registrations");
+        }
+        tournament.setOpenInscription(false);
+        tournamentRepository.save(tournament);
+    }
 }
