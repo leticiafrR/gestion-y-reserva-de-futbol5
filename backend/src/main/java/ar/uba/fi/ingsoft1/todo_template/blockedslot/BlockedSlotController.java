@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/blockedslots")
@@ -64,5 +65,44 @@ public class BlockedSlotController {
         service.deleteBlockedSlot(fieldId, date, hour, user);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/fields/{fieldId}")
+    @Operation(
+            summary = "Listar horarios bloqueados",
+            description = "Devuelve todos los horarios bloqueados de una cancha en una fecha específica, solo accesible por su dueño."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de horarios bloqueados devuelta exitosamente"),
+            @ApiResponse(responseCode = "403", description = "El usuario no es el dueño de la cancha"),
+            @ApiResponse(responseCode = "404", description = "Cancha no encontrada")
+    })
+    public ResponseEntity<List<Integer>> listAllBlockedSlotsForFieldAndDate(
+            @Parameter(description = "ID de la cancha") @PathVariable Long fieldId,
+            @Parameter(description = "Fecha a consultar") @RequestParam LocalDate date
+    ) {
+        String user = getAuthenticatedUser().getUsername();
+        List<Integer> horasBloqueadas = service.listBlockedSlotsForFieldAndDate(fieldId, date, user);
+        return ResponseEntity.ok(horasBloqueadas);
+    }
+
+    @GetMapping("/fields/{fieldId}/all")
+    @Operation(
+            summary = "Listar todos los horarios bloqueados de una cancha",
+            description = "Devuelve todos los horarios bloqueados de una cancha sin importar la fecha. Solo accesible por su dueño."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista completa de horarios bloqueados obtenida exitosamente"),
+            @ApiResponse(responseCode = "403", description = "El usuario no es el dueño de la cancha"),
+            @ApiResponse(responseCode = "404", description = "Cancha no encontrada")
+    })
+    public ResponseEntity<List<BlockedSlot>> listAllBlockedSlots(
+            @Parameter(description = "ID de la cancha") @PathVariable Long fieldId
+    ) {
+        String user = getAuthenticatedUser().getUsername();
+        List<BlockedSlot> bloqueos = service.listAllBlockedSlotsForField(fieldId, user);
+        return ResponseEntity.ok(bloqueos);
+    }
+
+
 
 }
