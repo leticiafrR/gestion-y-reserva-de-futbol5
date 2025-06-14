@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface BlockedSlotRepository extends JpaRepository<BlockedSlot, Long> {
     List<BlockedSlot> findByFieldIdAndDate(Long fieldId, LocalDate date);
+    List<BlockedSlot> findByFieldId(Long fieldId);
+
 }

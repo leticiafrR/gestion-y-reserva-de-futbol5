@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +56,32 @@ public class BlockedSlotService {
 
         blockedSlotRepository.delete(slot);
     }
+
+    public List<Integer> listBlockedSlotsForFieldAndDate(Long fieldId, LocalDate date, String user) {
+        Field field = fieldRepository.findById(fieldId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Field not found."));
+
+        if (!field.getOwner().getUsername().equals(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not own the field.");
+        }
+
+        return blockedSlotRepository.findByFieldIdAndDate(fieldId, date).stream()
+                .map(BlockedSlot::getHour)
+                .toList();
+    }
+
+    public List<BlockedSlot> listAllBlockedSlotsForField(Long fieldId, String user) {
+        Field field = fieldRepository.findById(fieldId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada"));
+
+        if (!field.getOwner().getUsername().equals(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No sos el dueño de esta cancha.");
+        }
+
+        return blockedSlotRepository.findByFieldId(fieldId);
+    }
+
+
 
 
 }
