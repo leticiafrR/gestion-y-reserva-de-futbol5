@@ -19,9 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -63,14 +61,28 @@ public class MatchService {
         User user = userRepo.findById(userId).orElseThrow();
 
         if (match.getPlayers().contains(user)) {
-            throw new IllegalStateException("El usuario ya está inscripto");
+            throw new IllegalStateException("User is already in the match.");
         }
         if (match.getPlayers().size() >= match.getMaxPlayers()) {
-            throw new IllegalStateException("El partido ya está lleno");
+            throw new IllegalStateException("Match is already full.");
         }
 
         match.getPlayers().add(user);
         return openMatchRepo.save(match);
+    }
+
+    @Transactional
+    public OpenMatch leaveOpenMatch(Long matchId, Long userId) {
+        OpenMatch match = openMatchRepo.findById(matchId).orElseThrow();
+        User user = userRepo.findById(userId).orElseThrow();
+
+        if (!match.getPlayers().contains(user)) {
+            throw new IllegalStateException("User does not belong to match.");
+        }
+        match.getPlayers().remove(user);
+
+        return openMatchRepo.save(match);
+
     }
 
     @Transactional
@@ -96,6 +108,7 @@ public class MatchService {
     public List<OpenMatch> listOpenMatchesOfUser(Long userId) {
         return openMatchRepo.findByIsActiveTrueAndPlayers_Id(userId);
     }
+
     @Transactional
     public List<CloseMatch> getCloseMatchesByTeams(Long teamOneId, Long teamTwoId) {
         return closeMatchRepo.findByTeamOne_IdAndTeamTwo_Id(teamOneId, teamTwoId);
