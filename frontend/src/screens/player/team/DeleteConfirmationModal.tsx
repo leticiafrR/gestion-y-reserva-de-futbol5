@@ -6,6 +6,8 @@ interface DeleteConfirmationModalProps {
   teamName: string;
   onClose: () => void;
   onError: (message: string) => void;
+  customText?: string;
+  onConfirm?: () => void;
 }
 
 export const DeleteConfirmationModal = ({
@@ -13,10 +15,16 @@ export const DeleteConfirmationModal = ({
   teamName,
   onClose,
   onError,
+  customText,
+  onConfirm,
 }: DeleteConfirmationModalProps) => {
   const deleteTeamMutation = useDeleteTeam();
 
   const handleDelete = async () => {
+    if (onConfirm) {
+      onConfirm();
+      return;
+    }
     try {
       await deleteTeamMutation.mutateAsync(teamId);
       onClose();
@@ -59,7 +67,7 @@ export const DeleteConfirmationModal = ({
               Confirmar Eliminación
             </h2>
             <p style={{ color: "var(--muted-foreground)", margin: 0, fontSize: "14px" }}>
-              ¿Estás seguro de que quieres eliminar el equipo "{teamName}"?
+              {customText || `¿Estás seguro de que quieres eliminar el equipo "${teamName}"?`}
             </p>
           </div>
           <button
@@ -92,7 +100,7 @@ export const DeleteConfirmationModal = ({
               opacity: deleteTeamMutation.isPending ? 0.7 : 1,
             }}
           >
-            {deleteTeamMutation.isPending ? "Eliminando..." : "Eliminar"}
+            {deleteTeamMutation.isPending && !onConfirm ? "Eliminando..." : "Eliminar"}
           </button>
         </div>
       </div>

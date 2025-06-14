@@ -82,6 +82,18 @@ export function usePendingInvitations(teamId: string) {
   });
 }
 
+export function useRemoveTeamMember() {
+  const queryClient = useQueryClient();
+  const [token] = useToken();
+  return useMutation({
+    mutationFn: ({ teamId, deletingUsername }: { teamId: string; deletingUsername: string }) =>
+      removeTeamMember({ teamId, deletingUsername }, token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userTeams"] });
+    },
+  });
+}
+
 async function getAllTeams(token: any): Promise<Team[]> {
   try {
     const response = await fetch(`${BASE_API_URL}/teams/my-teams`, {
@@ -226,6 +238,28 @@ export async function getPendingInvitations(teamId: string, token: any): Promise
   const invitations = await response.json();
   console.log("pending invitations body", invitations);
   return invitations.map((inv: { inviteeEmail: string }) => inv.inviteeEmail);
+}
+
+async function removeTeamMember(
+  { teamId, deletingUsername }: { teamId: string; deletingUsername: string },
+  token: any
+): Promise<{ success: boolean }> {
+  const response = await fetch(`${BASE_API_URL}/teams/${teamId}/member`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+    body: JSON.stringify({ deletingUsername }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al eliminar miembro: ${response.status}`);
+  }
+
+  return { success: true };
 }
 
 
