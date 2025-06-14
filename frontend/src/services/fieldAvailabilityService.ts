@@ -85,6 +85,8 @@ export class FieldAvailabilityService {
   ): Promise<TimeSlotResponseDTO> {
     try {
       const accessToken = getAuthToken();
+      console.log("fieldId", fieldId)
+      console.log("dayOfWeek", dayOfWeek)
       const response = await fetch(`${BASE_API_URL}/timeslots/field/${fieldId}/${dayOfWeek}`, {
         method: 'GET',
         headers: {
@@ -93,7 +95,7 @@ export class FieldAvailabilityService {
           Authorization: `Bearer ${accessToken}`,
         },
       });
-
+      console.log("response", response)
       if (!response.ok) {
         throw new Error(`Failed to fetch day availability with status ${response.status}: ${await response.text()}`);
       }

@@ -1,3 +1,6 @@
+export type MatchStatus = "open" | "confirmed" | "finished" | "full" | "cancelled"
+export type MatchType = "open" | "closed"
+
 export interface Player {
     id: string
     name: string
@@ -28,7 +31,7 @@ export interface Player {
   
   export interface Match {
     id: string
-    type: "open" | "closed"
+    type: MatchType
     title: string
     date: string
     time: string
@@ -38,7 +41,7 @@ export interface Player {
     maxPlayers: number
     currentPlayers: number
     pricePerPlayer: number
-    status: "open" | "confirmed" | "finished" | "full" | "cancelled"
+    status: MatchStatus
     isParticipant: boolean
     isOrganizer: boolean
     players: Player[]
@@ -48,20 +51,55 @@ export interface Player {
     result?: string
   }
   
-  export interface CreateMatchData {
-    type: "open" | "closed"
-    title: string
-    date: string
-    time: string
-    field: Field
+  export interface CreateOpenMatchData {
+    bookingId: number
+    creatorId: number
+    maxPlayers: number
+  }
+
+  export interface CreateClosedMatchData {
+    bookingId: number
+    teamOneId: number
+    teamTwoId: number
+  }
+  
+  export interface OpenMatchResponse {
+    id: number
+    booking: {
+      id: number
+      userId: number
+      timeSlotId: number
+      bookingDate: string
+      bookingHour: number
+      active: boolean
+    }
+    isActive: boolean
+    players: Array<{
+      id: number
+      name: string
+      last_name: string
+      email: string
+      profilePicture: string
+    }>
     minPlayers: number
     maxPlayers: number
-    pricePerPlayer: number
-    description?: string
-    selectedTeams?: {
-      team1: string
-      team2: string
+    teamOne: any | null
+    teamTwo: any | null
+  }
+  
+  export interface CloseMatchResponse {
+    id: number
+    booking: {
+      id: number
+      userId: number
+      timeSlotId: number
+      bookingDate: string
+      bookingHour: number
+      active: boolean
     }
+    isActive: boolean
+    teamOne: any
+    teamTwo: any
   }
   
   export interface AvailableSlot {

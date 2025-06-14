@@ -2,11 +2,14 @@
 
 import { useState } from "react"
 import { X, ArrowLeft, ArrowRight, MapPin, Clock, DollarSign, Calendar } from "lucide-react"
-import { createMatch } from "@/services/MatchServices"
-import type { CreateMatchData, Field, AvailableSlot } from "@/models/Match"
+import { createOpenMatch, createClosedMatch } from "@/services/MatchServices"
+import type { Field, AvailableSlot, CreateOpenMatchData, CreateClosedMatchData } from "@/models/Match"
 import { useFieldAvailableHours, bookingService } from "@/services/bookingService"
 import { fieldAvailabilityService } from "@/services/fieldAvailabilityService"
 import { CalendarTimePicker } from "@/components/ScheduleConfiguration/CalendarTimePicker"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { useUserTeams } from "@/services/TeamServices"
+import type { Team } from "@/models/Team"
 
 interface CreateMatchModalProps {
   onClose: () => void
@@ -82,6 +85,7 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
   const [selectedHour, setSelectedHour] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const { data: teams } = useUserTeams()
 
   // Form data
   const [formData, setFormData] = useState({
@@ -127,47 +131,56 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
   }
 
   const handleSubmit = async () => {
-    if (!selectedField || !selectedDate || !selectedHour) return
+    if (!selectedField || !selectedDate || !selectedHour) {
+      return
+    }
 
-    setIsLoading(true)
     try {
-      const matchData: CreateMatchData = {
-        type: formData.type,
-        title: formData.title,
+      setIsLoading(true)
+      const dayOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'][(new Date(selectedDate).getDay() + 6) % 7] as 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'
+      console.log("Requesting availability for:", {
+        fieldId: selectedField.id,
+        dayOfWeek,
         date: selectedDate,
-        time: `${selectedHour}:00`,
-        field: selectedField,
-        minPlayers: formData.minPlayers,
-        maxPlayers: formData.maxPlayers,
-        pricePerPlayer: calculatePricePerPlayer(),
-        description: formData.description,
-        selectedTeams: formData.type === "closed" ? formData.selectedTeams : undefined,
-      }
+        hour: selectedHour,
+      })
 
-      // await createMatch(matchData)
-      // Get the day of week from the selected date
-      const date = new Date(selectedDate)
-      const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()
-      // Get the timeslot for this day
-        const timeslot = await fieldAvailabilityService.getDayAvailability(
-        Number(selectedField.id),
-        dayOfWeek as any
+      const timeslot = await fieldAvailabilityService.getDayAvailability(
+        parseInt(selectedField.id),
+        dayOfWeek
       )
-      // Create booking with the timeslot ID
-      await bookingService.createBooking(
+      console.log("Timeslot:", timeslot)
+
+      const booking = await bookingService.createBooking(
         timeslot.id,
         selectedDate,
         selectedHour
       )
+      console.log("Booking created:", booking)
+
+      if (formData.type === "open") {
+        const matchData: CreateOpenMatchData = {
+          bookingId: booking.id,
+          creatorId: 1, // TODO: Get from current user
+          maxPlayers: formData.maxPlayers,
+        }
+        await createOpenMatch(matchData)
+      } else {
+        const matchData: CreateClosedMatchData = {
+          bookingId: booking.id,
+          teamOneId: parseInt(formData.selectedTeams.team1),
+          teamTwoId: parseInt(formData.selectedTeams.team2),
+        }
+        await createClosedMatch(matchData)
+      }
+
       setSuccessMessage("¡Partido creado exitosamente!")
       setTimeout(() => {
         setSuccessMessage("")
         onClose()
       }, 2000)
-      // Aquí podrías mostrar una notificación de éxito
     } catch (error) {
       console.error("Error creating match:", error)
-      // Aquí podrías mostrar una notificación de error
     } finally {
       setIsLoading(false)
     }
@@ -449,33 +462,7 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                     </div>
                   </div>
 
-                  {/* Title */}
-                  <div>
-                    <label
-                      style={{
-                        display: "block",
-                        marginBottom: "8px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        color: "#212529",
-                      }}
-                    >
-                      Título del Partido
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Ej: Partido Amistoso - Domingo"
-                      style={{
-                        width: "100%",
-                        padding: "12px",
-                        border: "1px solid #dee2e6",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                      }}
-                    />
-                  </div>
+                  
 
                   {/* Players */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -489,20 +476,19 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                           color: "#212529",
                         }}
                       >
-                        Mínimo de Jugadores
+                        Jugadores mínimos
                       </label>
                       <input
                         type="number"
-                        value={formData.minPlayers}
-                        onChange={(e) => setFormData({ ...formData, minPlayers: Number.parseInt(e.target.value) })}
-                        min="2"
-                        max="22"
+                        value={10}
+                        disabled
                         style={{
                           width: "100%",
                           padding: "12px",
                           border: "1px solid #dee2e6",
                           borderRadius: "8px",
                           fontSize: "14px",
+                          backgroundColor: "#f8f9fa",
                         }}
                       />
                     </div>
@@ -555,35 +541,7 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                     </div>
                   </div>
 
-                  {/* Description */}
-                  <div>
-                    <label
-                      style={{
-                        display: "block",
-                        marginBottom: "8px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        color: "#212529",
-                      }}
-                    >
-                      Descripción (Opcional)
-                    </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Describe tu partido, nivel requerido, reglas especiales, etc."
-                      rows={3}
-                      style={{
-                        width: "100%",
-                        padding: "12px",
-                        border: "1px solid #dee2e6",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        resize: "vertical",
-                      }}
-                    />
-                  </div>
-
+                  
                   {/* Teams Selection for Closed Match */}
                   {formData.type === "closed" && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -599,8 +557,7 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                         >
                           Equipo 1
                         </label>
-                        <input
-                          type="text"
+                        <select
                           value={formData.selectedTeams.team1}
                           onChange={(e) =>
                             setFormData({
@@ -608,7 +565,6 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                               selectedTeams: { ...formData.selectedTeams, team1: e.target.value },
                             })
                           }
-                          placeholder="Nombre del equipo 1"
                           style={{
                             width: "100%",
                             padding: "12px",
@@ -616,7 +572,14 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                             borderRadius: "8px",
                             fontSize: "14px",
                           }}
-                        />
+                        >
+                          <option value="">Seleccionar equipo</option>
+                          {teams?.map((team) => (
+                            <option key={team.id} value={team.id}>
+                              {team.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label
@@ -630,8 +593,7 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                         >
                           Equipo 2
                         </label>
-                        <input
-                          type="text"
+                        <select
                           value={formData.selectedTeams.team2}
                           onChange={(e) =>
                             setFormData({
@@ -639,7 +601,6 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                               selectedTeams: { ...formData.selectedTeams, team2: e.target.value },
                             })
                           }
-                          placeholder="Nombre del equipo 2"
                           style={{
                             width: "100%",
                             padding: "12px",
@@ -647,7 +608,14 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                             borderRadius: "8px",
                             fontSize: "14px",
                           }}
-                        />
+                        >
+                          <option value="">Seleccionar equipo</option>
+                          {teams?.map((team) => (
+                            <option key={team.id} value={team.id}>
+                              {team.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   )}
@@ -729,14 +697,11 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
               ) : (
                 <button
                   onClick={handleSubmit}
-                  disabled={!formData.title || isLoading}
                   style={{
                     padding: "10px 16px",
-                    backgroundColor: formData.title && !isLoading ? "#28a745" : "#6c757d",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
-                    cursor: formData.title && !isLoading ? "pointer" : "not-allowed",
                     fontSize: "14px",
                     fontWeight: "500",
                   }}
