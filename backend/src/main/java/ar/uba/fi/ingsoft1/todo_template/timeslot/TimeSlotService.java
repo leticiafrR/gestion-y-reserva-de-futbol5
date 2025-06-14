@@ -1,5 +1,7 @@
 package ar.uba.fi.ingsoft1.todo_template.timeslot;
 
+import ar.uba.fi.ingsoft1.todo_template.blockedslot.BlockedSlotRepository;
+import ar.uba.fi.ingsoft1.todo_template.blockedslot.BlockedSlot;
 import ar.uba.fi.ingsoft1.todo_template.booking.Booking;
 import ar.uba.fi.ingsoft1.todo_template.booking.BookingRepository;
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
@@ -19,11 +21,13 @@ public class TimeSlotService {
 
     private final TimeSlotRepository timeslotRepository;
     private final FieldRepository fieldRepository;
+    private final BlockedSlotRepository blockedSlotRepository;
 
 
-    public TimeSlotService(TimeSlotRepository repository, FieldRepository fieldRepository) {
+    public TimeSlotService(TimeSlotRepository repository, FieldRepository fieldRepository, BlockedSlotRepository blockedSlotRepository) {
         this.timeslotRepository = repository;
         this.fieldRepository = fieldRepository;
+        this.blockedSlotRepository = blockedSlotRepository;
     }
 
 
@@ -47,23 +51,31 @@ public class TimeSlotService {
                 continue;
             }
 
-            Set<Integer> reservedHours = bookingRepository.findByTimeSlot_Field_IdAndActiveTrue(fieldId).stream()
+            Set<Integer> reservedHours = bookingRepository
+                    .findByTimeSlot_Field_IdAndActiveTrue(fieldId).stream()
                     .filter(b -> b.getBookingDate().isEqual(date))
                     .map(Booking::getBookingHour)
+                    .collect(Collectors.toSet());
+
+            Set<Integer> blockedHours = blockedSlotRepository
+                    .findByFieldIdAndDate(fieldId, date).stream()
+                    .map(BlockedSlot::getHour)
                     .collect(Collectors.toSet());
 
             List<Integer> availableHours = new ArrayList<>();
 
             for (int hour = timeslot.getOpenTime(); hour < timeslot.getCloseTime(); hour++) {
-                if (!reservedHours.contains(hour)) {
+                if (!reservedHours.contains(hour) && !blockedHours.contains(hour)) {
                     availableHours.add(hour);
                 }
             }
+
             availability.put(date, availableHours);
         }
 
         return availability;
     }
+
 
     public int countAvailableHoursInDateRange(List<Long> fieldIds, int daysAhead) {
         int total = 0;

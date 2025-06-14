@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,12 @@ public class BookingService {
     public BookingDTO createBooking(String username, Long timeslotId, LocalDate date, int hour) {
         var user = userService.findByUsernameOrThrow(username);
         var timeSlot = timeslotService.findByIdOrThrow(timeslotId);
+        var field = timeSlot.getField();
+        var fieldId = field.getId();
+        Map<LocalDate, List<Integer>> availableHours = timeslotService.getAvailableHours(fieldId, 10);
+        if (!availableHours.get(date).contains(hour)) {
+            throw new IllegalArgumentException("Specified hour is not available for that day.");
+        }
 
         var booking = new Booking(user, timeSlot, date, hour);
         bookingRepository.save(booking);
