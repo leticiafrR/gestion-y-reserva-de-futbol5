@@ -40,17 +40,21 @@ public class BlockedSlotService {
         blockedSlotRepository.save(slot);
     }
 
-    public void deleteBlockedSlot(Long blockedSlotId, String user) {
-        BlockedSlot slot = blockedSlotRepository.findById(blockedSlotId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Horario bloqueado no encontrado"));
-
-        Field field = slot.getField();
+    public void deleteBlockedSlot(Long fieldId, LocalDate date, Integer hour, String user) {
+        Field field = fieldRepository.findById(fieldId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Field not found."));
 
         if (!field.getOwner().getUsername().equals(user)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No sos el dueño de esta cancha.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not own the field.");
         }
+
+        BlockedSlot slot = blockedSlotRepository.findByFieldIdAndDate(fieldId, date).stream()
+                .filter(b -> b.getHour().equals(hour))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Specified time is not blocked."));
 
         blockedSlotRepository.delete(slot);
     }
+
 
 }

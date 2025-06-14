@@ -45,21 +45,24 @@ public class BlockedSlotController {
         return ResponseEntity.ok("Horario bloqueado exitosamente");
     }
 
-    @DeleteMapping("/{blockedSlotId}")
+    @DeleteMapping("/fields/{fieldId}")
     @Operation(
             summary = "Eliminar horario bloqueado",
-            description = "Elimina un horario bloqueado si pertenece a una cancha del usuario autenticado."
+            description = "Elimina un horario bloqueado para una cancha y hora específica si pertenece al usuario autenticado."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Horario bloqueado eliminado exitosamente"),
             @ApiResponse(responseCode = "403", description = "El usuario no es el dueño de la cancha"),
             @ApiResponse(responseCode = "404", description = "Horario bloqueado no encontrado")
     })
-    public ResponseEntity<Void> deleteBlockedSlot (
-            @Parameter(description = "ID del horario bloqueado") @PathVariable Long blockedSlotId
+    public ResponseEntity<Void> eliminarHorarioBloqueado(
+            @Parameter(description = "ID de la cancha") @PathVariable Long fieldId,
+            @Parameter(description = "Fecha del horario a eliminar") @RequestParam LocalDate date,
+            @Parameter(description = "Hora del horario a eliminar") @RequestParam Integer hour
     ) {
         String user = getAuthenticatedUser().getUsername();
-        service.deleteBlockedSlot(blockedSlotId, user);
+        service.deleteBlockedSlot(fieldId, date, hour, user);
         return ResponseEntity.noContent().build();
     }
+
 }
