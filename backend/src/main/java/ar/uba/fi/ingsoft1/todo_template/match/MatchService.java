@@ -11,6 +11,7 @@ import ar.uba.fi.ingsoft1.todo_template.team.Team;
 import ar.uba.fi.ingsoft1.todo_template.team.TeamRepository;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
+import ar.uba.fi.ingsoft1.todo_template.user.UserService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -28,20 +29,32 @@ public class MatchService {
 
     private final BookingRepository bookingRepo;
     private final UserRepository userRepo;
+    private final UserService userService;
     private final OpenMatchRepository openMatchRepo;
     private final CloseMatchRepository closeMatchRepo;
     private final TeamRepository teamRepo;
+    private final OpenMatchRepository openMatchRepository;
 
     @Transactional
-    public OpenMatch createOpenMatch(OpenMatchCreateDTO dto) {
+    public OpenMatch createOpenMatch(OpenMatchCreateDTO dto, String creatorUsername) {
+        User creator = userService.findByUsernameOrThrow(creatorUsername);
         Booking booking = bookingRepo.findById(dto.getBookingId()).orElseThrow();
-        User creator = userRepo.findById(dto.getCreatorId()).orElseThrow();
+
+        if (dto.getMinPlayers() < 10) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El mínimo de jugadores debe ser al menos 10.");
+        }
+
+        if (dto.getMaxPlayers() < dto.getMinPlayers()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe haber al menos 2 jugadores.");
+        }
 
         OpenMatch match = new OpenMatch();
         match.setBooking(booking);
         match.setPlayers(new ArrayList<>(List.of(creator)));
+        match.setMinPlayers(dto.getMinPlayers());
         match.setMaxPlayers(dto.getMaxPlayers());
-        return openMatchRepo.save(match);
+
+        return openMatchRepository.save(match);
     }
 
     @Transactional
