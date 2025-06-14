@@ -1,11 +1,12 @@
-package ar.uba.fi.ingsoft1.todo_template.team;
+package ar.uba.fi.ingsoft1.todo_template.team.DTO;
 
+import ar.uba.fi.ingsoft1.todo_template.team.Team;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 @Getter
 @Setter
@@ -19,7 +20,7 @@ public class TeamCreateDTO {
     private String logo;
 
     public Team toTeam(User captain) {
-        var members = new ArrayList<User>();
+        var members = new HashSet<User>();
         members.add(captain);
         return Team.builder()
                 .name(this.name)
