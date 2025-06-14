@@ -106,7 +106,7 @@ public class TeamService {
                     var msg = String.format("Username '%s' not found", deleting);
                     return new UsernameNotFoundException(msg);
                 });
-        if (!deleting.equals(deleter) && !deleting.equals(team.getCaptain())){
+        if (!deleter.equals(team.getCaptain()) && !deleting.equals(deleter)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Only the captain or the m,ember itself can remove a member from a team");
         }
         team.removeMember(deleted);

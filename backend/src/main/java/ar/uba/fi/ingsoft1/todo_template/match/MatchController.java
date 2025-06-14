@@ -55,6 +55,18 @@ public class MatchController {
         return matchService.joinOpenMatch(matchId, userId);
     }
 
+    @DeleteMapping("/open/{matchId}/leave")
+    @Operation(summary = "Darse de baja de un partido abierto", description = "Permite a un usuario abandonar un partido abierto en el que estaba inscripto.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Usuario eliminado del partido exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Partido no encontrado")
+    })
+    public OpenMatch leaveOpenMatch(
+            @Parameter(description = "ID del partido abierto") @PathVariable Long matchId,
+            @Parameter(description = "ID del usuario que se quiere dar de baja.") @RequestParam Long userId) {
+        return matchService.leaveOpenMatch(matchId, userId);
+    }
+
     @PostMapping("/close")
     @Operation(summary = "Crear partido cerrado", description = "Crea un partido cerrado entre dos equipos predefinidos")
     @ApiResponses({
