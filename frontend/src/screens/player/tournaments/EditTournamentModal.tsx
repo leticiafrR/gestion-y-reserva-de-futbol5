@@ -7,9 +7,10 @@ interface EditTournamentModalProps {
   tournament: any;
   onClose: () => void;
   onSaved: () => void;
+  onSuccessToast: (msg: string) => void;
 }
 
-export const EditTournamentModal = ({ tournament, onClose, onSaved }: EditTournamentModalProps) => {
+export const EditTournamentModal = ({ tournament, onClose, onSaved, onSuccessToast }: EditTournamentModalProps) => {
   const [formData, setFormData] = useState({
     name: tournament.name || "",
     startDate: tournament.startDate || "",
@@ -30,14 +31,28 @@ export const EditTournamentModal = ({ tournament, onClose, onSaved }: EditTourna
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const validate = () => {
+    if (!formData.name.trim()) return "El nombre es obligatorio";
+    if (!formData.startDate) return "La fecha de inicio es obligatoria";
+    if (!formData.endDate) return "La fecha de fin es obligatoria";
+    if (!formData.format) return "El formato es obligatorio";
+    if (!formData.maxTeams || formData.maxTeams < 2) return "El máximo de equipos debe ser al menos 2";
+    if (formData.registrationFee < 0) return "La inscripción no puede ser negativa";
+    if (formData.endDate < formData.startDate) return "La fecha de fin no puede ser anterior a la de inicio";
+    return null;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const err = validate();
+    if (err) { setError(err); return; }
     updateTournament({ id: tournament.id, updates: {
       ...formData,
       maxTeams: Number(formData.maxTeams),
       registrationFee: Number(formData.registrationFee),
     } }, {
       onSuccess: () => {
+        onSuccessToast("¡Torneo editado correctamente!");
         onSaved();
       },
       onError: (err: any) => {
@@ -121,6 +136,7 @@ export const EditTournamentModal = ({ tournament, onClose, onSaved }: EditTourna
               closeRegistration(tournament.id, {
                 onSuccess: () => {
                   setShowCloseConfirmModal(false);
+                  onSuccessToast("¡Inscripción cerrada correctamente!");
                   onSaved();
                   window.location.reload();
                 },

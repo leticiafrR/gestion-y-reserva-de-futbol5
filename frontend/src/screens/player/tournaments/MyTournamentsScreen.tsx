@@ -26,6 +26,8 @@ export const MyTournamentsScreen = () => {
   const finishedTournaments = tournaments?.filter(t => t.state === 'FINISHED') || [];
   const filteredActiveTournaments = activeTournaments.filter(t => activeFilter === 'ALL' || t.state === 'OPEN_TO_REGISTER');
 
+  const [globalToast, setGlobalToast] = useState<string | null>(null);
+
   const handleCreated = () => {
     setShowCreateModal(false);
     refetch();
@@ -309,8 +311,27 @@ export const MyTournamentsScreen = () => {
               refetch();
             }}
             onEdited={refetch}
+            onSuccessToast={msg => setGlobalToast(msg)}
           />
         )
+      )}
+      {globalToast && (
+        <div style={{
+          position: "fixed",
+          top: 40,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#10b981",
+          color: "white",
+          padding: "12px 24px",
+          borderRadius: 8,
+          zIndex: 3000,
+          fontWeight: 500,
+          fontSize: 16,
+          boxShadow: "0 2px 8px #0002"
+        }}>
+          {globalToast}
+        </div>
       )}
     </div>
   );

@@ -41,6 +41,7 @@ export const CreateTournamentModal = ({ onClose, onError }: CreateTournamentModa
     if (!form.maxTeams || form.maxTeams < 2) return "El máximo de equipos debe ser al menos 2";
     if (form.registrationFee < 0) return "La inscripción no puede ser negativa";
     if (form.startDate < tomorrow) return "La fecha de inicio debe ser al menos mañana";
+    if (form.endDate < form.startDate) return "La fecha de fin no puede ser anterior a la de inicio";
     return null;
   };
 

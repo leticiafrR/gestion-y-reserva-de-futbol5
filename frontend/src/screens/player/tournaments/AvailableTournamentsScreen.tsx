@@ -126,6 +126,7 @@ export const AvailableTournamentsScreen = () => {
                 <option value="OPEN_TO_REGISTER">Abierto a la inscripción</option>
                 <option value="IN_PROGRESS">En progreso</option>
                 <option value="FINISHED">Finalizado</option>
+                <option value="CLOSE_TO_REGISTER_NOT_STARTED">Inscripciones finalizadas</option>
               </select>
             </div>
           </div>

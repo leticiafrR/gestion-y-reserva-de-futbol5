@@ -9,9 +9,10 @@ interface TournamentDetailsModalProps {
   onClose: () => void;
   onDeleted: () => void;
   onEdited: () => void;
+  onSuccessToast: (msg: string) => void;
 }
 
-export const TournamentDetailsModal = ({ tournament, onClose, onDeleted, onEdited }: TournamentDetailsModalProps) => {
+export const TournamentDetailsModal = ({ tournament, onClose, onDeleted, onEdited, onSuccessToast }: TournamentDetailsModalProps) => {
   const { mutate: deleteTournament, isPending: isDeleting } = useDeleteTournament();
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -157,23 +158,25 @@ export const TournamentDetailsModal = ({ tournament, onClose, onDeleted, onEdite
               {error && <div style={{ color: "#ef4444", marginBottom: "12px" }}>{error}</div>}
               {localTournament.state !== 'IN_PROGRESS' && localTournament.state !== 'FINISHED' && (
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-                  <button
-                    style={{
-                      padding: "10px 18px",
-                      backgroundColor: "#3b82f6",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontWeight: 600,
-                      fontSize: "15px",
-                      cursor: isDeleting ? "not-allowed" : "pointer",
-                      opacity: isDeleting ? 0.5 : 1
-                    }}
-                    onClick={handleEdit}
-                    disabled={isDeleting}
-                  >
-                    Editar
-                  </button>
+                  {localTournament.state === 'OPEN_TO_REGISTER' && (
+                    <button
+                      style={{
+                        padding: "10px 18px",
+                        backgroundColor: "#3b82f6",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontWeight: 600,
+                        fontSize: "15px",
+                        cursor: isDeleting ? "not-allowed" : "pointer",
+                        opacity: isDeleting ? 0.5 : 1
+                      }}
+                      onClick={handleEdit}
+                      disabled={isDeleting}
+                    >
+                      Editar
+                    </button>
+                  )}
                   <button
                     style={{
                       padding: "10px 18px",
@@ -205,6 +208,7 @@ export const TournamentDetailsModal = ({ tournament, onClose, onDeleted, onEdite
             setShowEditModal(false);
             onEdited(); // Refresca la lista en el padre
           }}
+          onSuccessToast={onSuccessToast}
         />
       )}
       {showDeleteModal && (
