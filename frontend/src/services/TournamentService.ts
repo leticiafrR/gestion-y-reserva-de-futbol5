@@ -235,3 +235,23 @@ async function closeTournamentRegistration(id: number) {
   if (!response.ok) throw new Error("Error al cerrar inscripción del torneo");
   return response.json();
 }
+
+// Obtener torneos del usuario organizador
+export function useUserTournaments() {
+  return useQuery({
+    queryKey: ["user-tournaments"],
+    queryFn: getUserTournaments,
+  });
+}
+async function getUserTournaments(): Promise<TournamentSummary[]> {
+  const accessToken = getAuthToken();
+  const response = await fetch(`${BASE_API_URL}/tournaments/organizer`, {
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!response.ok) throw new Error("Error al obtener torneos del usuario");
+  return response.json();
+}
