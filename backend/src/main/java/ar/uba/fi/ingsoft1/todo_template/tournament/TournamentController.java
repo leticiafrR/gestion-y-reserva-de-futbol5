@@ -133,6 +133,21 @@ public class TournamentController {
         return ResponseEntity.ok(inProgressTournaments);
     }
 
+    @GetMapping("/all/closed_registration")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tournaments found successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TournamentSummaryDTO.class))),
+            @ApiResponse(responseCode = "404", description = "No tournaments found in this state", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
+    })
+    @Operation(summary = "Get tournaments that have closed registration but have not started yet (not in progress)", description = "Returns a list of tournaments where registration is already closed and the tournament has not yet started.")
+    public ResponseEntity<List<TournamentSummaryDTO>> getTournamentsClosedRegistrationNotStarted() {
+        List<TournamentSummaryDTO> inProgressTournaments = tournamentService
+                .getFilteredByStateTournaments(TournamentState.CLOSE_TO_REGISTER_NOT_STARTED);
+        if (inProgressTournaments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No tournaments currently in progress found");
+        }
+        return ResponseEntity.ok(inProgressTournaments);
+    }
+
     @GetMapping("/search/{name}")
     @ApiResponse(responseCode = "404", description = "No tournament found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "200", description = "Tournament found successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Tournament.class)))
@@ -167,6 +182,5 @@ public class TournamentController {
         List<TournamentSummaryDTO> tournaments = tournamentService.getTournamentsByOrganizer();
         return ResponseEntity.ok(tournaments);
     }
-
 
 }
