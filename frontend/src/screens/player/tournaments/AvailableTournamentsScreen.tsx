@@ -5,6 +5,14 @@ import { useLocation } from "wouter";
 export const AvailableTournamentsScreen = () => {
   const [, setLocation] = useLocation();
   const { data: tournaments, isLoading, error } = useAllTournaments();
+  const [nameFilter, setNameFilter] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
+
+  const filteredTournaments = tournaments?.filter(tournament => {
+    const matchesName = tournament.name.toLowerCase().includes(nameFilter.toLowerCase());
+    const matchesState = stateFilter === "ALL" || tournament.state === stateFilter;
+    return matchesName && matchesState;
+  });
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "var(--background)", padding: "24px", fontFamily: "system-ui, -apple-system, sans-serif" }}>
@@ -75,17 +83,71 @@ export const AvailableTournamentsScreen = () => {
           padding: "24px",
           boxShadow: "0 1px 3px var(--border)"
         }}>
+          {/* Filters */}
+          <div style={{ 
+            display: "flex", 
+            gap: "16px", 
+            marginBottom: "24px",
+            flexWrap: "wrap"
+          }}>
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <input
+                type="text"
+                placeholder="Buscar por nombre..."
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--background)",
+                  color: "var(--foreground)",
+                  fontSize: "14px"
+                }}
+              />
+            </div>
+            <div style={{ minWidth: "200px" }}>
+              <select
+                value={stateFilter}
+                onChange={(e) => setStateFilter(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--background)",
+                  color: "var(--foreground)",
+                  fontSize: "14px",
+                  cursor: "pointer"
+                }}
+              >
+                <option value="ALL">Todos los estados</option>
+                <option value="OPEN_TO_REGISTER">Abierto a la inscripción</option>
+                <option value="IN_PROGRESS">En progreso</option>
+                <option value="FINISHED">Finalizado</option>
+              </select>
+            </div>
+          </div>
+
           {isLoading && <div style={{ textAlign: "center", marginTop: "2rem" }}>Cargando torneos...</div>}
           {error && (
             <div style={{ textAlign: "center", marginTop: "2rem", color: "var(--destructive)" }}>
               Error al cargar los torneos: {error instanceof Error ? error.message : 'Error desconocido'}
             </div>
           )}
-          {(!tournaments || tournaments.length === 0) && !isLoading && (
+          {(!filteredTournaments || filteredTournaments.length === 0) && !isLoading && (
             <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No hay torneos disponibles.</div>
           )}
-          <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "flex-start" }}>
-            {tournaments?.map((tournament, idx) => {
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "2rem",
+              justifyItems: "center"
+            }}
+          >
+            {filteredTournaments?.map((tournament, idx) => {
               const formatLabel = tournament.format
                 .split("_")
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -95,7 +157,7 @@ export const AvailableTournamentsScreen = () => {
                   border: "1px solid var(--border)",
                   borderRadius: "var(--radius-lg)",
                   padding: "1.5rem",
-                  width: "420px",
+                  width: "360px",
                   background: "#f5f6fa",
                   boxShadow: "0 2px 8px var(--border)",
                   display: "flex",

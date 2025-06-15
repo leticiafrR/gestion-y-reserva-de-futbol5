@@ -2,11 +2,13 @@ import { useLocation } from "wouter";
 import { useState } from "react";
 import { CreateTournamentModal } from "./CreateTournamentModal";
 import { useUserTournaments } from "@/services/TournamentService";
+import { TournamentDetailsModal } from "./TournamentDetailsModal";
 
 export const MyTournamentsScreen = () => {
   const [, setLocation] = useLocation();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedTournament, setSelectedTournament] = useState<any | null>(null);
 
   const { data: tournaments, isLoading, error, refetch } = useUserTournaments();
 
@@ -115,7 +117,14 @@ export const MyTournamentsScreen = () => {
           {(!tournaments || tournaments.length === 0) && !isLoading && (
             <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No tienes torneos propios.</div>
           )}
-          <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "flex-start" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "2rem",
+              justifyItems: "center"
+            }}
+          >
             {tournaments?.map((tournament, idx) => {
               const formatLabel = tournament.format
                 .split("_")
@@ -128,15 +137,17 @@ export const MyTournamentsScreen = () => {
                   border: "1px solid var(--border)",
                   borderRadius: "var(--radius-lg)",
                   padding: "1.5rem",
-                  width: "420px",
+                  width: "360px",
                   background: "#f5f6fa",
                   boxShadow: "0 2px 8px var(--border)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "flex-start",
                   marginBottom: "1rem",
-                  ...(isLast && isOdd && tournaments.length > 1 ? { marginLeft: "auto" } : {})
-                }}>
+                  cursor: "pointer"
+                }}
+                  onClick={() => setSelectedTournament(tournament)}
+                >
                   <h2 style={{ margin: "0 0 0.5rem 0", color: "var(--foreground)", fontSize: "1.3rem", fontWeight: 700, textTransform: "uppercase" }}>{tournament.name}</h2>
                   <div style={{ color: "var(--muted-foreground)", fontSize: "1rem", marginBottom: "0.5rem" }}>
                     <span>Formato: {formatLabel}</span>
@@ -202,6 +213,16 @@ export const MyTournamentsScreen = () => {
           {errorMessage}
           <button onClick={() => setErrorMessage(null)} style={{ marginLeft: 16, background: "none", border: "none", color: "white", fontWeight: 700, cursor: "pointer" }}>X</button>
         </div>
+      )}
+      {selectedTournament && (
+        <TournamentDetailsModal
+          tournament={selectedTournament}
+          onClose={() => setSelectedTournament(null)}
+          onDeleted={() => {
+            setSelectedTournament(null);
+            refetch();
+          }}
+        />
       )}
     </div>
   );
