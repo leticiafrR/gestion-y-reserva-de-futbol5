@@ -115,7 +115,7 @@ export const MyTournamentsScreen = () => {
           {(!tournaments || tournaments.length === 0) && !isLoading && (
             <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No tienes torneos propios.</div>
           )}
-          <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "flex-start" }}>
             {tournaments?.map((tournament, idx) => {
               const formatLabel = tournament.format
                 .split("_")
@@ -135,7 +135,7 @@ export const MyTournamentsScreen = () => {
                   flexDirection: "column",
                   alignItems: "flex-start",
                   marginBottom: "1rem",
-                  ...(isLast && isOdd ? { marginLeft: "auto" } : {})
+                  ...(isLast && isOdd && tournaments.length > 1 ? { marginLeft: "auto" } : {})
                 }}>
                   <h2 style={{ margin: "0 0 0.5rem 0", color: "var(--foreground)", fontSize: "1.3rem", fontWeight: 700, textTransform: "uppercase" }}>{tournament.name}</h2>
                   <div style={{ color: "var(--muted-foreground)", fontSize: "1rem", marginBottom: "0.5rem" }}>

@@ -41,23 +41,37 @@ export const AvailableFieldsScreen = () => {
   return (
     <div
       style={{
-        padding: "2rem",
-        maxWidth: 1200,
-        margin: "0 auto",
-        backgroundColor: "#f8f9fa",
         minHeight: "100vh",
+        backgroundColor: "var(--background)",
+        padding: "24px",
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        maxWidth: 1200,
+        margin: "0 auto"
       }}
     >
       {/* Header */}
-      <div
+      <header
         style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "2rem",
+          padding: "16px",
+          backgroundColor: "var(--card)",
+          borderRadius: "12px",
+          boxShadow: "0 1px 3px var(--border)",
+          marginBottom: "32px"
         }}
       >
-        <h1 style={{ color: "#212529", margin: 0, fontSize: "2rem", fontWeight: "bold" }}>Canchas Disponibles</h1>
+        <div>
+          <h1 style={{ fontSize: "24px", fontWeight: "bold", color: "var(--foreground)", margin: 0 }}>
+            ⚽ Canchas Disponibles
+          </h1>
+          <p style={{ color: "var(--muted-foreground)", margin: "4px 0 0 0", fontSize: "14px" }}>
+            Reservá tu cancha favorita
+          </p>
+        </div>
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
           {/* Toggle Filtros */}
           <button
@@ -135,16 +149,23 @@ export const AvailableFieldsScreen = () => {
           {/* Botón Volver */}
           <button
             style={{
-              padding: "10px 16px",
-              backgroundColor: "white",
-              color: "#374151",
-              border: "1px solid #d1d5db",
+              padding: "8px 16px",
+              backgroundColor: "var(--secondary)",
+              border: "1px solid transparent",
+              borderRadius: "8px",
+              color: "var(--secondary-foreground)",
               cursor: "pointer",
               fontSize: "14px",
-              borderRadius: "8px",
-              transition: "all 0.2s ease",
-              textDecoration: "none",
               fontWeight: "500",
+              transition: "all 0.2s ease"
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = "var(--accent)";
+              e.currentTarget.style.borderColor = "black";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = "var(--secondary)";
+              e.currentTarget.style.borderColor = "transparent";
             }}
             onClick={() => {
               window.location.href = "/main"
@@ -153,7 +174,7 @@ export const AvailableFieldsScreen = () => {
             Volver a Inicio
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Filtros */}
       <FieldFilters
@@ -175,35 +196,48 @@ export const AvailableFieldsScreen = () => {
         filteredFields={filteredFields}
       />
 
-      {/* Contenido Principal */}
-      {viewMode === "map" ? (
-        <FieldsMap fields={filteredFields} onFieldSelect={(field) => setSelectedField(field)} />
-      ) : (
-        <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
-          {filteredFields.length === 0 && (
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "1.2rem",
-                textAlign: "center",
-                padding: "40px",
-                backgroundColor: "white",
-                borderRadius: "12px",
-                border: "1px solid #e5e7eb",
-                width: "100%",
-              }}
-            >
-              No se encontraron canchas que coincidan con los filtros seleccionados.
+      {/* Main Content */}
+      <main style={{
+        maxWidth: "1200px",
+        margin: "0 auto",
+        padding: "0 16px"
+      }}>
+        <div style={{
+          backgroundColor: "var(--card)",
+          borderRadius: "12px",
+          padding: "24px",
+          boxShadow: "0 1px 3px var(--border)"
+        }}>
+          {viewMode === "map" ? (
+            <FieldsMap fields={filteredFields} onFieldSelect={(field) => setSelectedField(field)} />
+          ) : (
+            <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
+              {filteredFields.length === 0 && (
+                <div
+                  style={{
+                    color: "#6b7280",
+                    fontSize: "1.2rem",
+                    textAlign: "center",
+                    padding: "40px",
+                    backgroundColor: "white",
+                    borderRadius: "12px",
+                    border: "1px solid #e5e7eb",
+                    width: "100%",
+                  }}
+                >
+                  No se encontraron canchas que coincidan con los filtros seleccionados.
+                </div>
+              )}
+              {filteredFields.map((field) => (
+                <FieldCard key={field.id} field={field} onClick={setSelectedField} />
+              ))}
             </div>
           )}
-          {filteredFields.map((field) => (
-            <FieldCard key={field.id} field={field} onClick={setSelectedField} />
-          ))}
         </div>
+      </main>
+      {selectedField && (
+        <FieldDetailsModal field={selectedField} onClose={() => setSelectedField(null)} />
       )}
-
-      {/* Modal de Detalles */}
-      {selectedField && <FieldDetailsModal field={selectedField} onClose={() => setSelectedField(null)} />}
     </div>
   )
 }

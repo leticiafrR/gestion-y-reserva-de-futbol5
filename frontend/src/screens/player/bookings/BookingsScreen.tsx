@@ -136,243 +136,290 @@ export const BookingsScreen: React.FC = () => {
   return (
     <div
       style={{
-        padding: '2rem',
-        maxWidth: 1000,
-        margin: '0 auto',
-        backgroundColor: '#f8f9fa',
         minHeight: '100vh',
+        backgroundColor: 'var(--background)',
+        padding: '24px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <h1 style={{ color: '#212529', margin: 0, fontSize: '2rem', fontWeight: 'bold' }}>
-          Mis Reservas
-        </h1>
+      {/* Header */}
+      <header style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '16px',
+        backgroundColor: 'var(--card)',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px var(--border)',
+        marginBottom: '32px'
+      }}>
+        <div>
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: 'var(--foreground)',
+            margin: 0
+          }}>
+            📅 Mis Reservas
+          </h1>
+          <p style={{
+            color: 'var(--muted-foreground)',
+            margin: '4px 0 0 0',
+            fontSize: '14px'
+          }}>
+            Gestiona tus reservas de canchas
+          </p>
+        </div>
         <button
           style={{
-            padding: '10px 16px',
+            padding: '8px 16px',
             backgroundColor: 'var(--secondary)',
+            border: '1px solid transparent',
+            borderRadius: '8px',
             color: 'var(--secondary-foreground)',
-            border: '1px solid var(--border)',
             cursor: 'pointer',
             fontSize: '14px',
-            borderRadius: 'var(--radius-lg)',
-            transition: 'all 0.2s ease',
-            textDecoration: 'none'
+            fontWeight: '500',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.backgroundColor = 'var(--accent)';
+            e.currentTarget.style.borderColor = 'black';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.backgroundColor = 'var(--secondary)';
+            e.currentTarget.style.borderColor = 'transparent';
           }}
           onClick={() => navigate('/main')}
         >
           Volver a Inicio
         </button>
-      </div>
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0 }}>
-        <button
-          onClick={() => setActiveTab('upcoming')}
-          style={{
-            flex: 1,
-            padding: '12px 0',
-            background: activeTab === 'upcoming' ? '#3b82f6' : 'white',
-            color: activeTab === 'upcoming' ? 'white' : '#3b82f6',
-            border: '1px solid #3b82f6',
-            borderBottom: activeTab === 'upcoming' ? 'none' : '1px solid #3b82f6',
-            borderTopLeftRadius: 8,
-            borderTopRightRadius: 0,
-            fontWeight: 600,
-            fontSize: 16,
-            cursor: 'pointer',
-            outline: 'none',
-            transition: 'all 0.2s',
-          }}
-        >
-          Próximas reservas
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          style={{
-            flex: 1,
-            padding: '12px 0',
-            background: activeTab === 'history' ? '#3b82f6' : 'white',
-            color: activeTab === 'history' ? 'white' : '#3b82f6',
-            border: '1px solid #3b82f6',
-            borderBottom: activeTab === 'history' ? 'none' : '1px solid #3b82f6',
-            borderTopLeftRadius: 0,
-            borderTopRightRadius: 8,
-            fontWeight: 600,
-            fontSize: 16,
-            cursor: 'pointer',
-            outline: 'none',
-            transition: 'all 0.2s',
-          }}
-        >
-          Historial de reservas
-        </button>
-      </div>
-      {/* Contenido de la pestaña activa */}
-      <div style={{ background: 'white', border: 'none', borderRadius: '0 0 8px 8px', padding: '2rem 1rem', minHeight: 200 }}>
-        {activeTab === 'upcoming' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {upcomingBookings.length === 0 && (
-              <div style={{ color: '#6b7280', fontSize: '1.1rem', textAlign: 'center', padding: '30px' }}>
-                No tienes próximas reservas.
-              </div>
-            )}
-            {upcomingBookings.map((booking) => {
-              const slot = timeSlots[booking.timeSlotId];
-              const field = fields.find(f => String(f.id) === String(slot?.fieldId));
-              return (
-                <div
-                  key={booking.id}
-                  style={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '10px',
-                    background: booking.active ? 'white' : '#f8f9fa',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
-                    padding: '1.2rem 1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1.5rem',
-                    opacity: booking.active ? 1 : 0.7,
-                    position: 'relative',
-                  }}
-                >
-                  <img
-                    src={field?.photoUrl || '/placeholder.svg'}
-                    alt={field?.name || 'Cancha'}
-                    style={{
-                      width: 80,
-                      height: 80,
-                      objectFit: 'cover',
-                      borderRadius: '8px',
-                      border: '1px solid #e5e7eb',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <h2 style={{ margin: 0, color: '#3b82f6', fontSize: '1.2rem', fontWeight: 600 }}>
-                        {field?.name || 'Cancha'}
-                      </h2>
-                      <span style={{
-                        marginLeft: 12,
-                        padding: '2px 10px',
-                        backgroundColor: booking.active ? '#10b981' : '#ef4444',
-                        color: 'white',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                      }}>
-                        {booking.active ? 'Activa' : 'Inactiva'}
-                      </span>
-                    </div>
-                    <div style={{ color: '#374151', fontSize: 15, marginTop: 4 }}>
-                      <b>Dirección:</b> {field?.address || '-'}
-                    </div>
-                    <div style={{ color: '#374151', fontSize: 15 }}>
-                      <b>Fecha:</b> {booking.bookingDate}
-                    </div>
-                    <div style={{ color: '#374151', fontSize: 15 }}>
-                      <b>Hora:</b> {booking.bookingHour}:00
-                    </div>
+      </header>
+      {/* Main Content */}
+      <main style={{
+        maxWidth: '1000px',
+        margin: '0 auto',
+        padding: '0 16px'
+      }}>
+        <div style={{
+          backgroundColor: 'var(--card)',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 1px 3px var(--border)'
+        }}>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 0 }}>
+            <button
+              onClick={() => setActiveTab('upcoming')}
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                background: activeTab === 'upcoming' ? '#3b82f6' : 'white',
+                color: activeTab === 'upcoming' ? 'white' : '#3b82f6',
+                border: '1px solid #3b82f6',
+                borderBottom: activeTab === 'upcoming' ? 'none' : '1px solid #3b82f6',
+                borderTopLeftRadius: 8,
+                borderTopRightRadius: 0,
+                fontWeight: 600,
+                fontSize: 16,
+                cursor: 'pointer',
+                outline: 'none',
+                transition: 'all 0.2s',
+              }}
+            >
+              Próximas reservas
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                background: activeTab === 'history' ? '#3b82f6' : 'white',
+                color: activeTab === 'history' ? 'white' : '#3b82f6',
+                border: '1px solid #3b82f6',
+                borderBottom: activeTab === 'history' ? 'none' : '1px solid #3b82f6',
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 8,
+                fontWeight: 600,
+                fontSize: 16,
+                cursor: 'pointer',
+                outline: 'none',
+                transition: 'all 0.2s',
+              }}
+            >
+              Historial de reservas
+            </button>
+          </div>
+          {/* Contenido de la pestaña activa */}
+          <div style={{ background: 'white', border: 'none', borderRadius: '0 0 8px 8px', padding: '2rem 1rem', minHeight: 200 }}>
+            {activeTab === 'upcoming' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {upcomingBookings.length === 0 && (
+                  <div style={{ color: '#6b7280', fontSize: '1.1rem', textAlign: 'center', padding: '30px' }}>
+                    No tienes próximas reservas.
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                    <button
-                      onClick={() => handleCancel(booking.id, field?.name || 'Cancha')}
-                      disabled={cancelingId === booking.id}
+                )}
+                {upcomingBookings.map((booking) => {
+                  const slot = timeSlots[booking.timeSlotId];
+                  const field = fields.find(f => String(f.id) === String(slot?.fieldId));
+                  return (
+                    <div
+                      key={booking.id}
                       style={{
-                        padding: '8px 14px',
-                        backgroundColor: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: cancelingId === booking.id ? 'not-allowed' : 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        opacity: cancelingId === booking.id ? 0.7 : 1,
-                        marginTop: 8
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '10px',
+                        background: booking.active ? 'white' : '#f8f9fa',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+                        padding: '1.2rem 1.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1.5rem',
+                        opacity: booking.active ? 1 : 0.7,
+                        position: 'relative',
                       }}
                     >
-                      Cancelar reserva
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-            {cancelError && (
-              <div style={{ color: '#ef4444', textAlign: 'center', marginTop: 12 }}>{cancelError}</div>
-            )}
-          </div>
-        )}
-        {activeTab === 'history' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {historyBookings.length === 0 && (
-              <div style={{ color: '#6b7280', fontSize: '1.1rem', textAlign: 'center', padding: '30px' }}>
-                No tienes reservas anteriores.
+                      <img
+                        src={field?.photoUrl || '/placeholder.svg'}
+                        alt={field?.name || 'Cancha'}
+                        style={{
+                          width: 80,
+                          height: 80,
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb',
+                          flexShrink: 0,
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <h2 style={{ margin: 0, color: '#3b82f6', fontSize: '1.2rem', fontWeight: 600 }}>
+                            {field?.name || 'Cancha'}
+                          </h2>
+                          <span style={{
+                            marginLeft: 12,
+                            padding: '2px 10px',
+                            backgroundColor: booking.active ? '#10b981' : '#ef4444',
+                            color: 'white',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                          }}>
+                            {booking.active ? 'Activa' : 'Inactiva'}
+                          </span>
+                        </div>
+                        <div style={{ color: '#374151', fontSize: 15, marginTop: 4 }}>
+                          <b>Dirección:</b> {field?.address || '-'}
+                        </div>
+                        <div style={{ color: '#374151', fontSize: 15 }}>
+                          <b>Fecha:</b> {booking.bookingDate}
+                        </div>
+                        <div style={{ color: '#374151', fontSize: 15 }}>
+                          <b>Hora:</b> {booking.bookingHour}:00
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                        <button
+                          onClick={() => handleCancel(booking.id, field?.name || 'Cancha')}
+                          disabled={cancelingId === booking.id}
+                          style={{
+                            padding: '8px 14px',
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: cancelingId === booking.id ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            opacity: cancelingId === booking.id ? 0.7 : 1,
+                            marginTop: 8
+                          }}
+                        >
+                          Cancelar reserva
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {cancelError && (
+                  <div style={{ color: '#ef4444', textAlign: 'center', marginTop: 12 }}>{cancelError}</div>
+                )}
               </div>
             )}
-            {historyBookings.map((booking) => {
-              const slot = timeSlots[booking.timeSlotId];
-              const field = fields.find(f => String(f.id) === String(slot?.fieldId));
-              return (
-                <div
-                  key={booking.id}
-                  style={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '10px',
-                    background: booking.active ? 'white' : '#f8f9fa',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
-                    padding: '1.2rem 1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1.5rem',
-                    opacity: booking.active ? 1 : 0.7,
-                    position: 'relative',
-                  }}
-                >
-                  <img
-                    src={field?.photoUrl || '/placeholder.svg'}
-                    alt={field?.name || 'Cancha'}
-                    style={{
-                      width: 80,
-                      height: 80,
-                      objectFit: 'cover',
-                      borderRadius: '8px',
-                      border: '1px solid #e5e7eb',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <h2 style={{ margin: 0, color: '#3b82f6', fontSize: '1.2rem', fontWeight: 600 }}>
-                        {field?.name || 'Cancha'}
-                      </h2>
-                      <span style={{
-                        marginLeft: 12,
-                        padding: '2px 10px',
-                        backgroundColor: booking.active ? '#10b981' : '#ef4444',
-                        color: 'white',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                      }}>
-                        {booking.active ? 'Activa' : 'Inactiva'}
-                      </span>
-                    </div>
-                    <div style={{ color: '#374151', fontSize: 15, marginTop: 4 }}>
-                      <b>Dirección:</b> {field?.address || '-'}
-                    </div>
-                    <div style={{ color: '#374151', fontSize: 15 }}>
-                      <b>Fecha:</b> {booking.bookingDate}
-                    </div>
-                    <div style={{ color: '#374151', fontSize: 15 }}>
-                      <b>Hora:</b> {booking.bookingHour}:00
-                    </div>
+            {activeTab === 'history' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {historyBookings.length === 0 && (
+                  <div style={{ color: '#6b7280', fontSize: '1.1rem', textAlign: 'center', padding: '30px' }}>
+                    No tienes reservas anteriores.
                   </div>
-                </div>
-              );
-            })}
+                )}
+                {historyBookings.map((booking) => {
+                  const slot = timeSlots[booking.timeSlotId];
+                  const field = fields.find(f => String(f.id) === String(slot?.fieldId));
+                  return (
+                    <div
+                      key={booking.id}
+                      style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '10px',
+                        background: booking.active ? 'white' : '#f8f9fa',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+                        padding: '1.2rem 1.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1.5rem',
+                        opacity: booking.active ? 1 : 0.7,
+                        position: 'relative',
+                      }}
+                    >
+                      <img
+                        src={field?.photoUrl || '/placeholder.svg'}
+                        alt={field?.name || 'Cancha'}
+                        style={{
+                          width: 80,
+                          height: 80,
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb',
+                          flexShrink: 0,
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <h2 style={{ margin: 0, color: '#3b82f6', fontSize: '1.2rem', fontWeight: 600 }}>
+                            {field?.name || 'Cancha'}
+                          </h2>
+                          <span style={{
+                            marginLeft: 12,
+                            padding: '2px 10px',
+                            backgroundColor: booking.active ? '#10b981' : '#ef4444',
+                            color: 'white',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                          }}>
+                            {booking.active ? 'Activa' : 'Inactiva'}
+                          </span>
+                        </div>
+                        <div style={{ color: '#374151', fontSize: 15, marginTop: 4 }}>
+                          <b>Dirección:</b> {field?.address || '-'}
+                        </div>
+                        <div style={{ color: '#374151', fontSize: 15 }}>
+                          <b>Fecha:</b> {booking.bookingDate}
+                        </div>
+                        <div style={{ color: '#374151', fontSize: 15 }}>
+                          <b>Hora:</b> {booking.bookingHour}:00
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      </main>
       {showDeleteModal && bookingToDelete && (
         <DeleteBookingConfirmationModal
           bookingId={bookingToDelete.id}
