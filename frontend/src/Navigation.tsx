@@ -13,10 +13,11 @@ import { TeamsScreen } from "@/screens/player/team/TeamsScreen";
 import { ProfileScreen } from "@/screens/player/ProfileScreen";
 import { ScheduleManagementScreen } from "./screens/field-admin/ScheduleManagementScreen";
 import { MatchesScreen } from "@/screens/player/match/MatchesScreen";
-import { MyTournamentsScreen } from "@/screens/player/MyTournamentsScreen";
+import { MyTournamentsScreen } from "@/screens/player/tournaments/MyTournamentsScreen";
 import { AcceptInvitationScreen } from "./screens/auth/AcceptInvitationScreen";
 import { BookingsScreen as PlayerBookingsScreen } from "@/screens/player/bookings/BookingsScreen";
 import { BookingsScreen as AdminBookingsScreen } from "@/screens/field-admin/BookingsScreen";
+import { AvailableTournamentsScreen } from "@/screens/player/tournaments/AvailableTournamentsScreen";
 
 export const Navigation = () => {
   const [tokenState] = useToken();
@@ -94,6 +95,9 @@ export const Navigation = () => {
         </Route>
         <Route path="/my-tournaments">
           <MyTournamentsScreen />
+        </Route>
+        <Route path="/tournaments">
+          <AvailableTournamentsScreen />
         </Route>
         <Route path="/bookings">
           <PlayerBookingsScreen />
