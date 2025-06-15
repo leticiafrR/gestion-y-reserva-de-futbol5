@@ -171,6 +171,7 @@ public class TournamentService {
                 tournament.getId(),
                 tournament.getName(),
                 tournament.getStartDate(),
+                tournament.getEndDate(),
                 tournament.getFormat(),
                 tournament.getState());
     }
