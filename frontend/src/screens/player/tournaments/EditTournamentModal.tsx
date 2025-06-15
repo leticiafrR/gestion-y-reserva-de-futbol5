@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { useUpdateTournament } from "@/services/TournamentService";
+import { useUpdateTournament, useCloseTournamentRegistration } from "@/services/TournamentService";
+import { DeleteTournamentConfirmationModal } from "./DeleteTournamentConfirmationModal";
 
 interface EditTournamentModalProps {
   tournament: any;
@@ -21,6 +22,8 @@ export const EditTournamentModal = ({ tournament, onClose, onSaved }: EditTourna
   });
   const [error, setError] = useState<string | null>(null);
   const { mutate: updateTournament, isPending } = useUpdateTournament();
+  const { mutate: closeRegistration, isPending: isClosing } = useCloseTournamentRegistration();
+  const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -87,6 +90,47 @@ export const EditTournamentModal = ({ tournament, onClose, onSaved }: EditTourna
             <X size={24} />
           </button>
         </div>
+        {tournament.state === "OPEN_TO_REGISTER" && (
+          <button
+            style={{
+              margin: "24px 24px 0 24px",
+              padding: "10px 18px",
+              backgroundColor: "#f59e42",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontWeight: 600,
+              fontSize: "15px",
+              cursor: isClosing ? "not-allowed" : "pointer",
+              opacity: isClosing ? 0.7 : 1,
+              width: "calc(100% - 48px)"
+            }}
+            disabled={isClosing}
+            onClick={() => setShowCloseConfirmModal(true)}
+          >
+            {isClosing ? "Cerrando inscripción..." : "Cerrar inscripción"}
+          </button>
+        )}
+        {showCloseConfirmModal && (
+          <DeleteTournamentConfirmationModal
+            tournamentName={tournament.name}
+            isDeleting={isClosing}
+            customText="¿Estás seguro de que quieres cerrar la inscripción? Esta acción no se puede deshacer."
+            onClose={() => setShowCloseConfirmModal(false)}
+            onConfirm={() => {
+              closeRegistration(tournament.id, {
+                onSuccess: () => {
+                  setShowCloseConfirmModal(false);
+                  onSaved();
+                  window.location.reload();
+                },
+                onError: (err: any) => {
+                  setError(err?.message || "Error al cerrar inscripción");
+                }
+              });
+            }}
+          />
+        )}
         <form onSubmit={handleSubmit} style={{ padding: "24px" }}>
           <div style={{ marginBottom: "16px" }}>
             <label>Nombre</label>

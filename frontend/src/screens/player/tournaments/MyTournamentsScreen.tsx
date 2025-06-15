@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { CreateTournamentModal } from "./CreateTournamentModal";
-import { useUserTournaments } from "@/services/TournamentService";
+import { useUserTournaments, useTournamentByName } from "@/services/TournamentService";
 import { TournamentDetailsModal } from "./TournamentDetailsModal";
 
 export const MyTournamentsScreen = () => {
@@ -9,8 +9,22 @@ export const MyTournamentsScreen = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedTournament, setSelectedTournament] = useState<any | null>(null);
+  const [selectedTournamentName, setSelectedTournamentName] = useState<string | null>(null);
+  const { data: tournamentDetails, isLoading: isLoadingDetails } = useTournamentByName(selectedTournamentName || "");
 
   const { data: tournaments, isLoading, error, refetch } = useUserTournaments();
+
+  // Tabs y filtro
+  const [activeTab, setActiveTab] = useState<'activos' | 'finalizados'>('activos');
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'OPEN_TO_REGISTER'>('ALL');
+
+  // Filtrado de torneos
+  const activeTournaments = tournaments?.filter(t =>
+    t.state === 'OPEN_TO_REGISTER' ||
+    t.state === 'CLOSE_TO_REGISTER_NOT_STARTED' ||
+    t.state === 'IN_PROGRESS') || [];
+  const finishedTournaments = tournaments?.filter(t => t.state === 'FINISHED') || [];
+  const filteredActiveTournaments = activeTournaments.filter(t => activeFilter === 'ALL' || t.state === 'OPEN_TO_REGISTER');
 
   const handleCreated = () => {
     setShowCreateModal(false);
@@ -96,6 +110,62 @@ export const MyTournamentsScreen = () => {
         </div>
       </header>
 
+      {/* Tabs */}
+      <div style={{ maxWidth: "1200px", margin: "0 auto 24px auto", display: "flex", gap: 16 }}>
+        <button
+          onClick={() => setActiveTab('activos')}
+          style={{
+            padding: "10px 24px",
+            borderRadius: "8px 8px 0 0",
+            border: "none",
+            background: activeTab === 'activos' ? "#3b82f6" : "#e5e7eb",
+            color: activeTab === 'activos' ? "white" : "#374151",
+            fontWeight: 600,
+            fontSize: 16,
+            cursor: "pointer"
+          }}
+        >
+          Torneos activos
+        </button>
+        <button
+          onClick={() => setActiveTab('finalizados')}
+          style={{
+            padding: "10px 24px",
+            borderRadius: "8px 8px 0 0",
+            border: "none",
+            background: activeTab === 'finalizados' ? "#3b82f6" : "#e5e7eb",
+            color: activeTab === 'finalizados' ? "white" : "#374151",
+            fontWeight: 600,
+            fontSize: 16,
+            cursor: "pointer"
+          }}
+        >
+          Torneos finalizados
+        </button>
+      </div>
+
+      {/* Filtro solo en activos */}
+      {activeTab === 'activos' && (
+        <div style={{ maxWidth: "1200px", margin: "0 auto 16px auto", display: "flex", justifyContent: "flex-end" }}>
+          <select
+            value={activeFilter}
+            onChange={e => setActiveFilter(e.target.value as 'ALL' | 'OPEN_TO_REGISTER')}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "6px",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--background)",
+              color: "var(--foreground)",
+              fontSize: "14px",
+              cursor: "pointer"
+            }}
+          >
+            <option value="ALL">Todos los activos</option>
+            <option value="OPEN_TO_REGISTER">Solo abiertos a inscripción</option>
+          </select>
+        </div>
+      )}
+
       {/* Main Content */}
       <main style={{
         maxWidth: "1200px",
@@ -114,8 +184,11 @@ export const MyTournamentsScreen = () => {
               Error al cargar los torneos: {error instanceof Error ? error.message : 'Error desconocido'}
             </div>
           )}
-          {(!tournaments || tournaments.length === 0) && !isLoading && (
-            <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No tienes torneos propios.</div>
+          {activeTab === 'activos' && (!filteredActiveTournaments || filteredActiveTournaments.length === 0) && !isLoading && (
+            <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No tienes torneos activos.</div>
+          )}
+          {activeTab === 'finalizados' && (!finishedTournaments || finishedTournaments.length === 0) && !isLoading && (
+            <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No tienes torneos finalizados.</div>
           )}
           <div
             style={{
@@ -125,13 +198,37 @@ export const MyTournamentsScreen = () => {
               justifyItems: "center"
             }}
           >
-            {tournaments?.map((tournament, idx) => {
+            {(activeTab === 'activos' ? filteredActiveTournaments : finishedTournaments).map((tournament, idx) => {
               const formatLabel = tournament.format
                 .split("_")
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                 .join(" ");
-              const isLast = idx === tournaments.length - 1;
-              const isOdd = tournaments.length % 2 === 1;
+              let stateLabel = '';
+              let stateBg = '';
+              let stateColor = '';
+              if (tournament.state === 'OPEN_TO_REGISTER') {
+                stateLabel = 'Abierto a la inscripción';
+                stateBg = '#10b98122';
+                stateColor = '#10b981';
+              } else if (tournament.state === 'CLOSE_TO_REGISTER_NOT_STARTED') {
+                stateLabel = 'Inscripciones finalizadas';
+                stateBg = '#f59e4222';
+                stateColor = '#f59e42';
+              } else if (tournament.state === 'IN_PROGRESS') {
+                stateLabel = 'En progreso';
+                stateBg = '#3b82f622';
+                stateColor = '#2563eb';
+              } else if (tournament.state === 'FINISHED') {
+                stateLabel = 'Finalizado';
+                stateBg = '#e5e7eb';
+                stateColor = '#6b7280';
+              } else {
+                stateLabel = tournament.state;
+                stateBg = '#e5e7eb';
+                stateColor = '#6b7280';
+              }
+              const isLast = idx === (activeTab === 'activos' ? filteredActiveTournaments : finishedTournaments).length - 1;
+              const isOdd = (activeTab === 'activos' ? filteredActiveTournaments : finishedTournaments).length % 2 === 1;
               return (
                 <div key={tournament.id} style={{
                   border: "1px solid var(--border)",
@@ -146,7 +243,7 @@ export const MyTournamentsScreen = () => {
                   marginBottom: "1rem",
                   cursor: "pointer"
                 }}
-                  onClick={() => setSelectedTournament(tournament)}
+                  onClick={() => setSelectedTournamentName(tournament.name)}
                 >
                   <h2 style={{ margin: "0 0 0.5rem 0", color: "var(--foreground)", fontSize: "1.3rem", fontWeight: 700, textTransform: "uppercase" }}>{tournament.name}</h2>
                   <div style={{ color: "var(--muted-foreground)", fontSize: "1rem", marginBottom: "0.5rem" }}>
@@ -157,27 +254,11 @@ export const MyTournamentsScreen = () => {
                       padding: "4px 10px",
                       borderRadius: "4px",
                       fontWeight: 600,
-                      background:
-                        tournament.state === "OPEN_TO_REGISTER"
-                          ? "#10b98122"
-                          : tournament.state === "IN_PROGRESS"
-                          ? "#3b82f622"
-                          : "#e5e7eb",
-                      color:
-                        tournament.state === "OPEN_TO_REGISTER"
-                          ? "#10b981"
-                          : tournament.state === "IN_PROGRESS"
-                          ? "#2563eb"
-                          : "#6b7280",
+                      background: stateBg,
+                      color: stateColor,
                       fontSize: "0.95rem"
                     }}>
-                      {tournament.state === "OPEN_TO_REGISTER"
-                        ? "Abierto a la inscripción"
-                        : tournament.state === "IN_PROGRESS"
-                        ? "En progreso"
-                        : tournament.state === "FINISHED"
-                        ? "Finalizado"
-                        : tournament.state}
+                      {stateLabel}
                     </span>
                   </div>
                   <div style={{ color: "var(--muted-foreground)", fontSize: "0.95rem" }}>
@@ -214,15 +295,22 @@ export const MyTournamentsScreen = () => {
           <button onClick={() => setErrorMessage(null)} style={{ marginLeft: 16, background: "none", border: "none", color: "white", fontWeight: 700, cursor: "pointer" }}>X</button>
         </div>
       )}
-      {selectedTournament && (
-        <TournamentDetailsModal
-          tournament={selectedTournament}
-          onClose={() => setSelectedTournament(null)}
-          onDeleted={() => {
-            setSelectedTournament(null);
-            refetch();
-          }}
-        />
+      {selectedTournamentName && (
+        isLoadingDetails ? (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+            <div style={{ background: "white", borderRadius: 12, padding: 32, fontSize: 18 }}>Cargando detalles...</div>
+          </div>
+        ) : tournamentDetails && (
+          <TournamentDetailsModal
+            tournament={tournamentDetails}
+            onClose={() => setSelectedTournamentName(null)}
+            onDeleted={() => {
+              setSelectedTournamentName(null);
+              refetch();
+            }}
+            onEdited={refetch}
+          />
+        )
       )}
     </div>
   );

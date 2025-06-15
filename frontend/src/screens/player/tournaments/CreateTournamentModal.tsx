@@ -26,6 +26,8 @@ export const CreateTournamentModal = ({ onClose, onError }: CreateTournamentModa
   const [error, setError] = useState<string | null>(null);
   const createTournament = useCreateTournament();
 
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: name === "maxTeams" || name === "registrationFee" ? Number(value) : value }));
@@ -38,6 +40,7 @@ export const CreateTournamentModal = ({ onClose, onError }: CreateTournamentModa
     if (!form.format) return "El formato es obligatorio";
     if (!form.maxTeams || form.maxTeams < 2) return "El máximo de equipos debe ser al menos 2";
     if (form.registrationFee < 0) return "La inscripción no puede ser negativa";
+    if (form.startDate < tomorrow) return "La fecha de inicio debe ser al menos mañana";
     return null;
   };
 
@@ -65,7 +68,7 @@ export const CreateTournamentModal = ({ onClose, onError }: CreateTournamentModa
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
               <label style={{ display: "block", marginBottom: 8, fontSize: 14, fontWeight: 500 }}>Inicio *</label>
-              <input name="startDate" type="date" value={form.startDate} onChange={handleChange} required style={{ width: "100%", padding: 10, borderRadius: 6, border: "1px solid #ccc", fontSize: 15 }} />
+              <input name="startDate" type="date" value={form.startDate} onChange={handleChange} required min={tomorrow} style={{ width: "100%", padding: 10, borderRadius: 6, border: "1px solid #ccc", fontSize: 15 }} />
             </div>
             <div>
               <label style={{ display: "block", marginBottom: 8, fontSize: 14, fontWeight: 500 }}>Fin *</label>

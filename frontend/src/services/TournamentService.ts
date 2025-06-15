@@ -233,7 +233,7 @@ async function closeTournamentRegistration(id: number) {
     },
   });
   if (!response.ok) throw new Error("Error al cerrar inscripción del torneo");
-  return response.json();
+  return response.text();
 }
 
 // Obtener torneos del usuario organizador

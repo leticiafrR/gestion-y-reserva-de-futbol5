@@ -8,9 +8,10 @@ interface TournamentDetailsModalProps {
   tournament: any;
   onClose: () => void;
   onDeleted: () => void;
+  onEdited: () => void;
 }
 
-export const TournamentDetailsModal = ({ tournament, onClose, onDeleted }: TournamentDetailsModalProps) => {
+export const TournamentDetailsModal = ({ tournament, onClose, onDeleted, onEdited }: TournamentDetailsModalProps) => {
   const { mutate: deleteTournament, isPending: isDeleting } = useDeleteTournament();
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -70,29 +71,44 @@ export const TournamentDetailsModal = ({ tournament, onClose, onDeleted }: Tourn
                 <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#1f2937", margin: "0 0 4px 0" }}>
                   {localTournament.name}
                 </h2>
-                <span style={{
-                  padding: "6px 12px",
-                  backgroundColor:
-                    localTournament.state === "OPEN_TO_REGISTER"
-                      ? "#10b981"
-                      : localTournament.state === "IN_PROGRESS"
-                      ? "#2563eb"
-                      : "#6b7280",
-                  color: "white",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  marginBottom: "4px",
-                  display: "inline-block"
-                }}>
-                  {localTournament.state === "OPEN_TO_REGISTER"
-                    ? "Abierto a la inscripción"
-                    : localTournament.state === "IN_PROGRESS"
-                    ? "En progreso"
-                    : localTournament.state === "FINISHED"
-                    ? "Finalizado"
-                    : localTournament.state}
-                </span>
+                {(() => {
+                  let stateLabel = '';
+                  let stateBg = '';
+                  let stateColor = '';
+                  if (localTournament.state === 'OPEN_TO_REGISTER') {
+                    stateLabel = 'Abierto a la inscripción';
+                    stateBg = '#10b981';
+                    stateColor = 'white';
+                  } else if (localTournament.state === 'CLOSE_TO_REGISTER_NOT_STARTED') {
+                    stateLabel = 'Inscripciones finalizadas';
+                    stateBg = '#f59e42';
+                    stateColor = 'white';
+                  } else if (localTournament.state === 'IN_PROGRESS') {
+                    stateLabel = 'En progreso';
+                    stateBg = '#2563eb';
+                    stateColor = 'white';
+                  } else if (localTournament.state === 'FINISHED') {
+                    stateLabel = 'Finalizado';
+                    stateBg = '#6b7280';
+                    stateColor = 'white';
+                  } else {
+                    stateLabel = localTournament.state;
+                    stateBg = '#e5e7eb';
+                    stateColor = '#6b7280';
+                  }
+                  return (
+                    <span style={{
+                      padding: "6px 12px",
+                      backgroundColor: stateBg,
+                      color: stateColor,
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      marginBottom: "4px",
+                      display: "inline-block"
+                    }}>{stateLabel}</span>
+                  );
+                })()}
               </div>
               <button
                 onClick={onClose}
@@ -119,6 +135,9 @@ export const TournamentDetailsModal = ({ tournament, onClose, onDeleted }: Tourn
                 <div style={{ color: "#374151", fontSize: "16px", marginBottom: "8px" }}>
                   <b>Hasta:</b> {localTournament.endDate || "-"}
                 </div>
+                <div style={{ color: "#374151", fontSize: "16px", marginBottom: "8px" }}>
+                  <b>Cantidad máxima de equipos:</b> {localTournament.maxTeams ?? "-"}
+                </div>
                 {localTournament.description && (
                   <div style={{ color: "#374151", fontSize: "16px", marginBottom: "8px" }}>
                     <b>Descripción:</b> {localTournament.description}
@@ -136,40 +155,44 @@ export const TournamentDetailsModal = ({ tournament, onClose, onDeleted }: Tourn
                 )}
               </div>
               {error && <div style={{ color: "#ef4444", marginBottom: "12px" }}>{error}</div>}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-                <button
-                  style={{
-                    padding: "10px 18px",
-                    backgroundColor: "#3b82f6",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontWeight: 600,
-                    fontSize: "15px",
-                    cursor: "pointer"
-                  }}
-                  onClick={handleEdit}
-                  disabled={isDeleting}
-                >
-                  Editar
-                </button>
-                <button
-                  style={{
-                    padding: "10px 18px",
-                    backgroundColor: "#ef4444",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontWeight: 600,
-                    fontSize: "15px",
-                    cursor: isDeleting ? "not-allowed" : "pointer"
-                  }}
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Eliminando..." : "Eliminar"}
-                </button>
-              </div>
+              {localTournament.state !== 'IN_PROGRESS' && localTournament.state !== 'FINISHED' && (
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+                  <button
+                    style={{
+                      padding: "10px 18px",
+                      backgroundColor: "#3b82f6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontWeight: 600,
+                      fontSize: "15px",
+                      cursor: isDeleting ? "not-allowed" : "pointer",
+                      opacity: isDeleting ? 0.5 : 1
+                    }}
+                    onClick={handleEdit}
+                    disabled={isDeleting}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    style={{
+                      padding: "10px 18px",
+                      backgroundColor: "#ef4444",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontWeight: 600,
+                      fontSize: "15px",
+                      cursor: isDeleting ? "not-allowed" : "pointer",
+                      opacity: isDeleting ? 0.5 : 1
+                    }}
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Eliminando..." : "Eliminar"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -180,8 +203,7 @@ export const TournamentDetailsModal = ({ tournament, onClose, onDeleted }: Tourn
           onClose={() => setShowEditModal(false)}
           onSaved={() => {
             setShowEditModal(false);
-            // Refrescar datos locales (idealmente deberías refetchear desde backend)
-            onDeleted(); // Refresca la lista en el padre
+            onEdited(); // Refresca la lista en el padre
           }}
         />
       )}

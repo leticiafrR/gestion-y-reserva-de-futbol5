@@ -5,13 +5,15 @@ interface DeleteTournamentConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   isDeleting: boolean;
+  customText?: string;
 }
 
 export const DeleteTournamentConfirmationModal = ({
   tournamentName,
   onClose,
   onConfirm,
-  isDeleting
+  isDeleting,
+  customText
 }: DeleteTournamentConfirmationModalProps) => {
   return (
     <div style={{
@@ -47,7 +49,7 @@ export const DeleteTournamentConfirmationModal = ({
               Confirmar Eliminación
             </h2>
             <p style={{ color: "var(--muted-foreground)", margin: 0, fontSize: "14px" }}>
-              ¿Estás seguro de que quieres eliminar el torneo "{tournamentName}"?
+              {customText || `¿Estás seguro de que quieres eliminar el torneo "${tournamentName}"?`}
             </p>
           </div>
           <button
@@ -66,7 +68,10 @@ export const DeleteTournamentConfirmationModal = ({
         <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", padding: "24px" }}>
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={() => {
+              onConfirm();
+              window.location.reload();
+            }}
             disabled={isDeleting}
             style={{
               padding: "8px 16px",

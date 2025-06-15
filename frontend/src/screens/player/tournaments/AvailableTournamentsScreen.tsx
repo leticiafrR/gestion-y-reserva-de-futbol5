@@ -152,6 +152,30 @@ export const AvailableTournamentsScreen = () => {
                 .split("_")
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                 .join(" ");
+              let stateLabel = '';
+              let stateBg = '';
+              let stateColor = '';
+              if (tournament.state === 'OPEN_TO_REGISTER') {
+                stateLabel = 'Abierto a la inscripción';
+                stateBg = '#10b98122';
+                stateColor = '#10b981';
+              } else if (tournament.state === 'CLOSE_TO_REGISTER_NOT_STARTED') {
+                stateLabel = 'Inscripciones finalizadas';
+                stateBg = '#f59e4222';
+                stateColor = '#f59e42';
+              } else if (tournament.state === 'IN_PROGRESS') {
+                stateLabel = 'En progreso';
+                stateBg = '#3b82f622';
+                stateColor = '#2563eb';
+              } else if (tournament.state === 'FINISHED') {
+                stateLabel = 'Finalizado';
+                stateBg = '#e5e7eb';
+                stateColor = '#6b7280';
+              } else {
+                stateLabel = tournament.state;
+                stateBg = '#e5e7eb';
+                stateColor = '#6b7280';
+              }
               return (
                 <div key={tournament.id} style={{
                   border: "1px solid var(--border)",
@@ -174,27 +198,11 @@ export const AvailableTournamentsScreen = () => {
                       padding: "4px 10px",
                       borderRadius: "4px",
                       fontWeight: 600,
-                      background:
-                        tournament.state === "OPEN_TO_REGISTER"
-                          ? "#10b98122"
-                          : tournament.state === "IN_PROGRESS"
-                          ? "#3b82f622"
-                          : "#e5e7eb",
-                      color:
-                        tournament.state === "OPEN_TO_REGISTER"
-                          ? "#10b981"
-                          : tournament.state === "IN_PROGRESS"
-                          ? "#2563eb"
-                          : "#6b7280",
+                      background: stateBg,
+                      color: stateColor,
                       fontSize: "0.95rem"
                     }}>
-                      {tournament.state === "OPEN_TO_REGISTER"
-                        ? "Abierto a la inscripción"
-                        : tournament.state === "IN_PROGRESS"
-                        ? "En progreso"
-                        : tournament.state === "FINISHED"
-                        ? "Finalizado"
-                        : tournament.state}
+                      {stateLabel}
                     </span>
                   </div>
                   <div style={{ color: "var(--muted-foreground)", fontSize: "0.95rem" }}>
