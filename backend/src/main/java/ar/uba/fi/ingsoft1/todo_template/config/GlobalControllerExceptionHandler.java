@@ -2,6 +2,7 @@ package ar.uba.fi.ingsoft1.todo_template.config;
 
 import ar.uba.fi.ingsoft1.todo_template.common.exception.ItemNotFoundException;
 import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserAlreadyMemberException;
+import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserNotPartOfTeam;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnverifiedAccountException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InavlidCredentialsException;
@@ -76,6 +77,11 @@ public class GlobalControllerExceptionHandler {
         return new ResponseEntity<>(
                 ex.getClass().getCanonicalName() + " " + ex.getMessage(),
                 HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(UserNotPartOfTeam.class)
+    public ResponseEntity<String> handleUserNotPartOfTeam(UserNotPartOfTeam ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 
     public record IncorrectValueResponse(String field, String error_description) {

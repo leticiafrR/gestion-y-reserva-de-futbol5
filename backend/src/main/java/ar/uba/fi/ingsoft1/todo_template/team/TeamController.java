@@ -1,5 +1,10 @@
 package ar.uba.fi.ingsoft1.todo_template.team;
 
+import ar.uba.fi.ingsoft1.todo_template.team.DTO.TeamCreateDTO;
+import ar.uba.fi.ingsoft1.todo_template.team.DTO.TeamDeleteDTO;
+import ar.uba.fi.ingsoft1.todo_template.team.DTO.TeamDetailsDTO;
+import ar.uba.fi.ingsoft1.todo_template.team.DTO.TeamUpdateDTO;
+import ar.uba.fi.ingsoft1.todo_template.team.invitation.CreateInvitationDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -82,6 +87,20 @@ public class TeamController {
     })
     public ResponseEntity<List<TeamDetailsDTO>> getUsersTeams(){
         return ResponseEntity.ok(TeamDetailsDTO.fromTeamList(teamService.getUsersTeams()));
+    }
+
+    @DeleteMapping("/{teamId}/member")
+    @Operation(summary = "Deletes a member from the specified team", description = "Deletes a Member of the Team. Only the captain or the member itself are able to perform this operation.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Team Member delete successfully"),
+            @ApiResponse(responseCode = "403", description = "Unauthorized. Only the captain or the member itself are able to delete the team"),
+            @ApiResponse(responseCode = "404", description = "Team Not Found"),
+            @ApiResponse(responseCode = "404", description = "User to delete not Found")
+    })
+    public ResponseEntity<Void> deleteTeamMember(@Parameter(description = "ID of the Team") @PathVariable Long teamId,
+                                                 @Valid @RequestBody TeamDeleteDTO body){
+        teamService.deleteTeamMember(teamId, body.getDeletingUsername());
+        return ResponseEntity.noContent().build();
     }
 
 }

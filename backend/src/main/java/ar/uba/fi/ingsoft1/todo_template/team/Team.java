@@ -2,12 +2,15 @@ package ar.uba.fi.ingsoft1.todo_template.team;
 
 import ar.uba.fi.ingsoft1.todo_template.team.invitation.Invitation;
 import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserAlreadyMemberException;
+import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserNotPartOfTeam;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity
@@ -39,14 +42,14 @@ public class Team {
             joinColumns = @JoinColumn(name = "team_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    private List<User> members = new ArrayList<>();
+    private Set<User> members = new HashSet<>();
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Invitation> invitations = new ArrayList<>();
 
     public void addMember(User user) throws UserAlreadyMemberException{
         if (members == null) {
-            members = new ArrayList<>();
+            members = new HashSet<>();
         }
         if (members.contains(user)) {
             var msg = String.format("User '%s' is already a member of the Team '%s'", user.getUsername(), name);
@@ -62,8 +65,8 @@ public class Team {
     }
 
     public void removeMember(User user) {
-        if (members != null) {
-            members.remove(user);
+        if (!members.remove(user)) {
+            throw new UserNotPartOfTeam("The user wasnt part of the Team");
         }
     }
     public void clearMembers() {
@@ -71,9 +74,5 @@ public class Team {
             members.clear();
         }
     }
-
-//    public boolean removeMember(String username) {
-//        return members.removeIf(user -> user.getUsername().equals(username));
-//    }
 }
 

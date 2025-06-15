@@ -157,4 +157,16 @@ public class TournamentController {
         return ResponseEntity.ok("Registrations closed successfully for tournament with ID: " + id_tournament);
     }
 
+    @GetMapping("/organizer")
+    @Operation(summary = "Get tournaments by organizer", description = "Returns a list of all tournaments created by the authenticated user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of tournaments created by the user", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TournamentSummaryDTO.class))),
+            @ApiResponse(responseCode = "404", description = "User not found", content = @Content(mediaType = "text/plain"))
+    })
+    public ResponseEntity<List<TournamentSummaryDTO>> getTournamentsByOrganizer() {
+        List<TournamentSummaryDTO> tournaments = tournamentService.getTournamentsByOrganizer();
+        return ResponseEntity.ok(tournaments);
+    }
+
+
 }

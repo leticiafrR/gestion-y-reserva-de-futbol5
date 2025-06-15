@@ -42,6 +42,7 @@ public class GlobalSeeder {
         if (!userRepository.findAll().isEmpty())
             return;
         // seedForTournament();
+        //seedForLeaveMatchTest();
 
     }
 
@@ -233,4 +234,81 @@ public class GlobalSeeder {
 
         System.out.println("✅ Seed completada con jugadores, cancha, franja horaria, reserva y OpenMatch.");
     }
+
+    private void seedForLeaveMatchTest() {
+        // 👤 Crear un jugador
+        User player = new User(
+                "jugadorabandonador@mail.com",
+                "password",
+                "PLAYER",
+                "male",
+                "25",
+                "CABA",
+                "Jugador",
+                "Uno",
+                "https://picsum.photos/200?random=123"
+        );
+        player.setEmailVerified(true);
+        player.setActive(true);
+        userRepository.save(player);
+
+        // 👤 Crear un dueño
+        User owner = new User(
+                "duenoabandonado@mail.com",
+                "password",
+                "OWNER",
+                "female",
+                "45",
+                "Zona Oeste",
+                "Dueña",
+                "DeCancha",
+                "https://picsum.photos/200?random=124"
+        );
+        owner.setEmailVerified(true);
+        owner.setActive(true);
+        userRepository.save(owner);
+
+        // 🏟️ Crear cancha
+        Field field = Field.builder()
+                .name("Cancha Test")
+                .grassType("Natural")
+                .lighting(false)
+                .zone("Zona Oeste")
+                .address("Calle Falsa 123")
+                .photoUrl("https://cancha.example.com/test.jpg")
+                .price(10000.0)
+                .active(true)
+                .owner(owner)
+                .build();
+        fieldRepository.save(field);
+
+        // ⏰ Crear franja horaria
+        TimeSlot timeSlot = TimeSlot.builder()
+                .dayOfWeek(LocalDate.now().getDayOfWeek())
+                .openTime(17)
+                .closeTime(21)
+                .field(field)
+                .build();
+        timeSlotRepository.save(timeSlot);
+
+        // 🗓️ Crear booking para mañana
+        Booking booking = new Booking(
+                player,
+                timeSlot,
+                LocalDate.now().plusDays(1),
+                18 // 18hs
+        );
+        bookingRepository.save(booking);
+
+        // 👥 Crear OpenMatch con el jugador incluido
+        OpenMatch match = new OpenMatch();
+        match.setBooking(booking);
+        match.setPlayers(List.of(player));
+        match.setMaxPlayers(5);
+        openMatchRepository.save(match);
+
+        System.out.println("✅ Seed para leaveOpenMatch cargada correctamente.");
+        System.out.println("👉 matchId: " + match.getId() + ", userId: " + player.getId());
+    }
+
 }
