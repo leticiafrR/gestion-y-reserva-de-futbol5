@@ -98,9 +98,6 @@ public class TournamentController {
     @ApiResponse(responseCode = "404", description = "No tournament found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
     public ResponseEntity<List<TournamentSummaryDTO>> getAlltTournaments() {
         List<TournamentSummaryDTO> allTournaments = tournamentService.getAllTournaments();
-        if (allTournaments.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No active tournaments found");
-        }
         return ResponseEntity.ok(allTournaments);
     }
 
