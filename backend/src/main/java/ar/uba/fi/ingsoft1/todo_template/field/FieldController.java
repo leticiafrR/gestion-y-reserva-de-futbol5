@@ -114,6 +114,8 @@ public class FieldController {
     }
 
 
+
+
     private JwtUserDetails getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (JwtUserDetails) authentication.getPrincipal();

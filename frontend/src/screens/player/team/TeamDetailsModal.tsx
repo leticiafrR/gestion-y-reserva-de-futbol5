@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { X, Users, Crown } from "lucide-react";
-import { useInviteToTeam, usePendingInvitations } from "@/services/TeamServices";
+import { useInviteToTeam, usePendingInvitations, useRemoveTeamMember } from "@/services/TeamServices";
 import { useToken } from "@/services/TokenContext";
 import type { Team } from "@/models/Team";
+import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
 
 interface TeamDetailsModalProps {
   team: Team;
@@ -15,8 +16,10 @@ export const TeamDetailsModal = ({ team, onClose, onError }: TeamDetailsModalPro
   const userEmail = token.state === "LOGGED_IN" ? token.email : null;
   const isOwner = userEmail === team.ownerId;
   const inviteToTeamMutation = useInviteToTeam();
+  const removeMemberMutation = useRemoveTeamMember();
   const [inviteInputs, setInviteInputs] = useState(["", "", "", ""]);
   const { data: pendingInvitations = [], refetch: refetchPendingInvitations } = usePendingInvitations(team.id);
+  const [showRemoveModal, setShowRemoveModal] = useState<{ username: string, type: 'remove' | 'leave' } | null>(null);
 
   // Construir los slots: owner + hasta 4 miembros
   const slots: string[] = [team.ownerId, ...(team.members?.filter(m => m !== team.ownerId) || [])];
@@ -84,6 +87,28 @@ export const TeamDetailsModal = ({ team, onClose, onError }: TeamDetailsModalPro
     }
   };
 
+  // Handler para eliminar miembro (owner elimina a otro)
+  const handleRemoveMember = (username: string) => {
+    setShowRemoveModal({ username, type: 'remove' });
+  };
+
+  // Handler para salir del equipo (usuario actual)
+  const handleLeaveTeam = () => {
+    setShowRemoveModal({ username: userEmail!, type: 'leave' });
+  };
+
+  // Confirmación de borrado
+  const confirmRemove = async () => {
+    if (!showRemoveModal) return;
+    try {
+      await removeMemberMutation.mutateAsync({ teamId: team.id, deletingUsername: showRemoveModal.username });
+      setShowRemoveModal(null);
+      onClose(); // Cierra el modal de detalles para refrescar la pantalla
+    } catch (error: any) {
+      onError(error?.message || (showRemoveModal.type === 'leave' ? 'Error al salir del equipo' : 'Error al eliminar miembro'));
+    }
+  };
+
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
       <div style={{ backgroundColor: "white", borderRadius: "8px", width: "100%", maxWidth: "500px", maxHeight: "90vh", overflow: "auto" }}>
@@ -148,7 +173,19 @@ export const TeamDetailsModal = ({ team, onClose, onError }: TeamDetailsModalPro
                       <span>{member}</span>
                     </>
                   ) : member ? (
-                    <span>{member}</span>
+                    <>
+                      <span>{member}</span>
+                      {/* Si es owner y no es el mismo, puede eliminar */}
+                      {isOwner && member !== userEmail && (
+                        <button
+                          onClick={() => handleRemoveMember(member)}
+                          style={{ marginLeft: "auto", padding: "4px 10px", backgroundColor: "var(--destructive)", color: "var(--destructive-foreground)", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }}
+                          disabled={removeMemberMutation.isPending}
+                        >
+                          {removeMemberMutation.isPending ? "Eliminando..." : "Eliminar"}
+                        </button>
+                      )}
+                    </>
                   ) : isOwner ? (
                     <>
                       <input
@@ -212,6 +249,29 @@ export const TeamDetailsModal = ({ team, onClose, onError }: TeamDetailsModalPro
         <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end" }}>
           <button onClick={onClose} style={{ padding: "8px 16px", backgroundColor: "var(--secondary)", color: "var(--secondary-foreground)", border: "1px solid var(--border)", borderRadius: "4px", cursor: "pointer", fontSize: "14px" }}>Cerrar</button>
         </div>
+        {/* Botón para salir del equipo si no es owner */}
+        {!isOwner && userEmail && team.members?.includes(userEmail) && (
+          <div style={{ padding: "0 24px 16px 24px", display: "flex", justifyContent: "flex-end" }}>
+            <button
+              onClick={handleLeaveTeam}
+              style={{ padding: "8px 16px", backgroundColor: "var(--destructive)", color: "var(--destructive-foreground)", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "14px" }}
+              disabled={removeMemberMutation.isPending}
+            >
+              {removeMemberMutation.isPending ? "Saliendo..." : "Salir del equipo"}
+            </button>
+          </div>
+        )}
+        {showRemoveModal && (
+          <DeleteConfirmationModal
+            teamId={team.id}
+            teamName={showRemoveModal.type === 'leave' ? 'el equipo' : showRemoveModal.username}
+            onClose={() => setShowRemoveModal(null)}
+            onError={onError}
+            // Usar el texto adecuado y el handler correcto
+            customText={showRemoveModal.type === 'leave' ? '¿Estás seguro de que quieres salir del equipo?' : `¿Estás seguro de que quieres eliminar a ${showRemoveModal.username} del equipo?`}
+            onConfirm={confirmRemove}
+          />
+        )}
       </div>
     </div>
   );

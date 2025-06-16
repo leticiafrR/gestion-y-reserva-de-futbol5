@@ -75,8 +75,11 @@ public class Tournament {
         if (hasFinished()) {
             return TournamentState.FINISHED;
         }
-        if (isStillOpenForRegistration()) {
-            return TournamentState.OPEN_TO_REGISTER;
+        if (!hasStarted()) {
+            if (openInscription) {
+                return TournamentState.OPEN_TO_REGISTER;
+            }
+            return TournamentState.CLOSE_TO_REGISTER_NOT_STARTED;
         }
         return TournamentState.IN_PROGRESS;
     }

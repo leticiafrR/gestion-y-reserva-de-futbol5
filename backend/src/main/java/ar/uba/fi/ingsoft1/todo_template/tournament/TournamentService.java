@@ -2,6 +2,7 @@ package ar.uba.fi.ingsoft1.todo_template.tournament;
 
 import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
 import ar.uba.fi.ingsoft1.todo_template.tournament.update.TournamentUpdateCommand;
+import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
 
 import org.springframework.http.HttpStatus;
@@ -134,6 +135,16 @@ public class TournamentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Tournament not found with name: " + name));
         return tournament;
+    }
+
+    public List<TournamentSummaryDTO> getTournamentsByOrganizer() {
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
+        User organizer = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        return tournamentRepository.findByOrganizer(organizer).stream()
+                .map(this::toDTO)
+                .toList();
     }
 
     private void checkActionCarriedOutByOrganizer(String usernameOrganizer) {
