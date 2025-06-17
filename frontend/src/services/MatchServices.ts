@@ -11,90 +11,118 @@ import type {
   CloseMatchResponse
 } from "../models/Match"
 import { BASE_API_URL, getAuthToken } from "@/config/app-query-client"
+import { useQuery } from "@tanstack/react-query"
 
-export const useAvailableMatches = () => {
-  const [data, setData] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        const accessToken = getAuthToken()
-        const response = await fetch(`${BASE_API_URL}/matches/open`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        })
-        const matches = await response.json()
-        console.log("matches", matches)
-        setData(matches)
-      } catch (error) {
-        console.error('Error fetching available matches:', error)
-      } finally {
-        setIsLoading(false)
-      }
+const fetchAvailableMatches = async () => {
+  const accessToken = getAuthToken();
+  const response = await fetch(`${BASE_API_URL}/matches/open`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  });
+  const matches = await response.json();
+  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
+  // Filtrar partidos donde el usuario NO participa
+  const filtered = matches.filter((match: any) => {
+    // Abierto
+    if (Array.isArray(match.players)) {
+      return !match.players.some((player: any) =>
+        player.id === userProfile.id || player.username === userProfile.email
+      );
     }
-
-    fetchMatches()
-  }, [])
-
-  return { data, isLoading }
-}
-
-export const useMyMatches = () => {
-  const [data, setData] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        const accessToken = getAuthToken()
-        const [openMatchesResponse, closedMatchesResponse] = await Promise.all([
-          fetch(`${BASE_API_URL}/matches/open`, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-          }),
-          fetch(`${BASE_API_URL}/matches/close`, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-          })
-        ])
-
-        if (!openMatchesResponse.ok || !closedMatchesResponse.ok) {
-          const openError = await openMatchesResponse.text()
-          const closedError = await closedMatchesResponse.text()
-          throw new Error(`Server error: Open matches: ${openError}, Closed matches: ${closedError}`)
-        }
-
-        const openMatches = await openMatchesResponse.json()
-        const closedMatches = await closedMatchesResponse.json()
-        setData([...openMatches, ...closedMatches])
-      } catch (error) {
-        console.error('Error fetching my matches:', error)
-        setData([])
-      } finally {
-        setIsLoading(false)
-      }
+    // Cerrado
+    if (match.teamOne && Array.isArray(match.teamOne.members)) {
+      if (match.teamOne.members.some((player: any) =>
+        player.id === userProfile.id || player.username === userProfile.email
+      )) return false;
     }
+    if (match.teamTwo && Array.isArray(match.teamTwo.members)) {
+      if (match.teamTwo.members.some((player: any) =>
+        player.id === userProfile.id || player.username === userProfile.email
+      )) return false;
+    }
+    return true;
+  });
+  return filtered;
+};
 
-    fetchMatches()
-  }, [])
+export const useAvailableMatches = () =>
+  useQuery({
+    queryKey: ["availableMatches"],
+    queryFn: fetchAvailableMatches,
+  });
 
-  return { data, isLoading }
-}
+const fetchMyMatches = async () => {
+  const accessToken = getAuthToken();
+  const [openMatchesResponse, closedMatchesResponse] = await Promise.all([
+    fetch(`${BASE_API_URL}/matches/open`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    }),
+    fetch(`${BASE_API_URL}/matches/close`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    })
+  ]);
+
+  if (!openMatchesResponse.ok || !closedMatchesResponse.ok) {
+    const openError = await openMatchesResponse.text();
+    const closedError = await closedMatchesResponse.text();
+    throw new Error(`Server error: Open matches: ${openError}, Closed matches: ${closedError}`);
+  }
+
+  const openMatches = await openMatchesResponse.json();
+  const closedMatches = await closedMatchesResponse.json();
+  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
+
+  // Filtrar partidos donde el usuario participa
+  const filteredOpen = openMatches.filter((match: any) => {
+    if (Array.isArray(match.players)) {
+      return match.players.some((player: any) =>
+        player.id === userProfile.id || player.username === userProfile.email
+      );
+    }
+    return false;
+  });
+
+  const filteredClosed = closedMatches.filter((match: any) => {
+    // Participa en alguno de los equipos
+    if (match.teamOne && Array.isArray(match.teamOne.members)) {
+      if (match.teamOne.members.some((player: any) =>
+        player.id === userProfile.id || player.username === userProfile.email
+      )) return true;
+    }
+    if (match.teamTwo && Array.isArray(match.teamTwo.members)) {
+      if (match.teamTwo.members.some((player: any) =>
+        player.id === userProfile.id || player.username === userProfile.email
+      )) return true;
+    }
+    return false;
+  });
+
+  return [...filteredOpen, ...filteredClosed];
+};
+
+export const useMyMatches = () =>
+  useQuery({
+    queryKey: ["myMatches"],
+    queryFn: fetchMyMatches,
+  });
 
 export const useJoinMatch = () => {
   const [isPending, setIsPending] = useState(false)
 
   const mutateAsync = async (matchId: string, userId: number) => {
+    console.log("matchId:", matchId)
+    console.log("userId:", userId)
     setIsPending(true)
     try {
       const accessToken = getAuthToken()
@@ -258,11 +286,13 @@ export const useLeaveMatch = () => {
   const [isPending, setIsPending] = useState(false)
 
   const mutateAsync = async (matchId: string, userId: number) => {
+    console.log("matchId:", matchId)
+    console.log("userId:", userId)
     setIsPending(true)
     try {
       const accessToken = getAuthToken()
       const response = await fetch(`${BASE_API_URL}/matches/open/${matchId}/leave?userId=${userId}`, {
-        method: 'POST',
+        method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,
           Accept: "application/json",
@@ -388,3 +418,25 @@ export const createClosedMatch = async (matchData: CreateClosedMatchData) => {
 
   return response.json()
 }
+
+export const useUserProfile = () => {
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const accessToken = getAuthToken();
+        const response = await fetch(`${BASE_API_URL}/users/me`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+          },
+        });
+        if (!response.ok) return;
+        const profile = await response.json();
+        localStorage.setItem("userProfile", JSON.stringify(profile));
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchProfile();
+  }, []);
+};

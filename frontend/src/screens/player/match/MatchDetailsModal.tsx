@@ -5,6 +5,7 @@ import { X, Users, MapPin, Clock, DollarSign, Settings, CheckCircle, UserMinus, 
 import { useJoinMatch, useLeaveMatch, useConfirmMatch } from "@/services/MatchServices"
 import { TeamAssignmentModal } from "@/screens/player/match/TeamAssignmentModal"
 import type { Match } from "@/models/Match" 
+import { useQueryClient } from "@tanstack/react-query"
 
 interface MatchDetailsModalProps {
   match: Match
@@ -18,65 +19,57 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   const joinMatch = useJoinMatch()
   const leaveMatch = useLeaveMatch()
   const confirmMatch = useConfirmMatch()
+  const queryClient = useQueryClient()
 
-  const isOrganizer = match.organizer.id === "current-user" // Mock check
-  const isParticipant = match.players.some((p) => p.id === "current-user") // Mock check
-  const canJoin = match.status === "open" && match.currentPlayers < match.maxPlayers && !isParticipant
-  const canLeave = isParticipant && match.status !== "finished"
-  const canConfirm = isOrganizer && match.status === "open" && match.currentPlayers >= match.minPlayers
-  const canAssignTeams = isOrganizer && match.status === "confirmed" && !match.teams
+  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open":
-        return "#28a745"
-      case "confirmed":
-        return "#007bff"
-      case "full":
-        return "#ffc107"
-      case "finished":
-        return "#6c757d"
-      case "cancelled":
-        return "#dc3545"
-      default:
-        return "#6c757d"
-    }
+  const basePlayers =
+    (Array.isArray(match.teamOne?.members) && match.teamOne.members.length > 0) ||
+    (Array.isArray(match.teamTwo?.members) && match.teamTwo.members.length > 0)
+      ? [
+          ...(Array.isArray(match.teamOne?.members) ? match.teamOne.members : []),
+          ...(Array.isArray(match.teamTwo?.members) ? match.teamTwo.members : [])
+        ]
+      : Array.isArray(match.players)
+        ? match.players
+        : [];
+
+  const allPlayers = basePlayers;
+
+  const normalize = (str: string | undefined) => (str || "").trim().toLowerCase();
+
+  const isParticipant = allPlayers.some((p: any) => p.username === userProfile.email);
+  const isOrganizer = match.booking.user.username === userProfile.email;
+  const canAssignTeams = isOrganizer && allPlayers.length >= match.minPlayers;
+  const canJoin = match.isActive && allPlayers.length < match.maxPlayers && !isOrganizer;
+  const canLeave = !isOrganizer && isParticipant && match.isActive;
+
+  const getStatusColor = () => {
+    if (!match.isActive) return "#dc3545"
+    if (Array.isArray(match.players) && match.players.length >= match.maxPlayers) return "#ffc107"
+    return "#28a745"
   }
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "open":
-        return "Abierto para inscripciones"
-      case "confirmed":
-        return "Partido confirmado"
-      case "full":
-        return "Partido completo"
-      case "finished":
-        return "Partido finalizado"
-      case "cancelled":
-        return "Partido cancelado"
-      default:
-        return status
-    }
+  const getStatusText = () => {
+    if (!match.isActive) return "Partido cancelado"
+    if (Array.isArray(match.players) && match.players.length >= match.maxPlayers) return "Partido completo"
+    return "Abierto para inscripciones"
   }
 
   const handleJoinMatch = async () => {
     setIsLoading(true)
     try {
-      await joinMatch.mutateAsync(match.id)
+      await joinMatch.mutateAsync(String(match.id), 1)
       // Update local state
       setLocalMatch({
         ...localMatch,
-        currentPlayers: localMatch.currentPlayers + 1,
         players: [
-          ...localMatch.players,
-          {
-            id: "current-user",
-            name: "Usuario Actual",
-            avatar: "/placeholder.svg?height=32&width=32",
-          },
+          ...(Array.isArray(localMatch.players) ? localMatch.players : []),
+          match.booking.user
         ],
       })
+      queryClient.invalidateQueries({ queryKey: ['availableMatches'] })
+      queryClient.invalidateQueries({ queryKey: ['myMatches'] })
     } catch (error) {
       console.error("Error joining match:", error)
     } finally {
@@ -87,14 +80,56 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   const handleLeaveMatch = async () => {
     setIsLoading(true)
     try {
-      await leaveMatch.mutateAsync(match.id)
+      await leaveMatch.mutateAsync(String(match.id), 1)
       // Update local state
       setLocalMatch({
         ...localMatch,
-        currentPlayers: localMatch.currentPlayers - 1,
-        players: localMatch.players.filter((p) => p.id !== "current-user"),
+        players: Array.isArray(localMatch.players) ? localMatch.players.filter((p) => p.id !== match.booking.user.id) : [],
       })
+      queryClient.invalidateQueries({ queryKey: ['availableMatches'] })
+      queryClient.invalidateQueries({ queryKey: ['myMatches'] })
+      // Toast de éxito
+      const toast = document.createElement('div')
+      toast.style.position = 'fixed'
+      toast.style.top = '20px'
+      toast.style.right = '20px'
+      toast.style.backgroundColor = '#22c55e'
+      toast.style.color = 'white'
+      toast.style.padding = '12px 24px'
+      toast.style.borderRadius = '8px'
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+      toast.style.zIndex = '2000'
+      toast.style.fontSize = '16px'
+      toast.style.fontWeight = '500'
+      toast.textContent = 'Saliste del partido'
+      document.body.appendChild(toast)
+      setTimeout(() => {
+        toast.style.opacity = '0'
+        toast.style.transition = 'opacity 0.3s ease-out'
+        setTimeout(() => document.body.removeChild(toast), 300)
+      }, 3000)
+      onClose();
     } catch (error) {
+      // Toast de error
+      const toast = document.createElement('div')
+      toast.style.position = 'fixed'
+      toast.style.top = '20px'
+      toast.style.right = '20px'
+      toast.style.backgroundColor = '#ef4444'
+      toast.style.color = 'white'
+      toast.style.padding = '12px 24px'
+      toast.style.borderRadius = '8px'
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+      toast.style.zIndex = '2000'
+      toast.style.fontSize = '16px'
+      toast.style.fontWeight = '500'
+      toast.textContent = 'Error al salir del partido'
+      document.body.appendChild(toast)
+      setTimeout(() => {
+        toast.style.opacity = '0'
+        toast.style.transition = 'opacity 0.3s ease-out'
+        setTimeout(() => document.body.removeChild(toast), 300)
+      }, 3000)
       console.error("Error leaving match:", error)
     } finally {
       setIsLoading(false)
@@ -104,17 +139,29 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   const handleConfirmMatch = async () => {
     setIsLoading(true)
     try {
-      await confirmMatch.mutateAsync(match.id)
+      await confirmMatch.mutateAsync(String(match.id))
       setLocalMatch({
         ...localMatch,
-        status: "confirmed",
+        isActive: true,
       })
+      queryClient.invalidateQueries({ queryKey: ['availableMatches'] })
+      queryClient.invalidateQueries({ queryKey: ['myMatches'] })
     } catch (error) {
       console.error("Error confirming match:", error)
     } finally {
       setIsLoading(false)
     }
   }
+
+  console.log({
+    userProfile,
+    organizerUsername: match.booking.user.username,
+    isOrganizer,
+    isParticipant,
+    canAssignTeams,
+    canJoin,
+    allPlayers
+  });
 
   return (
     <>
@@ -163,13 +210,13 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                   style={{
                     fontSize: "12px",
                     fontWeight: "500",
-                    color: getStatusColor(localMatch.status),
-                    backgroundColor: `${getStatusColor(localMatch.status)}20`,
+                    color: getStatusColor(),
+                    backgroundColor: `${getStatusColor()}20`,
                     padding: "4px 8px",
                     borderRadius: "12px",
                   }}
                 >
-                  {getStatusText(localMatch.status)}
+                  {getStatusText()}
                 </span>
                 <span
                   style={{
@@ -180,13 +227,13 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                     borderRadius: "12px",
                   }}
                 >
-                  {localMatch.type === "open" ? "Partido Abierto" : "Partido Cerrado"}
+                  {!match.teamOne && !match.teamTwo ? "Partido Abierto" : "Partido Cerrado"}
                 </span>
               </div>
               <h2 style={{ margin: "0 0 8px 0", fontSize: "20px", fontWeight: "600", color: "#212529" }}>
-                {localMatch.title}
+                {match.booking.timeSlot.field.name}
               </h2>
-              <p style={{ margin: 0, color: "#6c757d", fontSize: "14px" }}>{getStatusText(localMatch.status)}</p>
+              <p style={{ margin: 0, color: "#6c757d", fontSize: "14px" }}>{getStatusText()}</p>
             </div>
             <button
               onClick={onClose}
@@ -199,247 +246,225 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                 color: "#6c757d",
               }}
             >
-              <X size={20} />
+              <X size={24} />
             </button>
           </div>
 
           {/* Content */}
-          <div style={{ flex: 1, overflow: "auto", padding: "24px" }}>
-            {/* Match Info */}
-            <div style={{ marginBottom: "24px" }}>
-              <div
-                style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <Clock size={20} style={{ color: "#6c757d" }} />
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: "500", color: "#212529" }}>{localMatch.date}</div>
-                    <div style={{ fontSize: "13px", color: "#6c757d" }}>{localMatch.time}</div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <MapPin size={20} style={{ color: "#6c757d" }} />
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: "500", color: "#212529" }}>{localMatch.field.name}</div>
-                    <div style={{ fontSize: "13px", color: "#6c757d" }}>
-                      {localMatch.field.location} • {localMatch.field.surface}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <Users size={20} style={{ color: "#6c757d" }} />
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: "500", color: "#212529" }}>
-                      {localMatch.currentPlayers}/{localMatch.maxPlayers} jugadores
-                    </div>
-                    <div style={{ fontSize: "13px", color: "#6c757d" }}>Mínimo: {localMatch.minPlayers}</div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <DollarSign size={20} style={{ color: "#6c757d" }} />
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: "500", color: "#212529" }}>
-                      ${localMatch.pricePerPlayer.toLocaleString()}
-                    </div>
-                    <div style={{ fontSize: "13px", color: "#6c757d" }}>por jugador</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Organizer */}
+          <div style={{ padding: "24px", overflowY: "auto" }}>
+            {/* Date and Time */}
             <div style={{ marginBottom: "24px" }}>
               <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#212529" }}>
-                Organizador
+                Fecha y Hora
               </h3>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <img
-                  src={localMatch.organizer.avatar || "/placeholder.svg"}
-                  alt={localMatch.organizer.name}
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                  }}
-                />
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: "500", color: "#212529" }}>
-                    {localMatch.organizer.name}
-                  </div>
-                  <div style={{ fontSize: "13px", color: "#6c757d" }}>Organizador del partido</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Clock size={20} color="#6c757d" />
+                  <span style={{ fontSize: "14px", color: "#212529" }}>
+                    {new Date(match.booking.bookingDate).toLocaleDateString("es-ES", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Clock size={20} color="#6c757d" />
+                  <span style={{ fontSize: "14px", color: "#212529" }}>
+                    {match.booking.bookingHour}:00
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Description */}
-            {localMatch.description && (
-              <div style={{ marginBottom: "24px" }}>
-                <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#212529" }}>
-                  Descripción
-                </h3>
-                <p style={{ margin: 0, fontSize: "14px", color: "#495057", lineHeight: "1.5" }}>
-                  {localMatch.description}
-                </p>
+            {/* Location */}
+            <div style={{ marginBottom: "24px" }}>
+              <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#212529" }}>
+                Ubicación
+              </h3>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <MapPin size={20} color="#6c757d" />
+                <span style={{ fontSize: "14px", color: "#212529" }}>
+                  {match.booking.timeSlot.field.address}
+                </span>
               </div>
-            )}
+            </div>
 
-            {/* Players List */}
-            {localMatch.players.length > 0 && (
-              <div style={{ marginBottom: "24px" }}>
-                <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#212529" }}>
-                  Jugadores Inscritos ({localMatch.players.length})
-                </h3>
-                <div
-                  style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px" }}
-                >
-                  {localMatch.players.map((player) => (
-                    <div
-                      key={player.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "8px",
-                        backgroundColor: "#f8f9fa",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <img
-                        src={player.avatar || "/placeholder.svg"}
-                        alt={player.name}
+            {/* Players/Teams */}
+            <div style={{ marginBottom: "24px" }}>
+              <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#212529" }}>
+                {!match.teamOne && !match.teamTwo ? "Jugadores" : "Equipos"}
+              </h3>
+              
+              {!match.teamOne && !match.teamTwo ? (
+                // Open match - show players list
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+                    <Users size={20} color="#6c757d" />
+                    <span style={{ fontSize: "14px", color: "#212529" }}>
+                      {allPlayers.length} / {match.maxPlayers} jugadores
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                    {allPlayers.map((player) => (
+                      <div
+                        key={player.id}
                         style={{
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "50%",
-                          objectFit: "cover",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "8px 12px",
+                          backgroundColor: "#f8f9fa",
+                          borderRadius: "8px",
                         }}
-                      />
-                      <span style={{ fontSize: "14px", color: "#212529" }}>{player.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Teams */}
-            {localMatch.teams && (
-              <div style={{ marginBottom: "24px" }}>
-                <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#212529" }}>
-                  Equipos Formados
-                </h3>
+                      >
+                        <img
+                          src={player.profilePicture}
+                          alt={player.name}
+                          style={{
+                            width: "24px",
+                            height: "24px",
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                          }}
+                        />
+                        <span style={{ fontSize: "14px", color: "#212529" }}>
+                          {player.name} {player.last_name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                // Closed match - show teams
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                  <div
-                    style={{
-                      padding: "16px",
-                      backgroundColor: "#e3f2fd",
-                      borderRadius: "12px",
-                      border: "1px solid #bbdefb",
-                    }}
-                  >
-                    <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "600", color: "#1976d2" }}>
-                      Equipo 1 ({localMatch.teams.team1.length})
+                  {/* Team 1 */}
+                  <div>
+                    <h4 style={{ 
+                      margin: "0 0 12px 0", 
+                      fontSize: "14px", 
+                      fontWeight: "600", 
+                      color: "#1976d2",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}>
+                      <div style={{
+                        width: "12px",
+                        height: "12px",
+                        backgroundColor: "#1976d2",
+                        borderRadius: "50%"
+                      }}></div>
+                      Equipo 1 ({Array.isArray(match.teamOne?.members) ? match.teamOne.members.length : 0} jugadores)
                     </h4>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      {localMatch.teams.team1.map((player) => (
-                        <div key={player.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <img
-                            src={player.avatar || "/placeholder.svg"}
-                            alt={player.name}
+                    <div style={{ 
+                      padding: "12px", 
+                      backgroundColor: "#e3f2fd", 
+                      borderRadius: "8px",
+                      border: "1px solid #bbdefb"
+                    }}>
+                      {Array.isArray(match.teamOne?.members) ? (
+                        match.teamOne.members.map((player: any) => (
+                          <div
+                            key={player.id}
                             style={{
-                              width: "24px",
-                              height: "24px",
-                              borderRadius: "50%",
-                              objectFit: "cover",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              padding: "6px 0",
                             }}
-                          />
-                          <span style={{ fontSize: "13px", color: "#1976d2" }}>{player.name}</span>
-                        </div>
-                      ))}
+                          >
+                            <img
+                              src={player.profilePicture}
+                              alt={player.name}
+                              style={{
+                                width: "20px",
+                                height: "20px",
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                              }}
+                            />
+                            <span style={{ fontSize: "13px", color: "#212529" }}>
+                              {player.name} {player.last_name}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <span style={{ fontSize: "13px", color: "#6c757d" }}>Sin jugadores asignados</span>
+                      )}
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      padding: "16px",
-                      backgroundColor: "#fff3e0",
-                      borderRadius: "12px",
-                      border: "1px solid #ffcc02",
-                    }}
-                  >
-                    <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "600", color: "#f57c00" }}>
-                      Equipo 2 ({localMatch.teams.team2.length})
+                  {/* Team 2 */}
+                  <div>
+                    <h4 style={{ 
+                      margin: "0 0 12px 0", 
+                      fontSize: "14px", 
+                      fontWeight: "600", 
+                      color: "#f57c00",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}>
+                      <div style={{
+                        width: "12px",
+                        height: "12px",
+                        backgroundColor: "#f57c00",
+                        borderRadius: "50%"
+                      }}></div>
+                      Equipo 2 ({Array.isArray(match.teamTwo?.members) ? match.teamTwo.members.length : 0} jugadores)
                     </h4>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      {localMatch.teams.team2.map((player) => (
-                        <div key={player.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <img
-                            src={player.avatar || "/placeholder.svg"}
-                            alt={player.name}
+                    <div style={{ 
+                      padding: "12px", 
+                      backgroundColor: "#fff3e0", 
+                      borderRadius: "8px",
+                      border: "1px solid #ffcc02"
+                    }}>
+                      {Array.isArray(match.teamTwo?.members) ? (
+                        match.teamTwo.members.map((player: any) => (
+                          <div
+                            key={player.id}
                             style={{
-                              width: "24px",
-                              height: "24px",
-                              borderRadius: "50%",
-                              objectFit: "cover",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              padding: "6px 0",
                             }}
-                          />
-                          <span style={{ fontSize: "13px", color: "#f57c00" }}>{player.name}</span>
-                        </div>
-                      ))}
+                          >
+                            <img
+                              src={player.profilePicture}
+                              alt={player.name}
+                              style={{
+                                width: "20px",
+                                height: "20px",
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                              }}
+                            />
+                            <span style={{ fontSize: "13px", color: "#212529" }}>
+                              {player.name} {player.last_name}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <span style={{ fontSize: "13px", color: "#6c757d" }}>Sin jugadores asignados</span>
+                      )}
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer Actions */}
-          <div
-            style={{
-              padding: "24px",
-              borderTop: "1px solid #e9ecef",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
-            <div style={{ display: "flex", gap: "8px" }}>
-              {/* Organizer Actions */}
-              {isOrganizer && canConfirm && (
-                <button
-                  onClick={handleConfirmMatch}
-                  disabled={isLoading}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "10px 16px",
-                    backgroundColor: "#007bff",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: isLoading ? "not-allowed" : "pointer",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  <CheckCircle size={16} />
-                  Confirmar Partido
-                </button>
               )}
+            </div>
 
-              {isOrganizer && canAssignTeams && (
+            {/* Actions */}
+            <div style={{ display: "flex", gap: "12px" }}>
+              {canAssignTeams && (
                 <button
                   onClick={() => setShowTeamAssignment(true)}
+                  disabled={isLoading}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "10px 16px",
+                    flex: 1,
+                    padding: "12px 24px",
                     backgroundColor: "#28a745",
                     color: "white",
                     border: "none",
@@ -447,91 +472,76 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                     cursor: "pointer",
                     fontSize: "14px",
                     fontWeight: "500",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
                   }}
                 >
                   <Settings size={16} />
                   Asignar Equipos
                 </button>
               )}
-            </div>
-
-            <div style={{ display: "flex", gap: "8px" }}>
-              {/* Player Actions */}
-              {canJoin && (
-                <button
-                  onClick={handleJoinMatch}
-                  disabled={isLoading}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "10px 16px",
-                    backgroundColor: "#28a745",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: isLoading ? "not-allowed" : "pointer",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  <UserPlus size={16} />
-                  {isLoading ? "Uniéndose..." : "Unirse al Partido"}
-                </button>
-              )}
-
-              {canLeave && (
+              {!canAssignTeams && canLeave && (
                 <button
                   onClick={handleLeaveMatch}
                   disabled={isLoading}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "10px 16px",
+                    flex: 1,
+                    padding: "12px 24px",
                     backgroundColor: "#dc3545",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",
-                    cursor: isLoading ? "not-allowed" : "pointer",
+                    cursor: "pointer",
                     fontSize: "14px",
                     fontWeight: "500",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
                   }}
                 >
                   <UserMinus size={16} />
-                  {isLoading ? "Saliendo..." : "Salir del Partido"}
+                  Salir del Partido
                 </button>
               )}
-
-              <button
-                onClick={onClose}
-                style={{
-                  padding: "10px 16px",
-                  backgroundColor: "transparent",
-                  color: "#6c757d",
-                  border: "1px solid #dee2e6",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
-                Cerrar
-              </button>
+              {!canAssignTeams && !canLeave && canJoin && (
+                <button
+                  onClick={handleJoinMatch}
+                  disabled={isLoading}
+                  style={{
+                    flex: 1,
+                    padding: "12px 24px",
+                    backgroundColor: "#28a745",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <UserPlus size={16} />
+                  Unirse al Partido
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Team Assignment Modal */}
       {showTeamAssignment && (
         <TeamAssignmentModal
           match={localMatch}
           onClose={() => setShowTeamAssignment(false)}
           onSave={(teams) => {
-            setLocalMatch({
-              ...localMatch,
-              teams: teams,
-            })
+            const updatedMatch = { ...localMatch, teams }
+            setLocalMatch(updatedMatch)
             setShowTeamAssignment(false)
           }}
         />

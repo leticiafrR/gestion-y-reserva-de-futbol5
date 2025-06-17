@@ -44,7 +44,7 @@ public class Team {
     )
     private Set<User> members = new HashSet<>();
 
-    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Invitation> invitations = new ArrayList<>();
 
     public void addMember(User user) throws UserAlreadyMemberException{

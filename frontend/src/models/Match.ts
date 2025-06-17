@@ -2,34 +2,58 @@ export type MatchStatus = "open" | "confirmed" | "finished" | "full" | "cancelle
 export type MatchType = "open" | "closed"
 
 export interface Player {
-    id: string
+    id: number
+    password: string
+    role: string
+    username: string
+    gender: string
+    birthYear: number
+    zone: string
     name: string
-    avatar: string
-    age?: number
-    rating?: number
-    position?: string
-  }
-  
-  export interface Field {
-    id: string
+    last_name: string
+    email: string
+    emailVerified: boolean
+    active: boolean
+    profilePicture: string
+    authorities: Array<{ authority: string }>
+    enabled: boolean
+    accountNonExpired: boolean
+    accountNonLocked: boolean
+    credentialsNonExpired: boolean
+}
+
+export interface Field {
+    id: number
     name: string
-    location: string
-    surface: string
-    pricePerHour?: number
-  }
-  
-  export interface Organizer {
-    id: string
-    name: string
-    avatar: string
-  }
-  
-  export interface Teams {
-    team1: Player[]
-    team2: Player[]
-  }
-  
-  export interface Match {
+    grassType: string
+    lighting: boolean
+    zone: string
+    address: string
+    photoUrl: string
+    price: number
+    active: boolean
+    owner: Player
+}
+
+export interface TimeSlot {
+    id: number
+    dayOfWeek: string
+    openTime: number
+    closeTime: number
+    field: Field
+}
+
+export interface Booking {
+    id: number
+    user: Player
+    timeSlot: TimeSlot
+    bookingDate: string
+    bookingHour: number
+    active: boolean
+    createdAt: string
+}
+
+export interface MatchCard {
     id: string
     type: MatchType
     title: string
@@ -49,66 +73,88 @@ export interface Player {
     description: string
     createdAt: string
     result?: string
-  }
-  
-  export interface CreateOpenMatchData {
-    bookingId: number
-    creatorId: number
-    maxPlayers: number
-  }
+}
 
-  export interface CreateClosedMatchData {
+export interface Match {
+    id: number
+    booking: Booking
+    isActive: boolean
+    players: Player[]
+    minPlayers: number
+    maxPlayers: number
+    teamOne: any | null
+    teamTwo: any | null
+}
+
+export interface Organizer {
+    id: string
+    name: string
+    avatar: string
+}
+
+export interface Teams {
+    team1: Player[]
+    team2: Player[]
+}
+
+export interface CreateOpenMatchData {
+    bookingId: number
+    maxPlayers: number
+    minPlayers: number
+}
+
+export interface CreateClosedMatchData {
     bookingId: number
     teamOneId: number
     teamTwoId: number
-  }
-  
-  export interface OpenMatchResponse {
+}
+
+export interface OpenMatchResponse {
     id: number
     booking: {
-      id: number
-      userId: number
-      timeSlotId: number
-      bookingDate: string
-      bookingHour: number
-      active: boolean
+        id: number
+        userId: number
+        timeSlotId: number
+        bookingDate: string
+        bookingHour: number
+        active: boolean
     }
     isActive: boolean
     players: Array<{
-      id: number
-      name: string
-      last_name: string
-      email: string
-      profilePicture: string
+        id: number
+        name: string
+        last_name: string
+        email: string
+        profilePicture: string
     }>
     minPlayers: number
     maxPlayers: number
     teamOne: any | null
     teamTwo: any | null
-  }
-  
-  export interface CloseMatchResponse {
+}
+
+export interface CloseMatchResponse {
     id: number
     booking: {
-      id: number
-      userId: number
-      timeSlotId: number
-      bookingDate: string
-      bookingHour: number
-      active: boolean
+        id: number
+        userId: number
+        timeSlotId: number
+        bookingDate: string
+        bookingHour: number
+        active: boolean
     }
     isActive: boolean
     teamOne: any
     teamTwo: any
-  }
-  
-  export interface AvailableSlot {
-    id: string
+}
+
+export interface AvailableSlot {
+    id: number
     date: string
     startTime: string
     endTime: string
     field: Field
     pricePerHour: number
     isAvailable: boolean
-  }
+}
   

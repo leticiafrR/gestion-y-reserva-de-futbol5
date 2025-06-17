@@ -161,8 +161,8 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
       if (formData.type === "open") {
         const matchData: CreateOpenMatchData = {
           bookingId: booking.id,
-          creatorId: 1, // TODO: Get from current user
           maxPlayers: formData.maxPlayers,
+          minPlayers: formData.minPlayers,
         }
         await createOpenMatch(matchData)
       } else {
@@ -462,64 +462,74 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                     </div>
                   </div>
 
-                  
-
-                  {/* Players */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                    <div>
-                      <label
-                        style={{
-                          display: "block",
-                          marginBottom: "8px",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          color: "#212529",
-                        }}
-                      >
-                        Jugadores mínimos
-                      </label>
-                      <input
-                        type="number"
-                        value={10}
-                        disabled
-                        style={{
-                          width: "100%",
-                          padding: "12px",
-                          border: "1px solid #dee2e6",
-                          borderRadius: "8px",
-                          fontSize: "14px",
-                          backgroundColor: "#f8f9fa",
-                        }}
-                      />
+                  {formData.type === "open" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "#212529",
+                          }}
+                        >
+                          Jugadores mínimos
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.minPlayers === undefined || Number.isNaN(formData.minPlayers) ? '' : formData.minPlayers}
+                          onChange={e => {
+                            const value = e.target.value;
+                            setFormData({
+                              ...formData,
+                              minPlayers: value === '' ? 1 : Number(value)
+                            });
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "12px",
+                            border: "1px solid #dee2e6",
+                            borderRadius: "8px",
+                            fontSize: "14px"
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "#212529",
+                          }}
+                        >
+                          Máximo de Jugadores
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.maxPlayers}
+                          onChange={e => {
+                            const value = e.target.value;
+                            setFormData({
+                              ...formData,
+                              maxPlayers: value === '' ? 1 : Number(value)
+                            });
+                          }}
+                          min={formData.minPlayers}
+                          max={22}
+                          style={{
+                            width: "100%",
+                            padding: "12px",
+                            border: "1px solid #dee2e6",
+                            borderRadius: "8px",
+                            fontSize: "14px"
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label
-                        style={{
-                          display: "block",
-                          marginBottom: "8px",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          color: "#212529",
-                        }}
-                      >
-                        Máximo de Jugadores
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.maxPlayers}
-                        onChange={(e) => setFormData({ ...formData, maxPlayers: Number.parseInt(e.target.value) })}
-                        min={formData.minPlayers}
-                        max="22"
-                        style={{
-                          width: "100%",
-                          padding: "12px",
-                          border: "1px solid #dee2e6",
-                          borderRadius: "8px",
-                          fontSize: "14px",
-                        }}
-                      />
-                    </div>
-                  </div>
+                  )}
 
                   {/* Price Calculation */}
                   <div

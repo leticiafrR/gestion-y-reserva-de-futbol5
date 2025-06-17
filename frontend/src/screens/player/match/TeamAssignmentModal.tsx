@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { X, Shuffle, Users, RotateCcw } from "lucide-react"
-import { useAssignTeams } from "@/services/MatchServices"
+import { useAssignTeams, useAssignRandomTeams, useAssignTeamsByAge } from "@/services/MatchServices"
 import type { Match, Player, Teams } from "@/models/Match"
 
 interface TeamAssignmentModalProps {
@@ -18,14 +18,16 @@ export const TeamAssignmentModal = ({ match, onClose, onSave }: TeamAssignmentMo
     team1: [],
     team2: [],
   })
-  const [unassignedPlayers, setUnassignedPlayers] = useState<Player[]>(match.players)
+  const [unassignedPlayers, setUnassignedPlayers] = useState<Player[]>(Array.isArray(match.players) ? match.players : [])
   const [isLoading, setIsLoading] = useState(false)
   const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null)
   const assignTeams = useAssignTeams()
+  const assignRandomTeams = useAssignRandomTeams()
+  const assignTeamsByAge = useAssignTeamsByAge()
 
-  const playersPerTeam = Math.floor(match.currentPlayers / 2)
+  const playersPerTeam = Math.floor((Array.isArray(match.players) ? match.players.length : 0) / 2)
   const isBalanced =
-    teams.team1.length === teams.team2.length && teams.team1.length + teams.team2.length === match.currentPlayers
+    teams.team1.length === teams.team2.length && teams.team1.length + teams.team2.length === (Array.isArray(match.players) ? match.players.length : 0)
 
   const handleDragStart = (player: Player) => {
     setDraggedPlayer(player)
@@ -66,44 +68,129 @@ export const TeamAssignmentModal = ({ match, onClose, onSave }: TeamAssignmentMo
     setDraggedPlayer(null)
   }
 
-  const handleRandomAssignment = () => {
-    const allPlayers = [...match.players]
-    const shuffled = [...allPlayers].sort(() => Math.random() - 0.5)
-
-    const newTeams: Teams = {
-      team1: shuffled.slice(0, playersPerTeam),
-      team2: shuffled.slice(playersPerTeam, playersPerTeam * 2),
+  const handleRandomAssignment = async () => {
+    setIsLoading(true)
+    try {
+      const result = await assignRandomTeams.mutateAsync(match.id.toString())
+      
+      // Actualizar el estado local con los equipos asignados por el backend
+      if (result.teamOne && result.teamTwo) {
+        const newTeams: Teams = {
+          team1: Array.from(result.teamOne.members || []).map((user: any) => ({
+            id: user.id,
+            name: user.name || user.username,
+            email: user.email,
+            password: user.password || "",
+            role: user.role || "",
+            username: user.username,
+            gender: user.gender || "",
+            birthYear: user.birthYear || 1990,
+            zone: user.zone || "",
+            last_name: user.last_name || "",
+            emailVerified: user.emailVerified || false,
+            active: user.active || true,
+            profilePicture: user.profilePicture || "/placeholder.svg",
+            authorities: user.authorities || [],
+            enabled: user.enabled || true,
+            accountNonExpired: user.accountNonExpired || true,
+            accountNonLocked: user.accountNonLocked || true,
+            credentialsNonExpired: user.credentialsNonExpired || true
+          })),
+          team2: Array.from(result.teamTwo.members || []).map((user: any) => ({
+            id: user.id,
+            name: user.name || user.username,
+            email: user.email,
+            password: user.password || "",
+            role: user.role || "",
+            username: user.username,
+            gender: user.gender || "",
+            birthYear: user.birthYear || 1990,
+            zone: user.zone || "",
+            last_name: user.last_name || "",
+            emailVerified: user.emailVerified || false,
+            active: user.active || true,
+            profilePicture: user.profilePicture || "/placeholder.svg",
+            authorities: user.authorities || [],
+            enabled: user.enabled || true,
+            accountNonExpired: user.accountNonExpired || true,
+            accountNonLocked: user.accountNonLocked || true,
+            credentialsNonExpired: user.credentialsNonExpired || true
+          }))
+        }
+        
+        setTeams(newTeams)
+        setUnassignedPlayers([])
+      }
+    } catch (error) {
+      console.error("Error assigning random teams:", error)
+    } finally {
+      setIsLoading(false)
     }
-
-    setTeams(newTeams)
-    setUnassignedPlayers(shuffled.slice(playersPerTeam * 2))
   }
 
-  const handleBalancedByAge = () => {
-    const playersWithAge = match.players.map((p) => ({
-      ...p,
-      age: Math.floor(Math.random() * 20) + 18, // Mock age between 18-38
-    }))
-
-    const sortedByAge = [...playersWithAge].sort((a, b) => a.age - b.age)
-    const newTeams: Teams = { team1: [], team2: [] }
-
-    // Alternate assignment to balance ages
-    sortedByAge.forEach((player, index) => {
-      if (index % 2 === 0 && newTeams.team1.length < playersPerTeam) {
-        newTeams.team1.push(player)
-      } else if (newTeams.team2.length < playersPerTeam) {
-        newTeams.team2.push(player)
+  const handleBalancedByAge = async () => {
+    setIsLoading(true)
+    try {
+      const result = await assignTeamsByAge.mutateAsync(match.id.toString())
+      
+      // Actualizar el estado local con los equipos asignados por el backend
+      if (result.teamOne && result.teamTwo) {
+        const newTeams: Teams = {
+          team1: Array.from(result.teamOne.members || []).map((user: any) => ({
+            id: user.id,
+            name: user.name || user.username,
+            email: user.email,
+            password: user.password || "",
+            role: user.role || "",
+            username: user.username,
+            gender: user.gender || "",
+            birthYear: user.birthYear || 1990,
+            zone: user.zone || "",
+            last_name: user.last_name || "",
+            emailVerified: user.emailVerified || false,
+            active: user.active || true,
+            profilePicture: user.profilePicture || "/placeholder.svg",
+            authorities: user.authorities || [],
+            enabled: user.enabled || true,
+            accountNonExpired: user.accountNonExpired || true,
+            accountNonLocked: user.accountNonLocked || true,
+            credentialsNonExpired: user.credentialsNonExpired || true
+          })),
+          team2: Array.from(result.teamTwo.members || []).map((user: any) => ({
+            id: user.id,
+            name: user.name || user.username,
+            email: user.email,
+            password: user.password || "",
+            role: user.role || "",
+            username: user.username,
+            gender: user.gender || "",
+            birthYear: user.birthYear || 1990,
+            zone: user.zone || "",
+            last_name: user.last_name || "",
+            emailVerified: user.emailVerified || false,
+            active: user.active || true,
+            profilePicture: user.profilePicture || "/placeholder.svg",
+            authorities: user.authorities || [],
+            enabled: user.enabled || true,
+            accountNonExpired: user.accountNonExpired || true,
+            accountNonLocked: user.accountNonLocked || true,
+            credentialsNonExpired: user.credentialsNonExpired || true
+          }))
+        }
+        
+        setTeams(newTeams)
+        setUnassignedPlayers([])
       }
-    })
-
-    setTeams(newTeams)
-    setUnassignedPlayers(sortedByAge.slice(playersPerTeam * 2))
+    } catch (error) {
+      console.error("Error assigning teams by age:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleReset = () => {
     setTeams({ team1: [], team2: [] })
-    setUnassignedPlayers(match.players)
+    setUnassignedPlayers(Array.isArray(match.players) ? match.players : [])
   }
 
   const handleSave = async () => {
@@ -111,7 +198,7 @@ export const TeamAssignmentModal = ({ match, onClose, onSave }: TeamAssignmentMo
 
     setIsLoading(true)
     try {
-      await assignTeams.mutateAsync(match.id, teams)
+      await assignTeams.mutateAsync(match.id.toString(), teams)
       onSave(teams)
     } catch (error) {
       console.error("Error assigning teams:", error)
@@ -151,7 +238,7 @@ export const TeamAssignmentModal = ({ match, onClose, onSave }: TeamAssignmentMo
       }}
     >
       <img
-        src={player.avatar || "/placeholder.svg"}
+        src={player.profilePicture || "/placeholder.svg"}
         alt={player.name}
         style={{
           width: "32px",
