@@ -160,6 +160,29 @@ public class MatchController {
         return ResponseEntity.ok(matchService.assignTeams(id, "manual", manualAssignments));
     }
 
+    @GetMapping("/past/open")
+    @Operation(summary = "Listar partidos abiertos pasados del usuario", description = "Devuelve todos los partidos abiertos del usuario autenticado cuya reserva ya ocurrió")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Partidos pasados obtenidos correctamente"),
+            @ApiResponse(responseCode = "404", description = "No se encontraron partidos pasados para el usuario")
+    })
+    public List<OpenMatch> getMyPastOpenMatches() {
+        String username = getAuthenticatedUser().username();
+        return matchService.getPastOpenMatchesForUser(username);
+    }
+
+    @GetMapping("/past/close")
+    @Operation(summary = "Listar partidos cerrados pasados del usuario", description = "Devuelve todos los partidos cerrados del usuario autenticado cuya reserva ya ocurrió")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Partidos pasados obtenidos correctamente"),
+            @ApiResponse(responseCode = "404", description = "No se encontraron partidos pasados para el usuario")
+    })
+    public List<CloseMatch> getMyPastCloseMatches() {
+        String username = getAuthenticatedUser().username();
+        return matchService.getPastCloseMatchesForUser(username);
+    }
+
+
     private JwtUserDetails getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (JwtUserDetails) authentication.getPrincipal();
