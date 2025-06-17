@@ -39,8 +39,7 @@ public class MatchController {
     public ResponseEntity<OpenMatch> createOpenMatch(
             @Valid @RequestBody OpenMatchCreateDTO dto) {
         String username = getAuthenticatedUser().username();
-        OpenMatch createdMatch = matchService.createOpenMatch(dto, username);
-        return ResponseEntity.ok(createdMatch);
+        return ResponseEntity.ok(matchService.createOpenMatch(dto, username));
     }
 
     @PostMapping("/open/{matchId}/join")
@@ -49,10 +48,10 @@ public class MatchController {
             @ApiResponse(responseCode = "200", description = "Usuario unido al partido exitosamente"),
             @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     })
-    public OpenMatch joinOpenMatch(
+    public ResponseEntity<OpenMatch> joinOpenMatch(
             @Parameter(description = "ID del partido abierto") @PathVariable Long matchId) {
         String username = getAuthenticatedUser().username();
-        return matchService.joinOpenMatch(matchId, username);
+        return ResponseEntity.ok(matchService.joinOpenMatch(matchId, username));
     }
 
     @DeleteMapping("/open/{matchId}/leave")
@@ -61,10 +60,10 @@ public class MatchController {
             @ApiResponse(responseCode = "200", description = "Usuario eliminado del partido exitosamente"),
             @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     })
-    public OpenMatch leaveOpenMatch(
+    public ResponseEntity<OpenMatch> leaveOpenMatch(
             @Parameter(description = "ID del partido abierto") @PathVariable Long matchId) {
         String username = getAuthenticatedUser().username();
-        return matchService.leaveOpenMatch(matchId, username);
+        return ResponseEntity.ok(matchService.leaveOpenMatch(matchId, username));
     }
 
     @PostMapping("/close")
@@ -73,15 +72,15 @@ public class MatchController {
             @ApiResponse(responseCode = "200", description = "Partido cerrado creado exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos")
     })
-    public CloseMatch createCloseMatch(@RequestBody CloseMatchCreateDTO dto) {
-        return matchService.createCloseMatch(dto);
+    public ResponseEntity<CloseMatch> createCloseMatch(@RequestBody CloseMatchCreateDTO dto) {
+        return ResponseEntity.ok(matchService.createCloseMatch(dto));
     }
 
     @GetMapping("/open")
     @Operation(summary = "Listar partidos abiertos", description = "Obtiene todos los partidos abiertos activos")
     @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente")
-    public List<OpenMatch> getAllOpenMatches() {
-        return matchService.listActiveOpenMatches();
+    public ResponseEntity<List<OpenMatch>> getAllOpenMatches() {
+        return ResponseEntity.ok(matchService.listActiveOpenMatches());
     }
 
     @GetMapping("/open/{id}")
@@ -90,15 +89,15 @@ public class MatchController {
             @ApiResponse(responseCode = "200", description = "Partido abierto encontrado"),
             @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     })
-    public OpenMatch getOpenMatch(@PathVariable Long id) {
-        return matchService.getOpenMatch(id);
+    public ResponseEntity<OpenMatch> getOpenMatch(@PathVariable Long id) {
+        return ResponseEntity.ok(matchService.getOpenMatch(id));
     }
 
     @GetMapping("/close")
     @Operation(summary = "Listar partidos cerrados", description = "Obtiene todos los partidos cerrados activos")
     @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente")
-    public List<CloseMatch> getAllCloseMatches() {
-        return matchService.listActiveCloseMatches();
+    public ResponseEntity<List<CloseMatch>> getAllCloseMatches() {
+        return ResponseEntity.ok(matchService.listActiveCloseMatches());
     }
 
     @GetMapping("/close/{id}")
@@ -107,8 +106,8 @@ public class MatchController {
             @ApiResponse(responseCode = "200", description = "Partido cerrado encontrado"),
             @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     })
-    public CloseMatch getCloseMatch(@PathVariable Long id) {
-        return matchService.getCloseMatch(id);
+    public ResponseEntity<CloseMatch> getCloseMatch(@PathVariable Long id) {
+        return ResponseEntity.ok(matchService.getCloseMatch(id));
     }
 
     @GetMapping("/close/teams/{teamOneId}/{teamTwoId}")
@@ -117,14 +116,14 @@ public class MatchController {
             @ApiResponse(responseCode = "200", description = "Partidos encontrados"),
             @ApiResponse(responseCode = "404", description = "No se encontraron partidos entre los equipos especificados")
     })
-    public List<CloseMatch> getCloseMatchesByTeams(
+    public ResponseEntity<List<CloseMatch>> getCloseMatchesByTeams(
             @Parameter(description = "ID del primer equipo") @PathVariable Long teamOneId,
             @Parameter(description = "ID del segundo equipo") @PathVariable Long teamTwoId) {
         List<CloseMatch> matches = matchService.getCloseMatchesByTeams(teamOneId, teamTwoId);
         if (matches.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontraron partidos cerrados para los equipos especificados");
         }
-        return matches;
+        return ResponseEntity.ok(matches);
     }
 
     @PostMapping("/{id}/assign/age")
@@ -133,8 +132,8 @@ public class MatchController {
             @ApiResponse(responseCode = "200", description = "Equipos asignados correctamente"),
             @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     })
-    public OpenMatch assignByAge(@PathVariable Long id) {
-        return matchService.assignTeams(id, "age", Collections.emptyMap());
+    public ResponseEntity<OpenMatch> assignByAge(@PathVariable Long id) {
+        return ResponseEntity.ok(matchService.assignTeams(id, "age", Collections.emptyMap()));
     }
 
     @PostMapping("/{id}/assign/random")
@@ -143,8 +142,8 @@ public class MatchController {
             @ApiResponse(responseCode = "200", description = "Equipos asignados correctamente"),
             @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     })
-    public OpenMatch assignRandom(@PathVariable Long id) {
-        return matchService.assignTeams(id, "random", Collections.emptyMap());
+    public ResponseEntity<OpenMatch> assignRandom(@PathVariable Long id) {
+        return ResponseEntity.ok(matchService.assignTeams(id, "random", Collections.emptyMap()));
     }
 
     @PostMapping("/{id}/assign/manual")
@@ -154,11 +153,11 @@ public class MatchController {
             @ApiResponse(responseCode = "400", description = "Asignaciones inválidas"),
             @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     })
-    public OpenMatch assignManual(
+    public ResponseEntity<OpenMatch> assignManual(
             @Parameter(description = "ID del partido abierto") @PathVariable Long id,
             @Parameter(description = "Mapa con asignaciones: clave = ID de usuario, valor = equipo (1 o 2)")
             @RequestBody Map<Long, Integer> manualAssignments) {
-        return matchService.assignTeams(id, "manual", manualAssignments);
+        return ResponseEntity.ok(matchService.assignTeams(id, "manual", manualAssignments));
     }
 
     private JwtUserDetails getAuthenticatedUser() {
