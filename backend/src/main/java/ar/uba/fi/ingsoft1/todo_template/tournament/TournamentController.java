@@ -30,6 +30,23 @@ public class TournamentController {
         this.tournamentService = tournamentService;
     }
 
+    @PostMapping("/register_team/{team_id}/{tournament_id}")
+    @Operation(summary = "Register a team into a tournament", description = "Registers the given team into the specified tournament. Only the team's captain can perform this action. The tournament must still be open and have free slots.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Team registered successfully into the tournament"),
+            @ApiResponse(responseCode = "400", description = "Missing or inconsistent data provided", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "401", description = "User not authenticated", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "403", description = "User is not the captain of the team", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "404", description = "Team or tournament not found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "409", description = "Team already registered or tournament is full", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class))),
+    })
+    public ResponseEntity<Void> registerTeamIntoTournament(
+            @PathVariable Long team_id,
+            @PathVariable Long tournament_id) {
+        tournamentService.regist_team_into_tournament(team_id, tournament_id);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a tourney", description = "Allows a user to create a tournament")
