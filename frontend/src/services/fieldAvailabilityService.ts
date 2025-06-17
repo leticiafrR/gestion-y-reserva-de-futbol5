@@ -13,6 +13,14 @@ export interface TimeSlotResponseDTO extends TimeSlotDTO {
   fieldId: number;
 }
 
+// --- Blocked Slots (Horarios Bloqueados) ---
+export interface BlockedSlotDTO {
+  id?: number;
+  fieldId: number;
+  date: string; // YYYY-MM-DD
+  hour: number; // 0-23
+}
+
 export class FieldAvailabilityService {
   /**
    * Get the availability schedule for a specific field
@@ -157,6 +165,108 @@ export class FieldAvailabilityService {
    */
   static hourToTimeString(hour: number): string {
     return `${String(hour).padStart(2, '0')}:00`;
+  }
+
+  /**
+   * Listar horarios bloqueados de una cancha (solo los próximos)
+   */
+  async getBlockedSlots(fieldId: number): Promise<BlockedSlotDTO[]> {
+    try {
+      const accessToken = getAuthToken();
+      const response = await fetch(`${BASE_API_URL}/blockedslots/fields/${fieldId}`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch blocked slots: ${response.status} - ${await response.text()}`);
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching blocked slots:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Listar todos los horarios bloqueados de una cancha (histórico)
+   */
+  async getAllBlockedSlots(fieldId: number): Promise<BlockedSlotDTO[]> {
+    try {
+      const accessToken = getAuthToken();
+      const response = await fetch(`${BASE_API_URL}/blockedslots/fields/${fieldId}/all`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch all blocked slots: ${response.status} - ${await response.text()}`);
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching all blocked slots:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bloquear un horario específico para una cancha
+   */
+  async addBlockedSlot(fieldId: number, date: string, hour: number): Promise<BlockedSlotDTO | any> {
+    try {
+      const accessToken = getAuthToken();
+      const response = await fetch(`${BASE_API_URL}/blockedslots/fields/${fieldId}?date=${date}&hour=${hour}`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        // No body
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to add blocked slot: ${response.status} - ${await response.text()}`);
+      }
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      } else {
+        return await response.text();
+      }
+    } catch (error) {
+      console.error('Error adding blocked slot:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Eliminar un horario bloqueado
+   */
+  async deleteBlockedSlot(fieldId: number, date: string, hour: number): Promise<void> {
+    try {
+      const accessToken = getAuthToken();
+      const response = await fetch(`${BASE_API_URL}/blockedslots/fields/${fieldId}`, {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        // body: JSON.stringify({ date, hour }),
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to delete blocked slot: ${response.status} - ${await response.text()}`);
+      }
+    } catch (error) {
+      console.error('Error deleting blocked slot:', error);
+      throw error;
+    }
   }
 }
 

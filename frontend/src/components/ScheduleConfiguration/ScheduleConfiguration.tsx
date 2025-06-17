@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Plus, ChevronLeft, ChevronRight, Calendar, Clock, Save, Copy, Trash2 } from "lucide-react"
-import { fieldAvailabilityService, TimeSlotDTO, FieldAvailabilityService } from "@/services/fieldAvailabilityService"
+import { fieldAvailabilityService, TimeSlotDTO, FieldAvailabilityService, BlockedSlotDTO } from "@/services/fieldAvailabilityService"
 import { bookingService } from "@/services/bookingService"
 
 interface TimeSlot {
@@ -169,7 +169,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
     saturday: { available: false, timeSlots: [] },
   })
 
-  const [specificDates, setSpecificDates] = useState<SpecificDateSchedule[]>([])
+  const [blockedSlots, setBlockedSlots] = useState<BlockedSlotDTO[]>([])
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string>("")
   const [tempHour, setTempHour] = useState<string>("09:00")
@@ -239,24 +239,42 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
     setSelectedDate(dateString)
   }
 
-  const applySpecificDate = () => {
+  const applySpecificDate = async () => {
     if (selectedDate && tempHour) {
-      setSpecificDates((prev) => {
-        const existing = prev.find((d) => d.date === selectedDate)
-        if (existing) {
-          return prev.map((d) => (d.date === selectedDate ? { ...d, hour: tempHour } : d))
-        } else {
-          return [...prev, { date: selectedDate, hour: tempHour }]
-        }
-      })
+      try {
+        console.log("selectedDate", selectedDate)
+        const hour = FieldAvailabilityService.timeStringToHour(tempHour)
+        console.log("1")
+        await fieldAvailabilityService.addBlockedSlot(Number(selectedFieldId), selectedDate, hour)
+        // Agregar el nuevo bloqueo al estado local inmediatamente y loguear
+        setBlockedSlots((prev) => {
+          console.log("2")
+          const updated = [...prev, { fieldId: Number(selectedFieldId), date: selectedDate, hour }]
+          console.log('Blocked slots after add:', updated)
+          return updated
+        })
+        console.log("3")
+        // Luego refrescar la lista real del backend (delay 1000ms)
+        setTimeout(async () => {
+          const slots = await fieldAvailabilityService.getAllBlockedSlots(Number(selectedFieldId))
+          setBlockedSlots(slots)
+        }, 1000)
+      } catch (e) {
+        console.error("Error en applySpecificDate:", e)
+      }
       setShowDatePicker(false)
       setSelectedDate("")
       setTempHour("09:00")
     }
   }
 
-  const removeSpecificDate = (date: string) => {
-    setSpecificDates((prev) => prev.filter((d) => d.date !== date))
+  const removeSpecificDate = async (date: string, hour: number) => {
+    try {
+      await fieldAvailabilityService.deleteBlockedSlot(Number(selectedFieldId), date, hour)
+      setBlockedSlots((prev) => prev.filter((d) => !(d.date === date && d.hour === hour)))
+    } catch (e) {
+      // Manejar error
+    }
   }
 
   const selectedField = fields.find((f) => f.id === selectedFieldId)
@@ -274,51 +292,8 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
           })
         }
       })
-
-      // Obtener todos los bookings activos de la cancha
-      const bookings = await bookingService.getBookingsByField(Number(selectedFieldId))
-      // Obtener los timeslots actuales
-      const currentSlots = await fieldAvailabilityService.getFieldAvailability(Number(selectedFieldId))
-      // Filtrar los timeslots que NO tienen bookings asociados
-      const slotsWithBookings = new Set(bookings.map(b => b.timeSlotId))
-      const slotsToKeep = currentSlots.filter(slot => slotsWithBookings.has(slot.id))
-      // Solo enviar a setFieldAvailability los slots nuevos y los que no tienen bookings
-      const safeAvailability = [
-        ...slotsToKeep.map(slot => ({
-          dayOfWeek: slot.dayOfWeek,
-          openTime: slot.openTime,
-          closeTime: slot.closeTime
-        })),
-        ...availability.filter(newSlot =>
-          !slotsToKeep.some(slot =>
-            slot.dayOfWeek === newSlot.dayOfWeek &&
-            slot.openTime === newSlot.openTime &&
-            slot.closeTime === newSlot.closeTime
-          )
-        )
-      ]
-      await fieldAvailabilityService.setFieldAvailability(Number(selectedFieldId), safeAvailability)
-
-      // Crear reservas para los horarios específicos
-      for (const specificDate of specificDates) {
-        const hour = FieldAvailabilityService.timeStringToHour(specificDate.hour)
-        const [year, month, day] = specificDate.date.split('-').map(Number)
-        const localDate = new Date(year, month - 1, day)
-        const dayOfWeek = localDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()
-        // Get the timeslot for this day of week
-        const timeslot = await fieldAvailabilityService.getDayAvailability(
-          Number(selectedFieldId),
-          dayOfWeek as TimeSlotDTO['dayOfWeek']
-        )
-        // Create the booking with the timeslot ID
-        await bookingService.createBooking(
-          timeslot.id,
-          specificDate.date,
-          hour
-        )
-      }
-      
-      // Show success toast
+      await fieldAvailabilityService.setFieldAvailability(Number(selectedFieldId), availability)
+      // Toast de éxito
       const toast = document.createElement('div')
       toast.style.position = 'fixed'
       toast.style.bottom = '24px'
@@ -333,19 +308,16 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
       toast.style.fontWeight = '500'
       toast.textContent = 'Configuración guardada exitosamente'
       document.body.appendChild(toast)
-
       setTimeout(() => {
         toast.style.opacity = '0'
         toast.style.transition = 'opacity 0.3s ease-out'
         setTimeout(() => {
           document.body.removeChild(toast)
-          // Redirigir a la página principal
           window.location.href = '/'
         }, 300)
       }, 3000)
     } catch (error) {
-      console.error('Error saving availability:', error)
-      // Show error toast
+      // Toast de error
       const toast = document.createElement('div')
       toast.style.position = 'fixed'
       toast.style.bottom = '24px'
@@ -408,9 +380,20 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
     }
   }
 
-  // Load availability when field changes
+  // Cargar horarios bloqueados al cambiar cancha
   useEffect(() => {
+    const loadBlockedSlots = async () => {
+      try {
+        if (selectedFieldId) {
+          const slots = await fieldAvailabilityService.getAllBlockedSlots(Number(selectedFieldId))
+          setBlockedSlots(slots)
+        }
+      } catch (e) {
+        setBlockedSlots([])
+      }
+    }
     loadFieldAvailability()
+    loadBlockedSlots()
   }, [selectedFieldId])
 
   return (
@@ -622,7 +605,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
 
           {/* Lista de fechas específicas */}
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {specificDates.length === 0 ? (
+            {blockedSlots.length === 0 ? (
               <div
                 style={{
                   textAlign: "center",
@@ -636,13 +619,11 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
             ) : (
               <>
                 {/* Mostrar fechas específicas configuradas */}
-                {specificDates.map((dateSchedule) => {
-                  const [year, month, day] = dateSchedule.date.split('-').map(Number);
-                  const localDate = new Date(year, month - 1, day);
-                  const formattedDate = localDate.toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+                {blockedSlots.map((slot) => {
+                  const formattedDate = new Date(slot.date).toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
                   return (
-                    <div key={dateSchedule.date}>
+                    <div key={`${slot.date}-${slot.hour}`}>
                       <div
                         style={{
                           display: "flex",
@@ -655,7 +636,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                           {formattedDate}
                         </span>
                         <button
-                          onClick={() => removeSpecificDate(dateSchedule.date)}
+                          onClick={() => removeSpecificDate(slot.date, slot.hour)}
                           style={{
                             padding: "6px 12px",
                             backgroundColor: "#ef4444",
@@ -691,7 +672,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                             Evento especial para fecha específica
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "14px" }}>{dateSchedule.hour}</span>
+                            <span style={{ fontSize: "14px" }}>{slot.hour}</span>
                           </div>
                         </div>
                       </div>
