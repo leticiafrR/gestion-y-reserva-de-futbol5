@@ -6,8 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface OpenMatchRepository extends JpaRepository<OpenMatch, Long> {
     List<OpenMatch> findByIsActiveTrue();
-
-    OpenMatch findByIdAndIsActiveTrue(Long id);
     List<OpenMatch> findByIsActiveTrueAndPlayers_Id(Long userId);
 
 }

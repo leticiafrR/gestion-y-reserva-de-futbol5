@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @Service
@@ -26,12 +27,10 @@ import java.util.*;
 public class MatchService {
 
     private final BookingRepository bookingRepo;
-    private final UserRepository userRepo;
     private final UserService userService;
     private final OpenMatchRepository openMatchRepo;
     private final CloseMatchRepository closeMatchRepo;
     private final TeamRepository teamRepo;
-    private final OpenMatchRepository openMatchRepository;
 
     @Transactional
     public OpenMatch createOpenMatch(OpenMatchCreateDTO dto, String creatorUsername) {
@@ -52,7 +51,7 @@ public class MatchService {
         match.setMinPlayers(dto.getMinPlayers());
         match.setMaxPlayers(dto.getMaxPlayers());
 
-        return openMatchRepository.save(match);
+        return openMatchRepo.save(match);
     }
 
     @Transactional
@@ -112,11 +111,6 @@ public class MatchService {
     }
 
     @Transactional
-    public List<OpenMatch> listOpenMatchesOfUser(Long userId) {
-        return openMatchRepo.findByIsActiveTrueAndPlayers_Id(userId);
-    }
-
-    @Transactional
     public List<CloseMatch> getCloseMatchesByTeams(Long teamOneId, Long teamTwoId) {
         return closeMatchRepo.findByTeamOne_IdAndTeamTwo_Id(teamOneId, teamTwoId);
     }
@@ -164,5 +158,33 @@ public class MatchService {
 
         strategy.assignTeams(match);
         return openMatchRepo.save(match);
+    }
+
+    public List<OpenMatch> getPastOpenMatchesForUser(String username) {
+        User user = userService.findByUsernameOrThrow(username);
+
+        LocalDate date = LocalDate.now();
+        List<OpenMatch> openMatches = openMatchRepo.findByIsActiveTrue();
+        List<OpenMatch> openMatchesFinal = new ArrayList<>();
+
+        for (OpenMatch openMatch : openMatches) {
+            if (openMatch.getBooking().getUser().equals(user) && openMatch.getBooking().getBookingDate().isBefore(date)) {
+                openMatchesFinal.add(openMatch);
+            }
+        }
+        return openMatchesFinal;
+    }
+    public List<CloseMatch> getPastCloseMatchesForUser(String username) {
+        User user = userService.findByUsernameOrThrow(username);
+
+        LocalDate date = LocalDate.now();
+        List<CloseMatch> closeMatches = closeMatchRepo.findByIsActiveTrue();
+        List<CloseMatch> closeMatchesFinal = new ArrayList<>();
+        for (CloseMatch closeMatch : closeMatches) {
+            if (closeMatch.getBooking().getUser().equals(user) && closeMatch.getBooking().getBookingDate().isBefore(date)) {
+                closeMatchesFinal.add(closeMatch);
+            }
+        }
+        return closeMatchesFinal;
     }
 }
