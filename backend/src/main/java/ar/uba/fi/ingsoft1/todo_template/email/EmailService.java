@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Service
 public class EmailService {
@@ -35,8 +37,22 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    @Autowired
+    private TemplateEngine emailTemplateEngine;
 
+    public void sendTeamConfirmation(String to, String nombre, String fecha, String hora, String equipo) {
+        Context context = new Context();
+        context.setVariable("nombre", nombre);
+        context.setVariable("fecha", fecha);
+        context.setVariable("hora", hora);
+        context.setVariable("equipo", equipo);
 
-//
-//
+        String htmlContent = emailTemplateEngine.process("confirmed-team", context);
+
+        try {
+            sendMessage(to, "Confirmación de equipo para el partido", htmlContent);
+        } catch (MessagingException e) {
+            throw new UnableToSendMessageException(to);
+        }
+    }
 }

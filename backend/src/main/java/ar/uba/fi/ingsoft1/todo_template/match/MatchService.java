@@ -2,7 +2,7 @@ package ar.uba.fi.ingsoft1.todo_template.match;
 
 import ar.uba.fi.ingsoft1.todo_template.booking.Booking;
 import ar.uba.fi.ingsoft1.todo_template.booking.BookingRepository;
-import ar.uba.fi.ingsoft1.todo_template.match.*;
+import ar.uba.fi.ingsoft1.todo_template.email.EmailService;
 import ar.uba.fi.ingsoft1.todo_template.match.strategy.AgeBasedAssignment;
 import ar.uba.fi.ingsoft1.todo_template.match.strategy.ManualAssignment;
 import ar.uba.fi.ingsoft1.todo_template.match.strategy.RandomAssignment;
@@ -10,7 +10,6 @@ import ar.uba.fi.ingsoft1.todo_template.match.strategy.TeamAssignmentStrategy;
 import ar.uba.fi.ingsoft1.todo_template.team.Team;
 import ar.uba.fi.ingsoft1.todo_template.team.TeamRepository;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
-import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
 import ar.uba.fi.ingsoft1.todo_template.user.UserService;
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +30,8 @@ public class MatchService {
     private final OpenMatchRepository openMatchRepo;
     private final CloseMatchRepository closeMatchRepo;
     private final TeamRepository teamRepo;
+    private final EmailService emailService;
+    private final OpenMatchTeamRepository openMatchTeamRepo;
 
     @Transactional
     public OpenMatch createOpenMatch(OpenMatchCreateDTO dto, String creatorUsername) {
@@ -50,6 +51,13 @@ public class MatchService {
         match.setPlayers(new ArrayList<>(List.of(creator)));
         match.setMinPlayers(dto.getMinPlayers());
         match.setMaxPlayers(dto.getMaxPlayers());
+        OpenMatchTeam teamOne = new OpenMatchTeam();
+        openMatchTeamRepo.save(teamOne);
+        match.setTeamOne(teamOne);
+        OpenMatchTeam teamTwo = new OpenMatchTeam();
+        openMatchTeamRepo.save(teamTwo);
+        match.setTeamTwo(teamTwo);
+
 
         return openMatchRepo.save(match);
     }
@@ -132,32 +140,20 @@ public class MatchService {
     @Transactional
     public OpenMatch assignTeams(Long matchId, String strategyType, Map<Long, Integer> manualMap) {
         OpenMatch match = openMatchRepo.findById(matchId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        if (match.getTeamOne() == null) {
-            match.setTeamOne(new Team());
-        }
-        if (match.getTeamTwo() == null) {
-            match.setTeamTwo(new Team());
-        }
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         TeamAssignmentStrategy strategy;
         switch (strategyType.toLowerCase()) {
-            case "age":
-                strategy = new AgeBasedAssignment();
-                break;
-            case "random":
-                strategy = new RandomAssignment();
-                break;
-            case "manual":
-                strategy = new ManualAssignment(manualMap);
-                break;
-            default:
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown strategy");
+            case "age" -> strategy = new AgeBasedAssignment();
+            case "random" -> strategy = new RandomAssignment();
+            case "manual" -> strategy = new ManualAssignment(manualMap);
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown strategy");
         }
 
         strategy.assignTeams(match);
-        return openMatchRepo.save(match);
+        openMatchRepo.save(match);
+        notifyTeams(match);
+        return match;
     }
 
     public List<OpenMatch> getPastOpenMatchesForUser(String username) {
@@ -186,5 +182,37 @@ public class MatchService {
             }
         }
         return closeMatchesFinal;
+    }
+
+    public void notifyTeams(OpenMatch match) {
+
+        if (match.getTeamOne() == null || match.getTeamTwo() == null ||
+                match.getTeamOne().getMembers().size() != 5 || match.getTeamTwo().getMembers().size() != 5) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Los equipos deben tener exactamente 5 miembros cada uno.");
+        }
+
+        sendNotifications(match);
+    }
+
+    private void sendNotifications(OpenMatch match) {
+        List<User> todos = new ArrayList<>();
+        todos.addAll(match.getTeamOne().getMembers());
+        todos.addAll(match.getTeamTwo().getMembers());
+
+        String fecha = match.getBooking().getBookingDate().toString();
+        String hora = String.format("%02d:00", match.getBooking().getBookingHour());
+
+        for (User jugador : todos) {
+            String equipo = match.getTeamOne().getMembers().contains(jugador) ? "Equipo A" : "Equipo B";
+            String nombreCompleto = jugador.getName() + " " + jugador.getLast_name();
+
+            emailService.sendTeamConfirmation(
+                    jugador.getUsername(),
+                    nombreCompleto,
+                    fecha,
+                    hora,
+                    equipo
+            );
+        }
     }
 }
