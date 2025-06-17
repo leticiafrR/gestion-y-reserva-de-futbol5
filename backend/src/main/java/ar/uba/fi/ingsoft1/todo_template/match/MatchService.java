@@ -79,6 +79,13 @@ public class MatchService {
         if (!match.getPlayers().contains(user)) {
             throw new IllegalStateException("User does not belong to match.");
         }
+
+        User matchOwner = match.getBooking().getUser();
+
+        if (matchOwner == user) {
+            throw new IllegalStateException("Match owner can't leave an open match.");
+        }
+
         match.getPlayers().remove(user);
 
         return openMatchRepo.save(match);
