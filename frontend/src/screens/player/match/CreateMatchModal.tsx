@@ -138,25 +138,17 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
     try {
       setIsLoading(true)
       const dayOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'][(new Date(selectedDate).getDay() + 6) % 7] as 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'
-      console.log("Requesting availability for:", {
-        fieldId: selectedField.id,
-        dayOfWeek,
-        date: selectedDate,
-        hour: selectedHour,
-      })
 
       const timeslot = await fieldAvailabilityService.getDayAvailability(
         parseInt(selectedField.id),
         dayOfWeek
       )
-      console.log("Timeslot:", timeslot)
 
       const booking = await bookingService.createBooking(
         timeslot.id,
         selectedDate,
         selectedHour
       )
-      console.log("Booking created:", booking)
 
       if (formData.type === "open") {
         const matchData: CreateOpenMatchData = {

@@ -235,32 +235,31 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
     const year = currentMonth.getFullYear()
     const month = currentMonth.getMonth()
     const dateString = formatDate(year, month, day)
-    console.log("dateString", dateString)
     setSelectedDate(dateString)
   }
 
   const applySpecificDate = async () => {
     if (selectedDate && tempHour) {
       try {
-        console.log("selectedDate", selectedDate)
         const hour = FieldAvailabilityService.timeStringToHour(tempHour)
-        console.log("1")
-        await fieldAvailabilityService.addBlockedSlot(Number(selectedFieldId), selectedDate, hour)
-        // Agregar el nuevo bloqueo al estado local inmediatamente y loguear
+        const result = await fieldAvailabilityService.addBlockedSlot(Number(selectedFieldId), selectedDate, hour)
+        
+        // Agregar el nuevo bloqueo al estado local inmediatamente
         setBlockedSlots((prev) => {
-          console.log("2")
           const updated = [...prev, { fieldId: Number(selectedFieldId), date: selectedDate, hour }]
-          console.log('Blocked slots after add:', updated)
           return updated
         })
-        console.log("3")
-        // Luego refrescar la lista real del backend (delay 1000ms)
-        setTimeout(async () => {
+        
+        // Refrescar la lista real del backend inmediatamente
+        try {
           const slots = await fieldAvailabilityService.getAllBlockedSlots(Number(selectedFieldId))
           setBlockedSlots(slots)
-        }, 1000)
+        } catch (refreshError) {
+          console.error("Error refreshing blocked slots:", refreshError)
+        }
       } catch (e) {
         console.error("Error en applySpecificDate:", e)
+        alert("Error al agregar el horario bloqueado: " + (e?.message || e))
       }
       setShowDatePicker(false)
       setSelectedDate("")

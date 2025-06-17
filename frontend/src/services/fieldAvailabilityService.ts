@@ -93,8 +93,7 @@ export class FieldAvailabilityService {
   ): Promise<TimeSlotResponseDTO> {
     try {
       const accessToken = getAuthToken();
-      console.log("fieldId", fieldId)
-      console.log("dayOfWeek", dayOfWeek)
+
       const response = await fetch(`${BASE_API_URL}/timeslots/field/${fieldId}/${dayOfWeek}`, {
         method: 'GET',
         headers: {
@@ -103,7 +102,7 @@ export class FieldAvailabilityService {
           Authorization: `Bearer ${accessToken}`,
         },
       });
-      console.log("response", response)
+
       if (!response.ok) {
         throw new Error(`Failed to fetch day availability with status ${response.status}: ${await response.text()}`);
       }
@@ -208,7 +207,15 @@ export class FieldAvailabilityService {
       if (!response.ok) {
         throw new Error(`Failed to fetch all blocked slots: ${response.status} - ${await response.text()}`);
       }
-      return response.json();
+      const blockedSlots = await response.json();
+      
+      // Transform backend BlockedSlot entities to frontend BlockedSlotDTO format
+      return blockedSlots.map((slot: any) => ({
+        id: slot.id,
+        fieldId: slot.field?.id || fieldId,
+        date: slot.date,
+        hour: slot.hour
+      }));
     } catch (error) {
       console.error('Error fetching all blocked slots:', error);
       throw error;
@@ -218,7 +225,7 @@ export class FieldAvailabilityService {
   /**
    * Bloquear un horario específico para una cancha
    */
-  async addBlockedSlot(fieldId: number, date: string, hour: number): Promise<BlockedSlotDTO | any> {
+  async addBlockedSlot(fieldId: number, date: string, hour: number): Promise<void> {
     try {
       const accessToken = getAuthToken();
       const response = await fetch(`${BASE_API_URL}/blockedslots/fields/${fieldId}?date=${date}&hour=${hour}`, {
@@ -228,17 +235,11 @@ export class FieldAvailabilityService {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        // No body
       });
       if (!response.ok) {
         throw new Error(`Failed to add blocked slot: ${response.status} - ${await response.text()}`);
       }
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json();
-      } else {
-        return await response.text();
-      }
+      // No need to parse response
     } catch (error) {
       console.error('Error adding blocked slot:', error);
       throw error;
@@ -251,7 +252,7 @@ export class FieldAvailabilityService {
   async deleteBlockedSlot(fieldId: number, date: string, hour: number): Promise<void> {
     try {
       const accessToken = getAuthToken();
-      const response = await fetch(`${BASE_API_URL}/blockedslots/fields/${fieldId}`, {
+      const response = await fetch(`${BASE_API_URL}/blockedslots/fields/${fieldId}?date=${date}&hour=${hour}`, {
         method: 'DELETE',
         headers: {
           Accept: 'application/json',
@@ -283,72 +284,3 @@ export function useFieldAvailability(fieldId: number | string | undefined) {
   });
 }
 
-/*
-// Example usage with hardcoded data for testing:
-
-// Example 1: Get availability
-const fieldId = 1;
-const availability = await fieldAvailabilityService.getFieldAvailability(fieldId);
-console.log('Current availability:', availability);
-
-// Example 2: Set availability with hardcoded data
-const newAvailability: TimeSlotDTO[] = [
-  {
-    dayOfWeek: 'MONDAY',
-    openTime: fieldAvailabilityService.timeStringToHour('09:00'),
-    closeTime: fieldAvailabilityService.timeStringToHour('18:00')
-  },
-  {
-    dayOfWeek: 'TUESDAY',
-    openTime: fieldAvailabilityService.timeStringToHour('09:00'),
-    closeTime: fieldAvailabilityService.timeStringToHour('18:00')
-  },
-  {
-    dayOfWeek: 'WEDNESDAY',
-    openTime: fieldAvailabilityService.timeStringToHour('09:00'),
-    closeTime: fieldAvailabilityService.timeStringToHour('18:00')
-  },
-  {
-    dayOfWeek: 'THURSDAY',
-    openTime: fieldAvailabilityService.timeStringToHour('09:00'),
-    closeTime: fieldAvailabilityService.timeStringToHour('18:00')
-  },
-  {
-    dayOfWeek: 'FRIDAY',
-    openTime: fieldAvailabilityService.timeStringToHour('09:00'),
-    closeTime: fieldAvailabilityService.timeStringToHour('18:00')
-  },
-  {
-    dayOfWeek: 'SATURDAY',
-    openTime: fieldAvailabilityService.timeStringToHour('10:00'),
-    closeTime: fieldAvailabilityService.timeStringToHour('22:00')
-  },
-  {
-    dayOfWeek: 'SUNDAY',
-    openTime: fieldAvailabilityService.timeStringToHour('10:00'),
-    closeTime: fieldAvailabilityService.timeStringToHour('22:00')
-  }
-];
-
-// Example 3: Set availability with different time slots for the same day
-const complexAvailability: TimeSlotDTO[] = [
-  {
-    dayOfWeek: 'MONDAY',
-    openTime: fieldAvailabilityService.timeStringToHour('09:00'),
-    closeTime: fieldAvailabilityService.timeStringToHour('13:00')
-  },
-  {
-    dayOfWeek: 'MONDAY',
-    openTime: fieldAvailabilityService.timeStringToHour('15:00'),
-    closeTime: fieldAvailabilityService.timeStringToHour('20:00')
-  }
-];
-
-// To test setting availability:
-try {
-  await fieldAvailabilityService.setFieldAvailability(fieldId, newAvailability);
-  console.log('Availability set successfully');
-} catch (error) {
-  console.error('Failed to set availability:', error);
-}
-*/ 
