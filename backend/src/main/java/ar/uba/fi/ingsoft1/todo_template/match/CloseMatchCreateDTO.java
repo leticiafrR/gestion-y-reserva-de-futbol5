@@ -9,6 +9,6 @@ import lombok.Setter;
 @Data
 public class CloseMatchCreateDTO {
     private Long bookingId;
-    private Long teamOneId;  // Cambiado: ahora pasás solo el ID del equipo
+    private Long teamOneId;
     private Long teamTwoId;  
 }
