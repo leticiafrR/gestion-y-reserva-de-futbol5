@@ -11,6 +11,7 @@ import ar.uba.fi.ingsoft1.todo_template.team.Team;
 import ar.uba.fi.ingsoft1.todo_template.team.TeamRepository;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
+import ar.uba.fi.ingsoft1.todo_template.user.UserService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -18,9 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -28,20 +27,32 @@ public class MatchService {
 
     private final BookingRepository bookingRepo;
     private final UserRepository userRepo;
+    private final UserService userService;
     private final OpenMatchRepository openMatchRepo;
     private final CloseMatchRepository closeMatchRepo;
     private final TeamRepository teamRepo;
+    private final OpenMatchRepository openMatchRepository;
 
     @Transactional
-    public OpenMatch createOpenMatch(OpenMatchCreateDTO dto) {
+    public OpenMatch createOpenMatch(OpenMatchCreateDTO dto, String creatorUsername) {
+        User creator = userService.findByUsernameOrThrow(creatorUsername);
         Booking booking = bookingRepo.findById(dto.getBookingId()).orElseThrow();
-        User creator = userRepo.findById(dto.getCreatorId()).orElseThrow();
+
+        if (dto.getMinPlayers() < 10) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El mínimo de jugadores debe ser al menos 10.");
+        }
+
+        if (dto.getMaxPlayers() < dto.getMinPlayers()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe haber al menos 2 jugadores.");
+        }
 
         OpenMatch match = new OpenMatch();
         match.setBooking(booking);
         match.setPlayers(new ArrayList<>(List.of(creator)));
+        match.setMinPlayers(dto.getMinPlayers());
         match.setMaxPlayers(dto.getMaxPlayers());
-        return openMatchRepo.save(match);
+
+        return openMatchRepository.save(match);
     }
 
     @Transactional
@@ -50,14 +61,28 @@ public class MatchService {
         User user = userRepo.findById(userId).orElseThrow();
 
         if (match.getPlayers().contains(user)) {
-            throw new IllegalStateException("El usuario ya está inscripto");
+            throw new IllegalStateException("User is already in the match.");
         }
         if (match.getPlayers().size() >= match.getMaxPlayers()) {
-            throw new IllegalStateException("El partido ya está lleno");
+            throw new IllegalStateException("Match is already full.");
         }
 
         match.getPlayers().add(user);
         return openMatchRepo.save(match);
+    }
+
+    @Transactional
+    public OpenMatch leaveOpenMatch(Long matchId, Long userId) {
+        OpenMatch match = openMatchRepo.findById(matchId).orElseThrow();
+        User user = userRepo.findById(userId).orElseThrow();
+
+        if (!match.getPlayers().contains(user)) {
+            throw new IllegalStateException("User does not belong to match.");
+        }
+        match.getPlayers().remove(user);
+
+        return openMatchRepo.save(match);
+
     }
 
     @Transactional
@@ -83,6 +108,7 @@ public class MatchService {
     public List<OpenMatch> listOpenMatchesOfUser(Long userId) {
         return openMatchRepo.findByIsActiveTrueAndPlayers_Id(userId);
     }
+
     @Transactional
     public List<CloseMatch> getCloseMatchesByTeams(Long teamOneId, Long teamTwoId) {
         return closeMatchRepo.findByTeamOne_IdAndTeamTwo_Id(teamOneId, teamTwoId);

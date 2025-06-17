@@ -22,8 +22,7 @@ public class RefreshTokenService {
     RefreshTokenService(
             @Value("${jwt.refresh.expiration}") Long expiration,
             @Value("${jwt.refresh.bytes}") Integer byteSize,
-            RefreshTokenRepository refreshTokenRepository
-    ) {
+            RefreshTokenRepository refreshTokenRepository) {
         this.expiration = expiration;
         this.byteSize = byteSize;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -50,6 +49,6 @@ public class RefreshTokenService {
     }
 
     Instant getExpirationFor(Instant reference) {
-        return reference.plus(expiration, ChronoUnit.MILLIS);
+        return reference.plus(expiration, ChronoUnit.MINUTES);
     }
 }

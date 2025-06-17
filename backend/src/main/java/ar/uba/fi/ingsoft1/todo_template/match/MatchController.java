@@ -1,12 +1,18 @@
 package ar.uba.fi.ingsoft1.todo_template.match;
 
-import ar.uba.fi.ingsoft1.todo_template.dto.*;
+import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
 
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +36,11 @@ public class MatchController {
             @ApiResponse(responseCode = "200", description = "Partido abierto creado exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos")
     })
-    public OpenMatch createOpenMatch(@RequestBody OpenMatchCreateDTO dto) {
-        return matchService.createOpenMatch(dto);
+    public ResponseEntity<OpenMatch> createOpenMatch(
+            @Valid @RequestBody OpenMatchCreateDTO dto) {
+        String username = getAuthenticatedUser().username();
+        OpenMatch createdMatch = matchService.createOpenMatch(dto, username);
+        return ResponseEntity.ok(createdMatch);
     }
 
     @PostMapping("/open/{matchId}/join")
@@ -44,6 +53,18 @@ public class MatchController {
             @Parameter(description = "ID del partido abierto") @PathVariable Long matchId,
             @Parameter(description = "ID del usuario que se quiere unir") @RequestParam Long userId) {
         return matchService.joinOpenMatch(matchId, userId);
+    }
+
+    @DeleteMapping("/open/{matchId}/leave")
+    @Operation(summary = "Darse de baja de un partido abierto", description = "Permite a un usuario abandonar un partido abierto en el que estaba inscripto.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Usuario eliminado del partido exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Partido no encontrado")
+    })
+    public OpenMatch leaveOpenMatch(
+            @Parameter(description = "ID del partido abierto") @PathVariable Long matchId,
+            @Parameter(description = "ID del usuario que se quiere dar de baja.") @RequestParam Long userId) {
+        return matchService.leaveOpenMatch(matchId, userId);
     }
 
     @PostMapping("/close")
@@ -138,5 +159,10 @@ public class MatchController {
             @Parameter(description = "Mapa con asignaciones: clave = ID de usuario, valor = equipo (1 o 2)")
             @RequestBody Map<Long, Integer> manualAssignments) {
         return matchService.assignTeams(id, "manual", manualAssignments);
+    }
+
+    private JwtUserDetails getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (JwtUserDetails) authentication.getPrincipal();
     }
 }

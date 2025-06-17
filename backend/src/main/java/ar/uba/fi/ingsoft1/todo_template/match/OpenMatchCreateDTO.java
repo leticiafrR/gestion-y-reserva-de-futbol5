@@ -9,6 +9,6 @@ import java.util.List;
 @Setter
 public class OpenMatchCreateDTO {
     private Long bookingId;
-    private Long creatorId;        // Solo un jugador al inicio
     private Integer maxPlayers;
+    private Integer minPlayers;
 }

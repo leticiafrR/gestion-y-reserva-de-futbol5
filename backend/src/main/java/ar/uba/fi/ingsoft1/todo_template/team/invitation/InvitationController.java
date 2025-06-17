@@ -1,6 +1,6 @@
 package ar.uba.fi.ingsoft1.todo_template.team.invitation;
 
-import ar.uba.fi.ingsoft1.todo_template.team.TeamDetailsDTO;
+import ar.uba.fi.ingsoft1.todo_template.team.DTO.TeamDetailsDTO;
 import ar.uba.fi.ingsoft1.todo_template.team.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

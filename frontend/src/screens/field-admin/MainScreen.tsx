@@ -189,7 +189,7 @@ export const MainScreen = () => {
                 color: '#374151',
                 cursor: 'pointer'
               }}
-              onClick={() => (window.location.href = "/canchas")}>
+              onClick={() => navigate("/canchas")}>
                 <MapPin style={{ marginRight: '12px' }} size={16} />
                 Gestionar Canchas
               </button>
@@ -206,10 +206,28 @@ export const MainScreen = () => {
                   color: "#374151",
                   cursor: "pointer",
                 }}
-                onClick={() => (window.location.href = "/horarios")}
+                onClick={() => navigate("/horarios")}
               >
                 <Clock style={{ marginRight: "12px" }} size={16} />
                 Gestionar Horarios
+              </button>
+              <button
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  padding: "12px 16px",
+                  backgroundColor: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "6px",
+                  color: "#374151",
+                  cursor: "pointer",
+                }}
+                onClick={() => navigate("/bookings")}
+              >
+                <Calendar style={{ marginRight: "12px" }} size={16} />
+                Gestionar Reservas
               </button>
             </div>
           </div>
@@ -224,50 +242,57 @@ export const MainScreen = () => {
           }}>
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>Próximas Reservas</h2>
-              <p style={{ color: '#4b5563' }}>Reservas programadas para los próximos días</p>
+              <p style={{ color: '#4b5563' }}>Reservas programadas para hoy</p>
             </div>
             {bookingsError && (
               <div style={{ color: '#b91c1c', marginBottom: 12 }}>{bookingsError}</div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {sortedDates.length === 0 && <p>No hay reservas próximas.</p>}
-              {sortedDates.map(date => (
-                <div key={date}>
-                  <h3 style={{ fontWeight: 600, marginBottom: 8 }}>{date}</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {grouped[date].map(b => (
-                      <div
-                        key={b.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '16px',
-                          backgroundColor: b.active ? '#ecfdf5' : '#fffbeb',
-                          border: `1px solid ${b.active ? '#d1fae5' : '#fef3c7'}`,
-                          borderRadius: '8px',
-                        }}
-                      >
-                        <div>
-                          <p style={{ fontWeight: '600', color: '#111827' }}>Reserva #{b.id}</p>
-                          <p style={{ fontSize: '14px', color: '#4b5563' }}>
-                            {b.bookingHour}:00 - {b.bookingHour + 1}:00
-                          </p>
-                        </div>
-                        <span
+              {sortedDates.length === 0 && <p>No hay reservas para hoy.</p>}
+              {sortedDates.slice(0, 1).map(date => {
+                // Solo mostrar si la fecha es hoy
+                const today = new Date().toISOString().split('T')[0];
+                if (date !== today) {
+                  return <p key={date}>No hay reservas para hoy.</p>;
+                }
+                return (
+                  <div key={date}>
+                    <h3 style={{ fontWeight: 600, marginBottom: 8 }}>{date}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {grouped[date].map(b => (
+                        <div
+                          key={b.id}
                           style={{
-                            color: b.active ? '#047857' : '#b45309',
-                            fontWeight: '500',
-                            fontSize: '14px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '16px',
+                            backgroundColor: b.active ? '#ecfdf5' : '#fffbeb',
+                            border: `1px solid ${b.active ? '#d1fae5' : '#fef3c7'}`,
+                            borderRadius: '8px',
                           }}
                         >
-                          {b.active ? 'Confirmada' : 'Pendiente'}
-                        </span>
-                      </div>
-                    ))}
+                          <div>
+                            <p style={{ fontWeight: '600', color: '#111827' }}>Reserva #{b.id}</p>
+                            <p style={{ fontSize: '14px', color: '#4b5563' }}>
+                              {b.bookingHour}:00 - {b.bookingHour + 1}:00
+                            </p>
+                          </div>
+                          <span
+                            style={{
+                              color: b.active ? '#047857' : '#b45309',
+                              fontWeight: '500',
+                              fontSize: '14px',
+                            }}
+                          >
+                            {b.active ? 'Confirmada' : 'Pendiente'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

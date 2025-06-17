@@ -22,7 +22,7 @@ public class OpenMatch extends Match {
     private List<User> players;
 
     @Column(nullable = false)
-    private Integer minPlayers = 10;
+    private Integer minPlayers;
 
     @Column(nullable = false)
     private Integer maxPlayers;

@@ -1,5 +1,6 @@
-package ar.uba.fi.ingsoft1.todo_template.team;
+package ar.uba.fi.ingsoft1.todo_template.team.DTO;
 
+import ar.uba.fi.ingsoft1.todo_template.team.Team;
 import lombok.Getter;
 import lombok.Setter;
 
