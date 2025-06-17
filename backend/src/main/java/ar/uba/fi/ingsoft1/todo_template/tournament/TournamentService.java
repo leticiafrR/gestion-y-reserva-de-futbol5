@@ -62,7 +62,6 @@ public class TournamentService {
         }
         TeamTournamentId id = new TeamTournamentId(team.getId(), tournament.getId());
         TeamRegisteredTournament registration = TeamRegisteredTournament.builder()
-                .id(id)
                 .team(team)
                 .tournament(tournament)
                 .build();

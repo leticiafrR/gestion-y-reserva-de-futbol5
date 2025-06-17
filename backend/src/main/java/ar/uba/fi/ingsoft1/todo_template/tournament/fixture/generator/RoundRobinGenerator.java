@@ -1,7 +1,7 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture.generator;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegistration;
+import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatch;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchStatus;
 import org.springframework.stereotype.Component;
@@ -12,7 +12,7 @@ import java.util.List;
 @Component
 public class RoundRobinGenerator implements FixtureGenerator {
     @Override
-    public List<TournamentMatch> generateFixture(Tournament tournament, List<TeamRegistration> teams) {
+    public List<TournamentMatch> generateFixture(Tournament tournament, List<TeamRegisteredTournament> teams) {
         List<TournamentMatch> matches = new ArrayList<>();
         int numTeams = teams.size();
         int numRounds = numTeams - 1;
@@ -29,7 +29,7 @@ public class RoundRobinGenerator implements FixtureGenerator {
             }
         }
 
-        List<TeamRegistration> rotatingTeams = new ArrayList<>(teams);
+        List<TeamRegisteredTournament> rotatingTeams = new ArrayList<>(teams);
         for (int round = 0; round < numRounds; round++) {
             for (int match = 0; match < matchesPerRound; match++) {
                 int homeIndex = match;

@@ -1,7 +1,7 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegistration;
+import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,12 +21,19 @@ public class TournamentMatch {
     private Tournament tournament;
 
     @ManyToOne
-    @JoinColumn(name = "home_team_id")
-    private TeamRegistration homeTeam;
+    @JoinColumns({
+            @JoinColumn(name = "home_team_id", referencedColumnName = "team_id"),
+            @JoinColumn(name = "home_tournament_id", referencedColumnName = "tournament_id")
+    })
+    private TeamRegisteredTournament homeTeam;
 
     @ManyToOne
-    @JoinColumn(name = "away_team_id")
-    private TeamRegistration awayTeam;
+    @JoinColumns({
+            @JoinColumn(name = "away_team_id", referencedColumnName = "team_id"),
+            @JoinColumn(name = "away_tournament_id", referencedColumnName = "tournament_id")
+    })
+    private TeamRegisteredTournament awayTeam;
+
 
     @ManyToOne
     @JoinColumn(name = "field_id")

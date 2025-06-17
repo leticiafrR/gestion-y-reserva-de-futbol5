@@ -45,7 +45,7 @@ public class Tournament {
     private boolean openInscription = true;
 
     @Column(nullable = false)
-    private int registeredTeams;
+    private int registeredTeams = 0;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "organizer_id", nullable = false)

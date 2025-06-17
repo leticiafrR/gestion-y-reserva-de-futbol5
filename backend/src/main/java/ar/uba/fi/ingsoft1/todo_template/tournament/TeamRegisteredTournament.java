@@ -1,16 +1,8 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament;
 
 import ar.uba.fi.ingsoft1.todo_template.team.Team;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Getter
@@ -31,4 +23,16 @@ public class TeamRegisteredTournament {
     @MapsId("teamId")
     @JoinColumn(name = "team_id")
     private Team team;
+
+    // Estadísticas del equipo
+    private int points = 0;
+    private int goalsFor = 0;
+    private int goalsAgainst = 0;
+    private int wins = 0;
+    private int draws = 0;
+    private int losses = 0;
+
+    public int getGoalDifference() {
+        return goalsFor - goalsAgainst;
+    }
 }
