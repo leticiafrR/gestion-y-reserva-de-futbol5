@@ -87,6 +87,10 @@ public class MatchService {
             throw new IllegalStateException("User does not belong to match.");
         }
 
+        if (match.getPlayers().size() >= match.getMinPlayers()) {
+            throw new IllegalStateException("Match is already confirmed.");
+        }
+
         User matchOwner = match.getBooking().getUser();
 
         if (matchOwner == user) {
@@ -185,14 +189,24 @@ public class MatchService {
     }
 
     public void notifyTeams(OpenMatch match) {
-
-        if (match.getTeamOne() == null || match.getTeamTwo() == null ||
-                match.getTeamOne().getMembers().size() != 5 || match.getTeamTwo().getMembers().size() != 5) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Los equipos deben tener exactamente 5 miembros cada uno.");
+        if (match.getTeamOne() == null || match.getTeamTwo() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Both teams have to be present.");
         }
-
+        int totalPlayers = match.getPlayers().size();
+        int teamOneSize = match.getTeamOne().getMembers().size();
+        int teamTwoSize = match.getTeamTwo().getMembers().size();
+        if (teamOneSize != teamTwoSize) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Teams must have the same amount of players.");
+        }
+        if (totalPlayers % 2 != 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "There should be an even number of players.");
+        }
+        if (totalPlayers < match.getMinPlayers() || totalPlayers > match.getMaxPlayers()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The amount of players must be within the match ranges.");
+        }
         sendNotifications(match);
     }
+
 
     private void sendNotifications(OpenMatch match) {
         List<User> todos = new ArrayList<>();
