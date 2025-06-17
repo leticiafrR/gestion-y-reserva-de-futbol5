@@ -28,15 +28,8 @@ public class OpenMatch extends Match {
     private Integer maxPlayers;
 
     @ManyToOne
-    private Team teamOne;
+    private OpenMatchTeam teamOne;
 
     @ManyToOne
-    private Team teamTwo;
-
-    public void getTeamOne(Team team) {
-        this.teamOne = team;
-    }
-    public void getTeamTwo(Team team) {
-        this.teamTwo = team;
-    }
+    private OpenMatchTeam teamTwo;
 }
