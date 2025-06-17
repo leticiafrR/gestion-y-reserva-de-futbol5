@@ -1,6 +1,8 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament;
 
 import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
+import ar.uba.fi.ingsoft1.todo_template.team.Team;
+import ar.uba.fi.ingsoft1.todo_template.team.TeamRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.update.TournamentUpdateCommand;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
@@ -18,10 +20,54 @@ import java.util.List;
 public class TournamentService {
     private final TournamentRepository tournamentRepository;
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
+    private final TeamRegisteredTournamentRepository teamRegisteredTournamentRepository;
 
-    public TournamentService(TournamentRepository tournamentRepository, UserRepository userRepository) {
+    public TournamentService(TournamentRepository tournamentRepository, UserRepository userRepository,
+            TeamRepository teamRepository, TeamRegisteredTournamentRepository teamRegisteredTournamentRepository) {
         this.tournamentRepository = tournamentRepository;
         this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
+        this.teamRegisteredTournamentRepository = teamRegisteredTournamentRepository;
+    }
+
+    public boolean isTeamAlreadyRegistered(Long teamId, Long tournamentId) {
+        TeamTournamentId id = new TeamTournamentId(teamId, tournamentId);
+        return teamRegisteredTournamentRepository.existsById(id);
+    }
+
+    private void checkConditionsToResgitTeam(String authenticatedUsername, Tournament tournament,
+            String captainUsername) {
+        if (!authenticatedUsername.equals(captainUsername)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only the team's captain can regist the team into a tournament. " + authenticatedUsername
+                            + " isn't the captain " + captainUsername);
+        }
+        if (!tournament.addNewTeamRegisted()) { // ya se agregó uno a la cantidad de equipos registrados
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tournament is full, cannot register more teams");
+        }
+    }
+
+    public void regist_team_into_tournament(Long team_id, Long tournament_id) {
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
+        Team team = teamRepository.findById(team_id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+        Tournament tournament = tournamentRepository.findById(tournament_id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
+
+        checkConditionsToResgitTeam(username, tournament, team.getCaptain());
+        if (isTeamAlreadyRegistered(team_id, tournament_id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Team already registered into the indicated tournament");
+        }
+        TeamTournamentId id = new TeamTournamentId(team.getId(), tournament.getId());
+        TeamRegisteredTournament registration = TeamRegisteredTournament.builder()
+                .id(id)
+                .team(team)
+                .tournament(tournament)
+                .build();
+
+        teamRegisteredTournamentRepository.save(registration);
     }
 
     public Tournament createTournament(TournamentCreateDTO dto) {

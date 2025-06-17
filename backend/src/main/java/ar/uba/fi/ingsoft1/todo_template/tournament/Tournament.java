@@ -44,6 +44,9 @@ public class Tournament {
     @Column(nullable = false)
     private boolean openInscription = true;
 
+    @Column(nullable = false)
+    private int registeredTeams;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "organizer_id", nullable = false)
     private User organizer;
@@ -55,6 +58,7 @@ public class Tournament {
         this.maxTeams = maxTeams;
         this.organizer = organizer;
         this.openInscription = true;
+        this.registeredTeams = 0;
     }
 
     public boolean hasStarted() {
@@ -83,4 +87,12 @@ public class Tournament {
         }
         return TournamentState.IN_PROGRESS;
     }
+
+    public Boolean addNewTeamRegisted() {
+        if (this.registeredTeams >= maxTeams)
+            return false;
+        registeredTeams += 1;
+        return true;
+    }
+
 }
