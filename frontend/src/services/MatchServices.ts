@@ -45,7 +45,12 @@ const fetchAvailableMatches = async () => {
     }
     return true;
   });
-  return filtered;
+  
+  // Agregar el tipo de partido
+  return filtered.map((match: any) => ({
+    ...match,
+    matchType: "open"
+  }));
 };
 
 export const useAvailableMatches = () =>
@@ -108,7 +113,18 @@ const fetchMyMatches = async () => {
     return false;
   });
 
-  return [...filteredOpen, ...filteredClosed];
+  // Agregar el tipo de partido
+  const openWithType = filteredOpen.map((match: any) => ({
+    ...match,
+    matchType: "open"
+  }));
+  
+  const closedWithType = filteredClosed.map((match: any) => ({
+    ...match,
+    matchType: "closed"
+  }));
+
+  return [...openWithType, ...closedWithType];
 };
 
 export const useMyMatches = () =>
@@ -121,8 +137,6 @@ export const useJoinMatch = () => {
   const [isPending, setIsPending] = useState(false)
 
   const mutateAsync = async (matchId: string, userId: number) => {
-    console.log("matchId:", matchId)
-    console.log("userId:", userId)
     setIsPending(true)
     try {
       const accessToken = getAuthToken()
@@ -286,8 +300,6 @@ export const useLeaveMatch = () => {
   const [isPending, setIsPending] = useState(false)
 
   const mutateAsync = async (matchId: string, userId: number) => {
-    console.log("matchId:", matchId)
-    console.log("userId:", userId)
     setIsPending(true)
     try {
       const accessToken = getAuthToken()

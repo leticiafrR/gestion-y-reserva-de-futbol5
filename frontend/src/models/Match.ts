@@ -84,6 +84,7 @@ export interface Match {
     maxPlayers: number
     teamOne: any | null
     teamTwo: any | null
+    matchType?: "open" | "closed"
 }
 
 export interface Organizer {

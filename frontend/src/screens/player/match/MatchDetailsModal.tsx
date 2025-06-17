@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, Users, MapPin, Clock, DollarSign, Settings, CheckCircle, UserMinus, UserPlus } from "lucide-react"
 import { useJoinMatch, useLeaveMatch, useConfirmMatch } from "@/services/MatchServices"
 import { TeamAssignmentModal } from "@/screens/player/match/TeamAssignmentModal"
@@ -21,17 +21,22 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   const confirmMatch = useConfirmMatch()
   const queryClient = useQueryClient()
 
+  // Sincronizar localMatch con el prop match cuando cambie
+  useEffect(() => {
+    setLocalMatch(match)
+  }, [match])
+
   const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
 
   const basePlayers =
-    (Array.isArray(match.teamOne?.members) && match.teamOne.members.length > 0) ||
-    (Array.isArray(match.teamTwo?.members) && match.teamTwo.members.length > 0)
+    (Array.isArray(localMatch.teamOne?.members) && localMatch.teamOne.members.length > 0) ||
+    (Array.isArray(localMatch.teamTwo?.members) && localMatch.teamTwo.members.length > 0)
       ? [
-          ...(Array.isArray(match.teamOne?.members) ? match.teamOne.members : []),
-          ...(Array.isArray(match.teamTwo?.members) ? match.teamTwo.members : [])
+          ...(Array.isArray(localMatch.teamOne?.members) ? localMatch.teamOne.members : []),
+          ...(Array.isArray(localMatch.teamTwo?.members) ? localMatch.teamTwo.members : [])
         ]
-      : Array.isArray(match.players)
-        ? match.players
+      : Array.isArray(localMatch.players)
+        ? localMatch.players
         : [];
 
   const allPlayers = basePlayers;
@@ -39,33 +44,42 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   const normalize = (str: string | undefined) => (str || "").trim().toLowerCase();
 
   const isParticipant = allPlayers.some((p: any) => p.username === userProfile.email);
-  const isOrganizer = match.booking.user.username === userProfile.email;
-  const canAssignTeams = isOrganizer && allPlayers.length >= match.minPlayers;
-  const canJoin = match.isActive && allPlayers.length < match.maxPlayers && !isOrganizer;
-  const canLeave = !isOrganizer && isParticipant && match.isActive;
+  const isOrganizer = localMatch.booking.user.username === userProfile.email;
+  // Un partido abierto con equipos asignados se considera confirmado
+  const hasAssignedTeams = (localMatch.teamOne?.members && localMatch.teamOne.members.length > 0) || 
+                          (localMatch.teamTwo?.members && localMatch.teamTwo.members.length > 0);
+  const isOpenMatch = localMatch.matchType === "open" && !hasAssignedTeams;
+  const isConfirmedMatch = hasAssignedTeams;
+  const canAssignTeams = isOrganizer && allPlayers.length >= localMatch.minPlayers && isOpenMatch;
+  const canJoin = localMatch.isActive && allPlayers.length < localMatch.maxPlayers && !isOrganizer && isOpenMatch;
+  const canLeave = !isOrganizer && isParticipant && localMatch.isActive && isOpenMatch;
 
   const getStatusColor = () => {
-    if (!match.isActive) return "#dc3545"
-    if (Array.isArray(match.players) && match.players.length >= match.maxPlayers) return "#ffc107"
+    if (!localMatch.isActive) return "#dc3545"
+    if (Array.isArray(localMatch.players) && localMatch.players.length >= localMatch.maxPlayers) return "#ffc107"
     return "#28a745"
   }
 
   const getStatusText = () => {
-    if (!match.isActive) return "Partido cancelado"
-    if (Array.isArray(match.players) && match.players.length >= match.maxPlayers) return "Partido completo"
-    return "Abierto para inscripciones"
+    if (!localMatch.isActive) return "Partido cancelado"
+    if (isConfirmedMatch) return "Partido confirmado"
+    if (isOpenMatch) {
+      if (Array.isArray(localMatch.players) && localMatch.players.length >= localMatch.maxPlayers) return "Partido completo"
+      return "Abierto para inscripciones"
+    }
+    return "Partido confirmado" // Para partidos cerrados
   }
 
   const handleJoinMatch = async () => {
     setIsLoading(true)
     try {
-      await joinMatch.mutateAsync(String(match.id), 1)
+      await joinMatch.mutateAsync(String(localMatch.id), 1)
       // Update local state
       setLocalMatch({
         ...localMatch,
         players: [
           ...(Array.isArray(localMatch.players) ? localMatch.players : []),
-          match.booking.user
+          localMatch.booking.user
         ],
       })
       queryClient.invalidateQueries({ queryKey: ['availableMatches'] })
@@ -80,11 +94,11 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   const handleLeaveMatch = async () => {
     setIsLoading(true)
     try {
-      await leaveMatch.mutateAsync(String(match.id), 1)
+      await leaveMatch.mutateAsync(String(localMatch.id), 1)
       // Update local state
       setLocalMatch({
         ...localMatch,
-        players: Array.isArray(localMatch.players) ? localMatch.players.filter((p) => p.id !== match.booking.user.id) : [],
+        players: Array.isArray(localMatch.players) ? localMatch.players.filter((p) => p.id !== localMatch.booking.user.id) : [],
       })
       queryClient.invalidateQueries({ queryKey: ['availableMatches'] })
       queryClient.invalidateQueries({ queryKey: ['myMatches'] })
@@ -139,7 +153,7 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   const handleConfirmMatch = async () => {
     setIsLoading(true)
     try {
-      await confirmMatch.mutateAsync(String(match.id))
+      await confirmMatch.mutateAsync(String(localMatch.id))
       setLocalMatch({
         ...localMatch,
         isActive: true,
@@ -153,15 +167,33 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
     }
   }
 
-  console.log({
-    userProfile,
-    organizerUsername: match.booking.user.username,
-    isOrganizer,
-    isParticipant,
-    canAssignTeams,
-    canJoin,
-    allPlayers
-  });
+  const handleMatchUpdate = (updatedMatch: Match) => {
+
+    setLocalMatch(updatedMatch)
+    // Invalidar las queries para refrescar los datos
+    queryClient.invalidateQueries({ queryKey: ["availableMatches"] })
+    queryClient.invalidateQueries({ queryKey: ["userMatches"] })
+    // Toast de confirmación
+    const toast = document.createElement('div')
+    toast.style.position = 'fixed'
+    toast.style.top = '20px'
+    toast.style.right = '20px'
+    toast.style.backgroundColor = '#28a745'
+    toast.style.color = 'white'
+    toast.style.padding = '12px 24px'
+    toast.style.borderRadius = '8px'
+    toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+    toast.style.zIndex = '2000'
+    toast.style.fontSize = '16px'
+    toast.style.fontWeight = '500'
+    toast.textContent = '✅ Equipos asignados exitosamente'
+    document.body.appendChild(toast)
+    setTimeout(() => {
+      toast.style.opacity = '0'
+      toast.style.transition = 'opacity 0.3s ease-out'
+      setTimeout(() => document.body.removeChild(toast), 300)
+    }, 3000)
+  }
 
   return (
     <>
@@ -227,11 +259,11 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                     borderRadius: "12px",
                   }}
                 >
-                  {!match.teamOne && !match.teamTwo ? "Partido Abierto" : "Partido Cerrado"}
+                  {isOpenMatch ? "Partido Abierto" : isConfirmedMatch ? "Confirmado" : "Partido Cerrado"}
                 </span>
               </div>
               <h2 style={{ margin: "0 0 8px 0", fontSize: "20px", fontWeight: "600", color: "#212529" }}>
-                {match.booking.timeSlot.field.name}
+                {localMatch.booking.timeSlot.field.name}
               </h2>
               <p style={{ margin: 0, color: "#6c757d", fontSize: "14px" }}>{getStatusText()}</p>
             </div>
@@ -261,7 +293,7 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <Clock size={20} color="#6c757d" />
                   <span style={{ fontSize: "14px", color: "#212529" }}>
-                    {new Date(match.booking.bookingDate).toLocaleDateString("es-ES", {
+                    {new Date(localMatch.booking.bookingDate).toLocaleDateString("es-ES", {
                       weekday: "long",
                       year: "numeric",
                       month: "long",
@@ -272,7 +304,7 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <Clock size={20} color="#6c757d" />
                   <span style={{ fontSize: "14px", color: "#212529" }}>
-                    {match.booking.bookingHour}:00
+                    {localMatch.booking.bookingHour}:00
                   </span>
                 </div>
               </div>
@@ -286,7 +318,7 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <MapPin size={20} color="#6c757d" />
                 <span style={{ fontSize: "14px", color: "#212529" }}>
-                  {match.booking.timeSlot.field.address}
+                  {localMatch.booking.timeSlot.field.address}
                 </span>
               </div>
             </div>
@@ -294,16 +326,16 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
             {/* Players/Teams */}
             <div style={{ marginBottom: "24px" }}>
               <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600", color: "#212529" }}>
-                {!match.teamOne && !match.teamTwo ? "Jugadores" : "Equipos"}
+                {isOpenMatch ? "Jugadores" : "Equipos"}
               </h3>
               
-              {!match.teamOne && !match.teamTwo ? (
+              {isOpenMatch ? (
                 // Open match - show players list
                 <>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
                     <Users size={20} color="#6c757d" />
                     <span style={{ fontSize: "14px", color: "#212529" }}>
-                      {allPlayers.length} / {match.maxPlayers} jugadores
+                      {allPlayers.length} / {localMatch.maxPlayers} jugadores
                     </span>
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -356,7 +388,7 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                         backgroundColor: "#1976d2",
                         borderRadius: "50%"
                       }}></div>
-                      Equipo 1 ({Array.isArray(match.teamOne?.members) ? match.teamOne.members.length : 0} jugadores)
+                      Equipo 1 ({Array.isArray(localMatch.teamOne?.members) ? localMatch.teamOne.members.length : 0} jugadores)
                     </h4>
                     <div style={{ 
                       padding: "12px", 
@@ -364,8 +396,8 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                       borderRadius: "8px",
                       border: "1px solid #bbdefb"
                     }}>
-                      {Array.isArray(match.teamOne?.members) ? (
-                        match.teamOne.members.map((player: any) => (
+                      {Array.isArray(localMatch.teamOne?.members) ? (
+                        localMatch.teamOne.members.map((player: any) => (
                           <div
                             key={player.id}
                             style={{
@@ -413,7 +445,7 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                         backgroundColor: "#f57c00",
                         borderRadius: "50%"
                       }}></div>
-                      Equipo 2 ({Array.isArray(match.teamTwo?.members) ? match.teamTwo.members.length : 0} jugadores)
+                      Equipo 2 ({Array.isArray(localMatch.teamTwo?.members) ? localMatch.teamTwo.members.length : 0} jugadores)
                     </h4>
                     <div style={{ 
                       padding: "12px", 
@@ -421,8 +453,8 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
                       borderRadius: "8px",
                       border: "1px solid #ffcc02"
                     }}>
-                      {Array.isArray(match.teamTwo?.members) ? (
-                        match.teamTwo.members.map((player: any) => (
+                      {Array.isArray(localMatch.teamTwo?.members) ? (
+                        localMatch.teamTwo.members.map((player: any) => (
                           <div
                             key={player.id}
                             style={{
@@ -544,6 +576,7 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
             setLocalMatch(updatedMatch)
             setShowTeamAssignment(false)
           }}
+          onMatchUpdate={handleMatchUpdate}
         />
       )}
     </>

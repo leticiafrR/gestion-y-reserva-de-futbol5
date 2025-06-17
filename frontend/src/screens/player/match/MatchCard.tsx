@@ -2,13 +2,13 @@
 
 import type React from "react"
 import ReactDOM from "react-dom"
+import { useEffect, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Calendar, Clock, MapPin, Users, User, Crown, Trophy, Settings } from "lucide-react"
 import type { Match, Player } from "@/models/Match"
 import { useJoinMatch, useLeaveMatch } from "@/services/MatchServices"
 import { TeamAssignmentModal } from "@/screens/player/match/TeamAssignmentModal"
-import { useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 
 interface MatchCardProps {
   match: Match
@@ -24,6 +24,11 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
   const [localMatch, setLocalMatch] = useState(match)
   const queryClient = useQueryClient()
 
+  // Sincronizar localMatch con el prop match cuando cambie
+  useEffect(() => {
+    setLocalMatch(match)
+  }, [match])
+
   const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
 
   const normalizeMail = (mail: string | undefined) => (mail || "").trim().toLowerCase();
@@ -34,7 +39,7 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
   const handleJoinMatch = async (e: React.MouseEvent) => {
     e.stopPropagation()
     try {
-      await joinMatch.mutateAsync(String(match.id), 1)
+      await joinMatch.mutateAsync(String(localMatch.id), 1)
       // Toast de éxito
       const toast = document.createElement('div')
       toast.style.position = 'fixed'
@@ -85,7 +90,7 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
   const handleLeaveMatch = async (e: React.MouseEvent) => {
     e.stopPropagation()
     try {
-      await leaveMatch.mutateAsync(String(match.id), 1)
+      await leaveMatch.mutateAsync(String(localMatch.id), 1)
       // Toast de éxito
       const toast = document.createElement('div')
       toast.style.position = 'fixed'
@@ -134,59 +139,72 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
   }
 
   const getStatusColor = () => {
-    if (!match.isActive) return "#dc3545"
-    if (allPlayers.length >= match.maxPlayers) return "#ffc107"
+    if (!localMatch.isActive) return "#dc3545"
+    if (allPlayers.length >= localMatch.maxPlayers) return "#ffc107"
     return "#28a745"
   }
 
-  const isOpenMatch = !match.teamOne && !match.teamTwo;
+  const hasAssignedTeams = (localMatch.teamOne?.members && localMatch.teamOne.members.length > 0) || 
+                          (localMatch.teamTwo?.members && localMatch.teamTwo.members.length > 0);
+  const isOpenMatch = localMatch.matchType === "open" && !hasAssignedTeams;
+  const isConfirmedMatch = hasAssignedTeams;
 
   const getStatusText = () => {
-    if (!match.isActive) return "Cancelado";
+    if (!localMatch.isActive) return "Cancelado";
+    if (isConfirmedMatch) return "Confirmado";
     if (isOpenMatch) {
-      if (allPlayers.length >= match.maxPlayers) return "Completo";
+      if (allPlayers.length >= localMatch.maxPlayers) return "Completo";
       return "Por completar";
     }
+    return "Confirmado"; // Para partidos cerrados
   }
 
   const allPlayers =
-    (Array.isArray(match.teamOne?.members) && match.teamOne.members.length > 0) ||
-    (Array.isArray(match.teamTwo?.members) && match.teamTwo.members.length > 0)
+    (Array.isArray(localMatch.teamOne?.members) && localMatch.teamOne.members.length > 0) ||
+    (Array.isArray(localMatch.teamTwo?.members) && localMatch.teamTwo.members.length > 0)
       ? [
-          ...(Array.isArray(match.teamOne?.members) ? match.teamOne.members : []),
-          ...(Array.isArray(match.teamTwo?.members) ? match.teamTwo.members : [])
+          ...(Array.isArray(localMatch.teamOne?.members) ? localMatch.teamOne.members : []),
+          ...(Array.isArray(localMatch.teamTwo?.members) ? localMatch.teamTwo.members : [])
         ]
-      : Array.isArray(match.players)
-        ? match.players
+      : Array.isArray(localMatch.players)
+        ? localMatch.players
         : [];
 
         const isParticipant = allPlayers.some((p: any) => p.username === userProfile.email);
-        const isOrganizer = match.booking.user.username === userProfile.email;
-        const canAssignTeams = isOrganizer && allPlayers.length >= match.minPlayers;
-        const canJoin = match.isActive && allPlayers.length < match.maxPlayers && !isOrganizer;
-        const canLeave = !isOrganizer && isParticipant && match.isActive;
+        const isOrganizer = localMatch.booking.user.username === userProfile.email;
+        const canAssignTeams = isOrganizer && allPlayers.length >= localMatch.minPlayers && isOpenMatch;
+        const canJoin = localMatch.isActive && allPlayers.length < localMatch.maxPlayers && !isOrganizer && isOpenMatch;
+        const canLeave = !isOrganizer && isParticipant && localMatch.isActive && isOpenMatch;
 
-  console.log("allPlayers (detallado):", allPlayers);
 
-  console.log("Debug info:", {
-    userEmail,
-    userUsername,
-    organizerUsername: match.booking.user.username,
-    organizerEmail: match.booking.user.email,
-    isOrganizer,
-    isParticipant,
-    canJoin,
-    canLeave,
-    canAssignTeams,
-    showJoinButton,
-    allPlayersLength: allPlayers.length,
-    minPlayers: match.minPlayers,
-    maxPlayers: match.maxPlayers,
-    isActive: match.isActive,
-    hasTeamOne: !!match.teamOne,
-    hasTeamTwo: !!match.teamTwo,
-    allPlayers: allPlayers.map(p => ({ email: p.email, username: p.username }))
-  });
+
+
+  const handleMatchUpdate = (updatedMatch: Match) => {
+    setLocalMatch(updatedMatch)
+    // Invalidar las queries para refrescar los datos
+    queryClient.invalidateQueries({ queryKey: ["availableMatches"] })
+    queryClient.invalidateQueries({ queryKey: ["userMatches"] })
+    // Toast de confirmación
+    const toast = document.createElement('div')
+    toast.style.position = 'fixed'
+    toast.style.top = '20px'
+    toast.style.right = '20px'
+    toast.style.backgroundColor = '#28a745'
+    toast.style.color = 'white'
+    toast.style.padding = '12px 24px'
+    toast.style.borderRadius = '8px'
+    toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+    toast.style.zIndex = '2000'
+    toast.style.fontSize = '16px'
+    toast.style.fontWeight = '500'
+    toast.textContent = '✅ Equipos asignados exitosamente'
+    document.body.appendChild(toast)
+    setTimeout(() => {
+      toast.style.opacity = '0'
+      toast.style.transition = 'opacity 0.3s ease-out'
+      setTimeout(() => document.body.removeChild(toast), 300)
+    }, 3000)
+  }
 
   return (
     <div
@@ -239,15 +257,15 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
       >
         <div
           style={{
-            backgroundColor: !match.teamOne && !match.teamTwo ? "#e3f2fd" : "#fff3e0",
-            color: !match.teamOne && !match.teamTwo ? "#1976d2" : "#f57c00",
+            backgroundColor: isOpenMatch ? "#e3f2fd" : isConfirmedMatch ? "#d4edda" : "#fff3e0",
+            color: isOpenMatch ? "#1976d2" : isConfirmedMatch ? "#155724" : "#f57c00",
             padding: "4px 8px",
             borderRadius: "6px",
             fontSize: "12px",
             fontWeight: "600",
           }}
         >
-          {!match.teamOne && !match.teamTwo ? "Partido Abierto" : "Partido Cerrado"}
+          {isOpenMatch ? "Partido Abierto" : isConfirmedMatch ? "Confirmado" : "Partido Cerrado"}
         </div>
         {isOrganizer && (
           <div
@@ -291,7 +309,7 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
           lineHeight: "1.3",
         }}
       >
-        {match.booking.timeSlot.field.name}
+        {localMatch.booking.timeSlot.field.name}
       </h3>
 
       {/* Date and Time */}
@@ -306,7 +324,7 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <Calendar size={16} color="#6c757d" />
           <span style={{ fontSize: "14px", color: "#212529" }}>
-            {new Date(match.booking.bookingDate).toLocaleDateString("es-ES", {
+            {new Date(localMatch.booking.bookingDate).toLocaleDateString("es-ES", {
               weekday: "long",
               year: "numeric",
               month: "long",
@@ -317,7 +335,7 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <Clock size={16} color="#6c757d" />
           <span style={{ fontSize: "14px", color: "#212529" }}>
-            {match.booking.bookingHour}:00
+            {localMatch.booking.bookingHour}:00
           </span>
         </div>
       </div>
@@ -333,12 +351,12 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
       >
         <MapPin size={16} color="#6c757d" />
         <span style={{ fontSize: "14px", color: "#212529" }}>
-          {match.booking.timeSlot.field.address}
+          {localMatch.booking.timeSlot.field.address}
         </span>
       </div>
 
       {/* Players */}
-      {!match.teamOne && !match.teamTwo && (
+      {isOpenMatch && (
         <div
           style={{
             display: "flex",
@@ -349,7 +367,7 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
         >
           <Users size={16} color="#6c757d" />
           <span style={{ fontSize: "14px", color: "#212529" }}>
-            {allPlayers.length} / {match.maxPlayers} jugadores
+            {allPlayers.length} / {localMatch.maxPlayers} jugadores
           </span>
         </div>
       )}
@@ -424,7 +442,9 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
               const updatedMatch = { ...localMatch, teams }
               setLocalMatch(updatedMatch)
               setShowTeamAssignment(false)
+              handleMatchUpdate(updatedMatch)
             }}
+            onMatchUpdate={handleMatchUpdate}
           />,
           document.body
         )
