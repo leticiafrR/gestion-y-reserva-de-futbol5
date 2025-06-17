@@ -8,7 +8,6 @@ import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournamentRepos
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
 import ar.uba.fi.ingsoft1.todo_template.field.FieldRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.generator.*;
-import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchResultDTO;
 import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,7 +29,7 @@ public class FixtureService {
     private final Map<TournamentFormat, FixtureGenerator> fixtureGenerators;
 
     private static final LocalTime MATCH_START_TIME = LocalTime.of(18, 0); // 6:00 PM
-    private static final int MATCH_DURATION_HOURS = 1;
+    private static final int MATCH_DURATION_MINS = 90;
     private static final int MATCHES_PER_DAY = 4;
 
     public FixtureService(
@@ -90,7 +89,7 @@ public class FixtureService {
             }
 
             match.setScheduledDateTime(currentDateTime);
-            currentDateTime = currentDateTime.plusHours(MATCH_DURATION_HOURS);
+            currentDateTime = currentDateTime.plusMinutes(MATCH_DURATION_MINS);
             matchesScheduledToday++;
         }
 
