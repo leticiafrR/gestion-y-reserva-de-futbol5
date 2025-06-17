@@ -50,9 +50,9 @@ public class MatchController {
             @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     })
     public OpenMatch joinOpenMatch(
-            @Parameter(description = "ID del partido abierto") @PathVariable Long matchId,
-            @Parameter(description = "ID del usuario que se quiere unir") @RequestParam Long userId) {
-        return matchService.joinOpenMatch(matchId, userId);
+            @Parameter(description = "ID del partido abierto") @PathVariable Long matchId) {
+        String username = getAuthenticatedUser().username();
+        return matchService.joinOpenMatch(matchId, username);
     }
 
     @DeleteMapping("/open/{matchId}/leave")
@@ -62,9 +62,9 @@ public class MatchController {
             @ApiResponse(responseCode = "404", description = "Partido no encontrado")
     })
     public OpenMatch leaveOpenMatch(
-            @Parameter(description = "ID del partido abierto") @PathVariable Long matchId,
-            @Parameter(description = "ID del usuario que se quiere dar de baja.") @RequestParam Long userId) {
-        return matchService.leaveOpenMatch(matchId, userId);
+            @Parameter(description = "ID del partido abierto") @PathVariable Long matchId) {
+        String username = getAuthenticatedUser().username();
+        return matchService.leaveOpenMatch(matchId, username);
     }
 
     @PostMapping("/close")

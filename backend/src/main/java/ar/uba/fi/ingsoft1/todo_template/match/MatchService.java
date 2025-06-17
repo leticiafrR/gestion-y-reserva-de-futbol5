@@ -56,9 +56,9 @@ public class MatchService {
     }
 
     @Transactional
-    public OpenMatch joinOpenMatch(Long matchId, Long userId) {
+    public OpenMatch joinOpenMatch(Long matchId, String creatorUsername) {
         OpenMatch match = openMatchRepo.findById(matchId).orElseThrow();
-        User user = userRepo.findById(userId).orElseThrow();
+        User user = userService.findByUsernameOrThrow(creatorUsername);
 
         if (match.getPlayers().contains(user)) {
             throw new IllegalStateException("User is already in the match.");
@@ -72,9 +72,9 @@ public class MatchService {
     }
 
     @Transactional
-    public OpenMatch leaveOpenMatch(Long matchId, Long userId) {
+    public OpenMatch leaveOpenMatch(Long matchId, String creatorUsername) {
         OpenMatch match = openMatchRepo.findById(matchId).orElseThrow();
-        User user = userRepo.findById(userId).orElseThrow();
+        User user = userService.findByUsernameOrThrow(creatorUsername);
 
         if (!match.getPlayers().contains(user)) {
             throw new IllegalStateException("User does not belong to match.");
