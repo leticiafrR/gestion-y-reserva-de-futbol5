@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useUserTeams } from "@/services/TeamServices";
 import { useRegisterTeamToTournament } from "@/services/TournamentService";
+import { useLocation } from "wouter";
 
 interface JoinTournamentModalProps {
   tournament: any;
@@ -13,6 +14,7 @@ export const JoinTournamentModal = ({ tournament, onClose }: JoinTournamentModal
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const { mutate: registerTeam, isPending, isSuccess, isError, error } = useRegisterTeamToTournament();
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (isError && error) {
@@ -32,6 +34,11 @@ export const JoinTournamentModal = ({ tournament, onClose }: JoinTournamentModal
     });
   };
 
+  const handleViewFixture = () => {
+    setLocation(`/tournament/${encodeURIComponent(tournament.name)}/fixture`);
+    onClose();
+  };
+
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
       <div style={{ background: "white", borderRadius: 12, maxWidth: 500, width: "100%", padding: 32, boxShadow: "0 2px 12px #0002", position: "relative" }}>
@@ -44,6 +51,27 @@ export const JoinTournamentModal = ({ tournament, onClose }: JoinTournamentModal
           <div style={{ color: "#374151", fontSize: 16, marginBottom: 8 }}><b>Equipos registrados:</b> {tournament.registeredTeams ?? 0} / {tournament.maxTeams ?? "-"}</div>
           {tournament.description && <div style={{ color: "#374151", fontSize: 16, marginBottom: 8 }}><b>Descripción:</b> {tournament.description}</div>}
         </div>
+        
+        {/* Botón para ver fixture */}
+        <div style={{ marginBottom: 20 }}>
+          <button
+            onClick={handleViewFixture}
+            style={{ 
+              padding: "10px 18px", 
+              background: "#3b82f6", 
+              color: "white", 
+              border: "none", 
+              borderRadius: 6, 
+              cursor: "pointer", 
+              fontSize: 15,
+              width: "100%",
+              marginBottom: 12
+            }}
+          >
+            📅 Ver Fixture y Posiciones
+          </button>
+        </div>
+
         <div style={{ marginBottom: 20 }}>
           <label style={{ fontWeight: 600, fontSize: 15, marginBottom: 8, display: "block" }}>Selecciona tu equipo</label>
           {isLoadingTeams ? (
