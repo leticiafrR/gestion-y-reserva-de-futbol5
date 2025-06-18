@@ -1,6 +1,5 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
-import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchResultDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -10,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/tournaments/{tournamentId}/fixture")

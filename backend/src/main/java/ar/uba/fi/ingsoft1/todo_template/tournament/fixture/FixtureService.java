@@ -9,7 +9,6 @@ import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournamentRepos
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
 import ar.uba.fi.ingsoft1.todo_template.field.FieldRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.generator.*;
-import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchResultDTO;
 import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
