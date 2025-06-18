@@ -2,13 +2,14 @@
 
 import { useState } from "react"
 import { ArrowLeft, Plus, Users, Calendar, Filter, History } from "lucide-react"
-import { useAvailableMatches, useMyMatches, useMatchHistory } from "@/services/MatchServices"
+import { useAvailableMatches, useMyMatches, useMatchHistory, useUserProfile } from "@/services/MatchServices"
 import { MatchCard } from "./MatchCard"
 import { CreateMatchModal } from "./CreateMatchModal"
 import { MatchDetailsModal } from "./MatchDetailsModal"
 import type { Match } from "@/models/Match"
 
 export const MatchesScreen = () => {
+  useUserProfile();
   const [activeTab, setActiveTab] = useState<"available" | "my-matches" | "history">("available")
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [showFilters, setShowFilters] = useState(false)
@@ -23,21 +24,23 @@ export const MatchesScreen = () => {
   const { data: myMatches, isLoading: loadingMy } = useMyMatches()
   const { data: matchHistory, isLoading: loadingHistory } = useMatchHistory()
 
-  const filteredAvailableMatches = (availableMatches ?? []).filter((match: Match) => {
-    const matchesDate = dateFilter ? match.date === dateFilter : true
-    const matchesTime = timeFilter ? match.time.includes(timeFilter) : true
-    const matchesField = fieldFilter ? match.field.name.toLowerCase().includes(fieldFilter.toLowerCase()) : true
-    const matchesType = typeFilter ? match.type === typeFilter : true
-    return matchesDate && matchesTime && matchesField && matchesType
-  })
+  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
 
-  const filteredHistory = (matchHistory ?? []).filter((match: Match) => {
-    const matchesDate = dateFilter ? match.date === dateFilter : true
-    const matchesTime = timeFilter ? match.time.includes(timeFilter) : true
-    const matchesField = fieldFilter ? match.field.name.toLowerCase().includes(fieldFilter.toLowerCase()) : true
-    const matchesType = typeFilter ? match.type === typeFilter : true
-    return matchesDate && matchesTime && matchesField && matchesType
-  })
+  const filteredAvailableMatches: Match[] = (availableMatches ?? []).filter((match: any) => {
+    const matchesDate = dateFilter ? match.booking.bookingDate === dateFilter : true;
+    const matchesTime = timeFilter ? match.booking.bookingHour.toString().includes(timeFilter) : true;
+    const matchesField = fieldFilter ? match.booking.timeSlot.field.name.toLowerCase().includes(fieldFilter.toLowerCase()) : true;
+    const matchesType = typeFilter ? (!match.teamOne && !match.teamTwo ? "open" : "closed") === typeFilter : true;
+    return matchesDate && matchesTime && matchesField && matchesType;
+  });
+
+  const filteredHistory: Match[] = (matchHistory ?? []).filter((match: any) => {
+    const matchesDate = dateFilter ? match.booking.bookingDate === dateFilter : true;
+    const matchesTime = timeFilter ? match.booking.bookingHour.toString().includes(timeFilter) : true;
+    const matchesField = fieldFilter ? match.booking.timeSlot.field.name.toLowerCase().includes(fieldFilter.toLowerCase()) : true;
+    const matchesType = typeFilter ? (!match.teamOne && !match.teamTwo ? "open" : "closed") === typeFilter : true;
+    return matchesDate && matchesTime && matchesField && matchesType;
+  });
 
   return (
     <div
@@ -359,7 +362,7 @@ export const MatchesScreen = () => {
           <div>
             {loadingMy ? (
               <div style={{ textAlign: "center", padding: "40px", color: "#6c757d" }}>Cargando mis partidos...</div>
-            ) : (myMatches ?? []).length === 0 ? (
+            ) : myMatches.length === 0 ? (
               <div
                 style={{
                   textAlign: "center",
@@ -379,7 +382,7 @@ export const MatchesScreen = () => {
                   gap: "20px",
                 }}
               >
-                {(myMatches ?? []).map((match) => (
+                {myMatches.map((match: any) => (
                   <MatchCard
                     key={match.id}
                     match={match}
