@@ -137,7 +137,7 @@ export const TournamentDetailsModal = ({ tournament, onClose, onDeleted, onEdite
                   <b>Hasta:</b> {localTournament.endDate || "-"}
                 </div>
                 <div style={{ color: "#374151", fontSize: "16px", marginBottom: "8px" }}>
-                  <b>Cantidad máxima de equipos:</b> {localTournament.maxTeams ?? "-"}
+                  <b>Equipos registrados:</b> {localTournament.registeredTeams ?? 0} / {localTournament.maxTeams ?? "-"}
                 </div>
                 {localTournament.description && (
                   <div style={{ color: "#374151", fontSize: "16px", marginBottom: "8px" }}>

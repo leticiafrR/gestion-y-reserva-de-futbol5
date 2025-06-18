@@ -206,6 +206,9 @@ export const EditTournamentModal = ({ tournament, onClose, onSaved, onSuccessToa
               required
               style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid var(--border)" }}
             />
+            <div style={{ fontSize: "14px", color: "#6b7280", marginTop: "4px" }}>
+              Equipos registrados actualmente: {tournament.registeredTeams || 0} / {tournament.maxTeams || 0}
+            </div>
           </div>
           <div style={{ marginBottom: "16px" }}>
             <label>Descripción</label>

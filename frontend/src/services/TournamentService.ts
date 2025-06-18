@@ -20,6 +20,8 @@ export interface TournamentSummary {
   endDate: string;
   format: string;
   state: string;
+  registeredTeams: number;
+  maxTeams: number;
 }
 
 export interface Tournament extends TournamentSummary {
@@ -27,7 +29,6 @@ export interface Tournament extends TournamentSummary {
   prizes: string;
   registrationFee: number;
   maxTeams: number;
-  // Agrega más campos si el backend los devuelve
 }
 
 // Crear torneo

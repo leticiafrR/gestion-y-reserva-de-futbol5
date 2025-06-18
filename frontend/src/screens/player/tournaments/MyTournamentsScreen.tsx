@@ -265,7 +265,8 @@ export const MyTournamentsScreen = () => {
                   </div>
                   <div style={{ color: "var(--muted-foreground)", fontSize: "0.95rem" }}>
                     <span>Desde: {tournament.startDate || "-"}</span><br />
-                    <span>Hasta: {tournament.endDate || "-"}</span>
+                    <span>Hasta: {tournament.endDate || "-"}</span><br />
+                    <span>Equipos: {tournament.registeredTeams || 0} / {tournament.maxTeams || "-"}</span>
                   </div>
                 </div>
               );
