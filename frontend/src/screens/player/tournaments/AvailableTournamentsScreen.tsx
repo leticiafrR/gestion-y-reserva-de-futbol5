@@ -1,12 +1,16 @@
-import { useAllTournaments } from "@/services/TournamentService";
+import { useAllTournaments, useTournamentByName } from "@/services/TournamentService";
+import { useUserTeams } from "@/services/TeamServices";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { JoinTournamentModal } from "./JoinTournamentModal";
 
 export const AvailableTournamentsScreen = () => {
   const [, setLocation] = useLocation();
   const { data: tournaments, isLoading, error } = useAllTournaments();
   const [nameFilter, setNameFilter] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("ALL");
+  const [selectedTournamentName, setSelectedTournamentName] = useState<string | null>(null);
+  const { data: tournamentDetails, isLoading: isLoadingDetails } = useTournamentByName(selectedTournamentName || "");
 
   const filteredTournaments = tournaments?.filter(tournament => {
     const matchesName = tournament.name.toLowerCase().includes(nameFilter.toLowerCase());
@@ -188,8 +192,11 @@ export const AvailableTournamentsScreen = () => {
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "flex-start",
-                  marginBottom: "1rem"
-                }}>
+                  marginBottom: "1rem",
+                  cursor: "pointer"
+                }}
+                  onClick={() => setSelectedTournamentName(tournament.name)}
+                >
                   <h2 style={{ margin: "0 0 0.5rem 0", color: "var(--foreground)", fontSize: "1.3rem", fontWeight: 700, textTransform: "uppercase" }}>{tournament.name}</h2>
                   <div style={{ color: "var(--muted-foreground)", fontSize: "1rem", marginBottom: "0.5rem" }}>
                     <span>Formato: {formatLabel}</span>
@@ -216,6 +223,18 @@ export const AvailableTournamentsScreen = () => {
           </div>
         </div>
       </main>
+      {selectedTournamentName && (
+        isLoadingDetails ? (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+            <div style={{ background: "white", borderRadius: 12, padding: 32, fontSize: 18 }}>Cargando detalles...</div>
+          </div>
+        ) : tournamentDetails && (
+          <JoinTournamentModal
+            tournament={tournamentDetails}
+            onClose={() => setSelectedTournamentName(null)}
+          />
+        )
+      )}
     </div>
   );
 };
