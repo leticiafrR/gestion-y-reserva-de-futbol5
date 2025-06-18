@@ -3,6 +3,8 @@ package ar.uba.fi.ingsoft1.todo_template.match;
 import ar.uba.fi.ingsoft1.todo_template.team.Team;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
@@ -18,9 +20,9 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CloseMatch extends Match {
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
     private Team teamOne;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     private Team teamTwo;
 }

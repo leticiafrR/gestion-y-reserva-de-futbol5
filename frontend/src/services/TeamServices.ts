@@ -228,15 +228,12 @@ export async function getPendingInvitations(teamId: string, token: any): Promise
     },
   });
 
-  console.log("response pending invitations", response);
-
   if (!response.ok) {
     const errorData = await response.text();
     throw new Error(errorData || `Error al obtener invitaciones pendientes: ${response.status}`);
   }
 
   const invitations = await response.json();
-  console.log("pending invitations body", invitations);
   return invitations.map((inv: { inviteeEmail: string }) => inv.inviteeEmail);
 }
 

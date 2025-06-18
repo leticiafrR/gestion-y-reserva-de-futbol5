@@ -34,14 +34,6 @@ export async function uploadImageProfile(file: File, userEmail: string): Promise
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `gestiondecanchas/profile-photos/${sanitizedEmail}/${fileName}`;
 
-    console.log('Attempting to upload file:', {
-      fileName,
-      filePath,
-      fileType: file.type,
-      fileSize: file.size,
-      userEmail
-    });
-
     // Intentar subir el archivo
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('gestiondecanchas')
@@ -65,8 +57,6 @@ export async function uploadImageProfile(file: File, userEmail: string): Promise
     if (!urlData?.publicUrl) {
       throw new Error('Failed to get public URL for uploaded image');
     }
-
-    console.log('Public URL:', urlData.publicUrl);
     return urlData.publicUrl;
 
   } catch (error) {
@@ -102,15 +92,6 @@ export async function uploadFieldImage(file: File, fieldName: string): Promise<s
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `gestiondecanchas/fields/${sanitizedFieldName}/${fileName}`;
-
-    console.log('Attempting to upload field image:', {
-      fileName,
-      filePath,
-      fileType: file.type,
-      fileSize: file.size,
-      fieldName
-    });
-
     // Intentar subir el archivo
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('gestiondecanchas')
@@ -135,7 +116,6 @@ export async function uploadFieldImage(file: File, fieldName: string): Promise<s
       throw new Error('Failed to get public URL for uploaded image');
     }
 
-    console.log('Public URL:', urlData.publicUrl);
     return urlData.publicUrl;
 
   } catch (error) {
@@ -171,15 +151,6 @@ export async function uploadTeamLogo(file: File, teamName: string): Promise<stri
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `gestiondecanchas/teams/${sanitizedTeamName}/${fileName}`;
-
-    console.log('Attempting to upload team logo:', {
-      fileName,
-      filePath,
-      fileType: file.type,
-      fileSize: file.size,
-      teamName
-    });
-
     // Intentar subir el archivo
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('gestiondecanchas')
@@ -204,7 +175,6 @@ export async function uploadTeamLogo(file: File, teamName: string): Promise<stri
       throw new Error('Failed to get public URL for uploaded image');
     }
 
-    console.log('Public URL:', urlData.publicUrl);
     return urlData.publicUrl;
 
   } catch (error) {

@@ -15,7 +15,6 @@ export interface OwnerBooking {
 export const bookingService = {
     // Create a new booking
     createBooking: async (timeslotId: number, date: string, hour: number): Promise<BookingDTO> => {
-        console.log(timeslotId, date, hour)
         const accessToken = getAuthToken();
         const response = await axios.post(`${BASE_API_URL}/bookings`, null, {
             params: {
@@ -27,7 +26,6 @@ export const bookingService = {
                 Authorization: `Bearer ${accessToken}`
             }
         });
-        console.log("response", response)
         return response.data;
     },
 
@@ -60,7 +58,6 @@ export const bookingService = {
                 Authorization: `Bearer ${accessToken}`
             }
         });
-        console.log("response", response)
         return response.data;
     },
 
