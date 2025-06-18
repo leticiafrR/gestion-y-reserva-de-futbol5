@@ -6,6 +6,7 @@ public record TournamentSummaryDTO(
                 Long id,
                 String name,
                 LocalDate startDate,
+                LocalDate endDate,
                 TournamentFormat format,
                 TournamentState state) {
 }

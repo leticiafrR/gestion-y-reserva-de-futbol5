@@ -5,3 +5,4 @@ export { useCreateField } from "./CreateFieldServices.ts";
 export { useAvailableFields } from "./AvailableFieldsServices.ts";
 export { useUserTeams } from "./TeamServices.ts";
 export { useProfile } from "./ProfileServices.ts";
+export { useAllTournaments } from "./TournamentService.ts";

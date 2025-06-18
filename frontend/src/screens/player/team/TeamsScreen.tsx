@@ -51,19 +51,41 @@ export const TeamsScreen = () => {
 
   return (
     <div style={{ 
-      padding: "2rem", 
-      maxWidth: 1200, 
-      margin: "0 auto",
+      minHeight: "100vh",
       backgroundColor: "var(--background)",
-      minHeight: "100vh"
+      padding: "24px",
+      fontFamily: "system-ui, -apple-system, sans-serif"
     }}>
-      <div style={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        marginBottom: "2rem" 
+      {/* Header */}
+      <header style={{
+        maxWidth: "1200px",
+        margin: "0 auto",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "16px",
+        backgroundColor: "var(--card)",
+        borderRadius: "12px",
+        boxShadow: "0 1px 3px var(--border)",
+        marginBottom: "32px"
       }}>
-        <h1 style={{ color: "var(--foreground)", margin: 0, fontSize: "2rem" }}> Equipos</h1>
+        <div>
+          <h1 style={{
+            fontSize: "24px",
+            fontWeight: "bold",
+            color: "var(--foreground)",
+            margin: 0
+          }}>
+            👫 Equipos
+          </h1>
+          <p style={{
+            color: "var(--muted-foreground)",
+            margin: "4px 0 0 0",
+            fontSize: "14px"
+          }}>
+            Gestiona tus equipos y miembros
+          </p>
+        </div>
         <div style={{ display: "flex", gap: "1rem" }}>
           <button
             style={{
@@ -85,15 +107,23 @@ export const TeamsScreen = () => {
           </button>
           <button
             style={{
-              padding: "10px 16px",
+              padding: "8px 16px",
               backgroundColor: "var(--secondary)",
+              border: "1px solid transparent",
+              borderRadius: "8px",
               color: "var(--secondary-foreground)",
-              border: "1px solid var(--border)",
               cursor: "pointer",
               fontSize: "14px",
-              borderRadius: "var(--radius-lg)",
-              transition: "all 0.2s ease",
-              textDecoration: "none"
+              fontWeight: "500",
+              transition: "all 0.2s ease"
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = "var(--accent)";
+              e.currentTarget.style.borderColor = "black";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = "var(--secondary)";
+              e.currentTarget.style.borderColor = "transparent";
             }}
             onClick={() => {
               navigate("/main");
@@ -102,32 +132,46 @@ export const TeamsScreen = () => {
             Volver a Inicio
           </button>
         </div>
-      </div>
+      </header>
 
-      <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
-        {teams?.length === 0 && (
-          <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No participas en ningún equipo.</div>
-        )}
-        {teams?.map((team) => (
-          <TeamCard
-            key={team.id}
-            team={team}
-            userEmail={userEmail}
-            onEdit={() => {
-              setSelectedTeam(team);
-              setShowEditModal(true);
-            }}
-            onDelete={() => {
-              setTeamToDeleteId(team.id);
-              setShowDeleteModal(true);
-            }}
-            onDetails={() => {
-              setSelectedTeamForDetails(team);
-              setShowDetailsModal(true);
-            }}
-          />
-        ))}
-      </div>
+      {/* Main Content */}
+      <main style={{
+        maxWidth: "1200px",
+        margin: "0 auto",
+        padding: "0 16px"
+      }}>
+        <div style={{
+          backgroundColor: "var(--card)",
+          borderRadius: "12px",
+          padding: "24px",
+          boxShadow: "0 1px 3px var(--border)"
+        }}>
+          <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
+            {teams?.length === 0 && (
+              <div style={{ color: "var(--muted-foreground)", fontSize: "1.2rem" }}>No participas en ningún equipo.</div>
+            )}
+            {teams?.map((team) => (
+              <TeamCard
+                key={team.id}
+                team={team}
+                userEmail={userEmail}
+                onEdit={() => {
+                  setSelectedTeam(team);
+                  setShowEditModal(true);
+                }}
+                onDelete={() => {
+                  setTeamToDeleteId(team.id);
+                  setShowDeleteModal(true);
+                }}
+                onDetails={() => {
+                  setSelectedTeamForDetails(team);
+                  setShowDetailsModal(true);
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </main>
 
       {/* Modals */}
       {showCreateModal && (

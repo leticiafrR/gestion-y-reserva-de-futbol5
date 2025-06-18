@@ -22,56 +22,6 @@ export function useGetOwnerFields() {
   });
 }
 
-let mockFields: Field[] = [
-  {
-    id: "1",
-    name: "Cancha CENTRAL",
-    grass: "sintetico",
-    lighting: true,
-    roofing: false,
-    location: {
-      lat: -34.6037,
-      lng: -58.3816,
-      address: "Av. Principal 123"
-    },
-    area: "Centro",
-    photos: [],
-    description: "Cancha con césped sintético y buena iluminación.",
-    price: 80,
-    active: true,
-    schedule: [
-      { dayOfWeek: "MONDAY", openTime: "10:00", closeTime: "18:00" },
-      { dayOfWeek: "TUESDAY", openTime: "10:00", closeTime: "18:00" },
-      { dayOfWeek: "WEDNESDAY", openTime: "10:00", closeTime: "18:00" },
-      { dayOfWeek: "THURSDAY", openTime: "10:00", closeTime: "18:00" },
-      { dayOfWeek: "FRIDAY", openTime: "10:00", closeTime: "18:00" }
-    ],
-    photoUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: "2",
-    name: "Cancha NORTE",
-    grass: "natural",
-    lighting: false,
-    roofing: false,
-    location: {
-      lat: -34.5837,
-      lng: -58.4016,
-      address: "Calle Norte 456"
-    },
-    area: "Norte",
-    photos: [],
-    description: "Cancha de césped natural, ideal para torneos.",
-    price: 50,
-    active: false,
-    schedule: [
-      { dayOfWeek: "SATURDAY", openTime: "09:00", closeTime: "14:00" },
-      { dayOfWeek: "SUNDAY", openTime: "09:00", closeTime: "14:00" }
-    ],
-    photoUrl: "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80"
-  }
-];
-
 async function getOwnerFields(): Promise<Field[]> {
   // return mockFields;
   const accessToken = getAuthToken();
