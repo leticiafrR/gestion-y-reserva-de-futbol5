@@ -24,7 +24,7 @@ public class TournamentService {
     private final TeamRegisteredTournamentRepository teamRegisteredTournamentRepository;
 
     public TournamentService(TournamentRepository tournamentRepository, UserRepository userRepository,
-            TeamRepository teamRepository, TeamRegisteredTournamentRepository teamRegisteredTournamentRepository) {
+                             TeamRepository teamRepository, TeamRegisteredTournamentRepository teamRegisteredTournamentRepository) {
         this.tournamentRepository = tournamentRepository;
         this.userRepository = userRepository;
         this.teamRepository = teamRepository;
@@ -37,7 +37,7 @@ public class TournamentService {
     }
 
     private void checkConditionsToResgitTeam(String authenticatedUsername, Tournament tournament,
-            String captainUsername) {
+                                             String captainUsername) {
         if (!authenticatedUsername.equals(captainUsername)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Only the team's captain can regist the team into a tournament. " + authenticatedUsername
@@ -208,5 +208,28 @@ public class TournamentService {
         }
         tournament.setOpenInscription(false);
         tournamentRepository.save(tournament);
+    }
+
+    public List<TeamRegisteredTournament> getTournamentTeams(Long tournamentId) {
+        Tournament tournament = getTournament(tournamentId);
+        return teamRegisteredTournamentRepository.findByTournament(tournament);
+    }
+
+    public List<TeamRegisteredTournament> getTournamentStandings(Long tournamentId) {
+        Tournament tournament = getTournament(tournamentId);
+        List<TeamRegisteredTournament> teams = teamRegisteredTournamentRepository.findByTournament(tournament);
+
+        // Ordenar por points (descending), goal difference (descending), goals for (descending)
+        teams.sort((t1, t2) -> {
+            if (t1.getPoints() != t2.getPoints()) {
+                return Integer.compare(t2.getPoints(), t1.getPoints());
+            }
+            if (t1.getGoalDifference() != t2.getGoalDifference()) {
+                return Integer.compare(t2.getGoalDifference(), t1.getGoalDifference());
+            }
+            return Integer.compare(t2.getGoalsFor(), t1.getGoalsFor());
+        });
+
+        return teams;
     }
 }

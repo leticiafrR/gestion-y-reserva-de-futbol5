@@ -200,4 +200,26 @@ public class TournamentController {
         return ResponseEntity.ok(tournaments);
     }
 
+    @GetMapping("/{id}/teams")
+    @Operation(summary = "Get tournament teams with statistics", description = "Returns all teams registered in the tournament with their current statistics")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tournament teams retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Tournament not found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
+    })
+    public ResponseEntity<List<TeamRegisteredTournament>> getTournamentTeams(@PathVariable Long id) {
+        List<TeamRegisteredTournament> teams = tournamentService.getTournamentTeams(id);
+        return ResponseEntity.ok(teams);
+    }
+
+    @GetMapping("/{id}/standings")
+    @Operation(summary = "Get tournament standings", description = "Returns tournament standings sorted by points and other criteria")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tournament standings retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Tournament not found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
+    })
+    public ResponseEntity<List<TeamRegisteredTournament>> getTournamentStandings(@PathVariable Long id) {
+        List<TeamRegisteredTournament> standings = tournamentService.getTournamentStandings(id);
+        return ResponseEntity.ok(standings);
+    }
+
 }
