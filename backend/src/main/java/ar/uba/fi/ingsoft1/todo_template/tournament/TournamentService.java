@@ -67,6 +67,7 @@ public class TournamentService {
                 .tournament(tournament)
                 .build();
 
+
         teamRegisteredTournamentRepository.save(registration);
     }
 

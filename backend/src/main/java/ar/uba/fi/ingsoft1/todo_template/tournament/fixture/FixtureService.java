@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class FixtureService {
@@ -37,13 +38,18 @@ public class FixtureService {
             TournamentRepository tournamentRepository,
             TeamRegisteredTournamentRepository teamRegisteredTournamentRepository,
             TournamentMatchRepository tournamentMatchRepository,
-            FieldRepository fieldRepository,
-            Map<TournamentFormat, FixtureGenerator> fixtureGenerators) {
+            FieldRepository fieldRepository) {
         this.tournamentRepository = tournamentRepository;
         this.teamRegisteredTournamentRepository = teamRegisteredTournamentRepository;
         this.tournamentMatchRepository = tournamentMatchRepository;
         this.fieldRepository = fieldRepository;
-        this.fixtureGenerators = fixtureGenerators;
+
+        // Inicializar los generadores internamente
+        RoundRobinGenerator roundRobinGenerator = new RoundRobinGenerator();
+        this.fixtureGenerators = new HashMap<>();
+        this.fixtureGenerators.put(TournamentFormat.SINGLE_ELIMINATION, new SingleEliminationGenerator());
+        this.fixtureGenerators.put(TournamentFormat.GROUP_STAGE_AND_ELIMINATION, new GroupStageAndEliminationGenerator(roundRobinGenerator));
+        this.fixtureGenerators.put(TournamentFormat.ROUND_ROBIN, roundRobinGenerator);
     }
 
     @Transactional
