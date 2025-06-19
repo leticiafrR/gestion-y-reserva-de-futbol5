@@ -256,3 +256,37 @@ async function getUserTournaments(): Promise<TournamentSummary[]> {
   if (!response.ok) throw new Error("Error al obtener torneos del usuario");
   return response.json();
 }
+
+// Unir equipo a torneo
+export function useRegisterTeamToTournament() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ teamId, tournamentId }: { teamId: string | number; tournamentId: string | number }) => registerTeamToTournament(teamId, tournamentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-tournaments"] });
+    },
+  });
+}
+
+async function registerTeamToTournament(teamId: string | number, tournamentId: string | number) {
+  const accessToken = getAuthToken();
+  const response = await fetch(`${BASE_API_URL}/tournaments/register_team/${teamId}/${tournamentId}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al unir equipo al torneo: ${response.status}`);
+  }
+  if (response.status === 204 || response.headers.get("content-length") === "0") {
+    return { success: true };
+  }
+  try {
+    return await response.json();
+  } catch {
+    return { success: true };
+  }
+}
