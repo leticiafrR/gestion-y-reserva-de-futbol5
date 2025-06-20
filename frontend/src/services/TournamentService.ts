@@ -161,6 +161,26 @@ async function getTournamentByName(name: string): Promise<Tournament> {
   return response.json();
 }
 
+// Obtener torneos en los que participa el usuario
+export function useParticipatingTournaments() {
+  return useQuery({
+    queryKey: ["participating-tournaments"],
+    queryFn: getParticipatingTournaments,
+  });
+}
+async function getParticipatingTournaments(): Promise<TournamentSummary[]> {
+  const accessToken = getAuthToken();
+  const response = await fetch(`${BASE_API_URL}/tournaments/participating`, {
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!response.ok) throw new Error("Error al obtener torneos en los que participas");
+  return response.json();
+}
+
 // Eliminar torneo
 export function useDeleteTournament() {
   const queryClient = useQueryClient();
@@ -237,6 +257,29 @@ async function closeTournamentRegistration(id: number) {
   return response.text();
 }
 
+// Obtener equipos de un torneo
+export function useTournamentTeams(tournamentId: number | null) {
+  return useQuery({
+    queryKey: ["tournament-teams", tournamentId],
+    queryFn: () => getTournamentTeams(tournamentId!),
+    enabled: !!tournamentId,
+  });
+}
+
+async function getTournamentTeams(tournamentId: number) {
+  const accessToken = getAuthToken();
+  const response = await fetch(`${BASE_API_URL}/tournaments/${tournamentId}/teams`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Error al obtener los equipos del torneo");
+  }
+  return response.json();
+}
+
 // Obtener torneos del usuario organizador
 export function useUserTournaments() {
   return useQuery({
@@ -289,4 +332,32 @@ async function registerTeamToTournament(teamId: string | number, tournamentId: s
   } catch {
     return { success: true };
   }
+}
+
+// Salir de un torneo
+export function useUnregisterTeamFromTournament() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ teamId, tournamentId }: { teamId: number; tournamentId: number }) => unregisterTeamFromTournament(teamId, tournamentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-tournaments"] });
+      queryClient.invalidateQueries({ queryKey: ["participating-tournaments"] });
+    },
+  });
+}
+
+async function unregisterTeamFromTournament(teamId: number, tournamentId: number) {
+  const accessToken = getAuthToken();
+  const response = await fetch(`${BASE_API_URL}/tournaments/unregister_team/${teamId}/${tournamentId}`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al salir del torneo: ${response.status}`);
+  }
+  return { success: true };
 }
