@@ -19,20 +19,19 @@ import java.util.stream.Collectors;
 @Service
 public class TimeSlotService {
 
-    private final TimeSlotRepository timeslotRepository;
+    public final TimeSlotRepository timeslotRepository;
     private final FieldRepository fieldRepository;
     private final BlockedSlotRepository blockedSlotRepository;
 
+    public final BookingRepository bookingRepository;
 
-    public TimeSlotService(TimeSlotRepository repository, FieldRepository fieldRepository, BlockedSlotRepository blockedSlotRepository) {
+    public TimeSlotService(TimeSlotRepository repository, FieldRepository fieldRepository,
+            BlockedSlotRepository blockedSlotRepository, BookingRepository bookingRepository) {
         this.timeslotRepository = repository;
         this.fieldRepository = fieldRepository;
         this.blockedSlotRepository = blockedSlotRepository;
+        this.bookingRepository = bookingRepository;
     }
-
-
-    @Autowired
-    private BookingRepository bookingRepository;
 
     public Map<LocalDate, List<Integer>> getAvailableHours(Long fieldId, int daysAhead) {
         Field field = fieldRepository.findById(fieldId)
@@ -76,7 +75,6 @@ public class TimeSlotService {
         return availability;
     }
 
-
     public int countAvailableHoursInDateRange(List<Long> fieldIds, int daysAhead) {
         int total = 0;
 
@@ -89,8 +87,6 @@ public class TimeSlotService {
 
         return total;
     }
-
-
 
     public List<TimeSlot> getTimeSlotsByField(Long fieldId) {
         return timeslotRepository.findByFieldIdOrderByDayOfWeekAscOpenTimeAsc(fieldId);
@@ -118,7 +114,6 @@ public class TimeSlotService {
                         .build())
                 .toList();
 
-
         timeslotRepository.saveAll(slots);
     }
 
@@ -138,7 +133,6 @@ public class TimeSlotService {
 
         timeslotRepository.save(slot);
     }
-
 
     private void validateSlot(TimeSlotDTO dto) {
         if (dto.closeTime() <= dto.openTime()) {
