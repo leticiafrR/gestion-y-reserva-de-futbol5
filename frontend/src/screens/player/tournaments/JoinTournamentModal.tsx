@@ -7,9 +7,10 @@ import { useLocation } from "wouter";
 interface JoinTournamentModalProps {
   tournament: any;
   onClose: () => void;
+  onErrorToast?: (message: string) => void;
 }
 
-export const JoinTournamentModal = ({ tournament, onClose }: JoinTournamentModalProps) => {
+export const JoinTournamentModal = ({ tournament, onClose, onErrorToast }: JoinTournamentModalProps) => {
   const { data: teams, isLoading: isLoadingTeams } = useUserTeams();
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const { mutate: registerTeam, isPending, isSuccess, isError, error } = useRegisterTeamToTournament();
@@ -21,8 +22,43 @@ export const JoinTournamentModal = ({ tournament, onClose }: JoinTournamentModal
       // Loguear el error completo en consola para debug
       // eslint-disable-next-line no-console
       console.log('Error al unir equipo al torneo:', error);
+      
+      // Manejar errores específicos
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      if (errorMessage.includes('Team already registered') || errorMessage.includes('409')) {
+        const toastMessage = "Tu equipo ya está registrado en este torneo";
+        if (onErrorToast) {
+          onErrorToast(toastMessage);
+        } else {
+          // Fallback si no hay función de toast
+          alert(toastMessage);
+        }
+      } else if (errorMessage.includes('Tournament is full')) {
+        const toastMessage = "El torneo está completo, no se pueden registrar más equipos";
+        if (onErrorToast) {
+          onErrorToast(toastMessage);
+        } else {
+          alert(toastMessage);
+        }
+      } else if (errorMessage.includes('not the captain')) {
+        const toastMessage = "Solo el capitán del equipo puede registrarlo en un torneo";
+        if (onErrorToast) {
+          onErrorToast(toastMessage);
+        } else {
+          alert(toastMessage);
+        }
+      } else {
+        // Error genérico
+        const toastMessage = `Error al unirse al torneo: ${errorMessage}`;
+        if (onErrorToast) {
+          onErrorToast(toastMessage);
+        } else {
+          alert(toastMessage);
+        }
+      }
     }
-  }, [isError, error]);
+  }, [isError, error, onErrorToast]);
 
   const handleJoin = () => {
     if (!selectedTeamId) return;
@@ -66,7 +102,6 @@ export const JoinTournamentModal = ({ tournament, onClose }: JoinTournamentModal
             <div style={{ color: "#ef4444" }}>No tienes equipos disponibles para unirte.</div>
           )}
         </div>
-        {isError && <div style={{ color: "#ef4444", marginBottom: 12 }}>{(error as any)?.message || "Error al unir equipo"}</div>}
         {successMsg && <div style={{ color: "#10b981", marginBottom: 12 }}>{successMsg}</div>}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
           <button

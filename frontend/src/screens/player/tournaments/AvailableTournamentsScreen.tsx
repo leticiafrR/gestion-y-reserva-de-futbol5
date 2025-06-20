@@ -11,12 +11,18 @@ export const AvailableTournamentsScreen = () => {
   const [stateFilter, setStateFilter] = useState<string>("ALL");
   const [selectedTournamentName, setSelectedTournamentName] = useState<string | null>(null);
   const { data: tournamentDetails, isLoading: isLoadingDetails } = useTournamentByName(selectedTournamentName || "");
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   const filteredTournaments = tournaments?.filter(tournament => {
     const matchesName = tournament.name.toLowerCase().includes(nameFilter.toLowerCase());
     const matchesState = stateFilter === "ALL" || tournament.state === stateFilter;
     return matchesName && matchesState;
   });
+
+  const handleErrorToast = (message: string) => {
+    setErrorToast(message);
+    setTimeout(() => setErrorToast(null), 5000); // Auto-hide after 5 seconds
+  };
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "var(--background)", padding: "24px", fontFamily: "system-ui, -apple-system, sans-serif" }}>
@@ -232,8 +238,28 @@ export const AvailableTournamentsScreen = () => {
           <JoinTournamentModal
             tournament={tournamentDetails}
             onClose={() => setSelectedTournamentName(null)}
+            onErrorToast={handleErrorToast}
           />
         )
+      )}
+
+      {/* Error Toast */}
+      {errorToast && (
+        <div style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          backgroundColor: "#ef4444",
+          color: "white",
+          padding: "12px 24px",
+          borderRadius: "8px",
+          zIndex: 1001,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          maxWidth: "400px",
+          wordWrap: "break-word"
+        }}>
+          {errorToast}
+        </div>
       )}
     </div>
   );
