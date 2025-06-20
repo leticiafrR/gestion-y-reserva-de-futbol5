@@ -14,21 +14,32 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ar.uba.fi.ingsoft1.todo_template.match.CloseMatch;
+import ar.uba.fi.ingsoft1.todo_template.match.CloseMatchRepository;
+import ar.uba.fi.ingsoft1.todo_template.booking.Booking;
+import ar.uba.fi.ingsoft1.todo_template.booking.BookingRepository;
+import ar.uba.fi.ingsoft1.todo_template.timeslot.TimeSlotService;
+import ar.uba.fi.ingsoft1.todo_template.timeslot.TimeSlot;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.DayOfWeek;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 @Service
+@Transactional
 public class FixtureService {
     private final TournamentRepository tournamentRepository;
     private final TeamRegisteredTournamentRepository teamRegisteredTournamentRepository;
     private final TournamentMatchRepository tournamentMatchRepository;
     private final FieldRepository fieldRepository;
     private final Map<TournamentFormat, FixtureGenerator> fixtureGenerators;
+    private final CloseMatchRepository closeMatchRepository;
+    private final BookingRepository bookingRepository;
+    private final TimeSlotService timeSlotService;
 
     private static final LocalTime MATCH_START_TIME = LocalTime.of(18, 0); // 6:00 PM
     private static final int MATCH_DURATION_MINUTES = 90; // 90 minutos
@@ -38,18 +49,24 @@ public class FixtureService {
             TournamentRepository tournamentRepository,
             TeamRegisteredTournamentRepository teamRegisteredTournamentRepository,
             TournamentMatchRepository tournamentMatchRepository,
-            FieldRepository fieldRepository) {
+            FieldRepository fieldRepository,
+            Map<TournamentFormat, FixtureGenerator> fixtureGenerators,
+            CloseMatchRepository closeMatchRepository,
+            BookingRepository bookingRepository,
+            TimeSlotService timeSlotService) {
         this.tournamentRepository = tournamentRepository;
         this.teamRegisteredTournamentRepository = teamRegisteredTournamentRepository;
         this.tournamentMatchRepository = tournamentMatchRepository;
         this.fieldRepository = fieldRepository;
-
-        // Inicializar los generadores internamente
+        this.closeMatchRepository = closeMatchRepository;
+        this.bookingRepository = bookingRepository;
+        this.timeSlotService = timeSlotService;
         RoundRobinGenerator roundRobinGenerator = new RoundRobinGenerator();
         this.fixtureGenerators = new HashMap<>();
         this.fixtureGenerators.put(TournamentFormat.SINGLE_ELIMINATION, new SingleEliminationGenerator());
         this.fixtureGenerators.put(TournamentFormat.GROUP_STAGE_AND_ELIMINATION, new GroupStageAndEliminationGenerator(roundRobinGenerator));
         this.fixtureGenerators.put(TournamentFormat.ROUND_ROBIN, roundRobinGenerator);
+
     }
 
     @Transactional
@@ -98,6 +115,30 @@ public class FixtureService {
             match.setScheduledDateTime(currentDateTime);
             currentDateTime = currentDateTime.plusMinutes(MATCH_DURATION_MINUTES);
             matchesScheduledToday++;
+
+            DayOfWeek dayOfWeek = match.getScheduledDateTime().getDayOfWeek();
+            int hour = match.getScheduledDateTime().getHour();
+            TimeSlot timeSlot = timeSlotService.getTimeSlotByFieldAndDay(match.getField().getId(), dayOfWeek);
+
+            if (timeSlot == null || hour < timeSlot.getOpenTime() || hour >= timeSlot.getCloseTime()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No hay franja horaria para la cancha y hora del partido");
+            }
+
+            Booking booking = new Booking(
+                    tournament.getOrganizer(),
+                    timeSlot,
+                    match.getScheduledDateTime().toLocalDate(),
+                    hour
+            );
+            bookingRepository.save(booking);
+
+            CloseMatch closeMatch = new CloseMatch();
+            closeMatch.setBooking(booking);
+            closeMatch.setTeamOne(match.getHomeTeam() != null ? match.getHomeTeam().getTeam() : null);
+            closeMatch.setTeamTwo(match.getAwayTeam() != null ? match.getAwayTeam().getTeam() : null);
+            closeMatchRepository.save(closeMatch);
+
+            match.setMatch(closeMatch);
         }
 
         return tournamentMatchRepository.saveAll(matches);
