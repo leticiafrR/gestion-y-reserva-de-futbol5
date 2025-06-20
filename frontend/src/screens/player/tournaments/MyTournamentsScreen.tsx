@@ -20,6 +20,7 @@ export const MyTournamentsScreen = () => {
 
   // Estado de pestañas
   const [activeTab, setActiveTab] = useState<'organizing' | 'participating'>('organizing');
+  const [context, setContext] = useState<'organizing' | 'participant' | null>(null);
 
   const [globalToast, setGlobalToast] = useState<string | null>(null);
 
@@ -70,7 +71,10 @@ export const MyTournamentsScreen = () => {
         marginBottom: "1rem",
         cursor: "pointer"
       }}
-        onClick={() => setSelectedTournamentName(tournament.name)}
+        onClick={() => {
+          setSelectedTournamentName(tournament.name);
+          setContext(isOrganizer ? 'organizing' : 'participant');
+        }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "0.5rem" }}>
           <h2 style={{ margin: 0, color: "var(--foreground)", fontSize: "1.3rem", fontWeight: 700, textTransform: "uppercase", flex: 1 }}>{tournament.name}</h2>
@@ -327,16 +331,22 @@ export const MyTournamentsScreen = () => {
       {selectedTournamentName && tournamentDetails && (
         <TournamentDetailsModal
           tournament={tournamentDetails}
+          context={context}
           onClose={() => {
             setSelectedTournamentName(null);
             setSelectedTournament(null);
+            setContext(null);
           }}
           onDeleted={() => {
             setSelectedTournamentName(null);
             setSelectedTournament(null);
+            setContext(null);
             refetch();
           }}
-          onEdited={refetch}
+          onEdited={() => {
+            refetch();
+            setContext(null);
+          }}
           onSuccessToast={setGlobalToast}
         />
       )}
