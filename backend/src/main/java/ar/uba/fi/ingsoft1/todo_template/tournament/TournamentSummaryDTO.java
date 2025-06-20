@@ -8,5 +8,6 @@ public record TournamentSummaryDTO(
                 LocalDate startDate,
                 LocalDate endDate,
                 TournamentFormat format,
-                TournamentState state) {
+                TournamentState state,
+                Integer registeredTeams) {
 }

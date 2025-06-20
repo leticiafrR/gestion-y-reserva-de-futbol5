@@ -161,6 +161,26 @@ async function getTournamentByName(name: string): Promise<Tournament> {
   return response.json();
 }
 
+// Obtener torneos en los que participa el usuario
+export function useParticipatingTournaments() {
+  return useQuery({
+    queryKey: ["participating-tournaments"],
+    queryFn: getParticipatingTournaments,
+  });
+}
+async function getParticipatingTournaments(): Promise<TournamentSummary[]> {
+  const accessToken = getAuthToken();
+  const response = await fetch(`${BASE_API_URL}/tournaments/participating`, {
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!response.ok) throw new Error("Error al obtener torneos en los que participas");
+  return response.json();
+}
+
 // Eliminar torneo
 export function useDeleteTournament() {
   const queryClient = useQueryClient();

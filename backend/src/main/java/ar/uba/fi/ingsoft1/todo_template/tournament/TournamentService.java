@@ -175,7 +175,8 @@ public class TournamentService {
                 tournament.getStartDate(),
                 tournament.getEndDate(),
                 tournament.getFormat(),
-                tournament.getState());
+                tournament.getState(),
+                tournament.getRegisteredTeams());
     }
 
     public Tournament getTournamentByName(String name) {
@@ -191,6 +192,28 @@ public class TournamentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         return tournamentRepository.findByOrganizer(organizer).stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    public List<TournamentSummaryDTO> getTournamentsByParticipant() {
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // Obtener todos los equipos donde el usuario es miembro
+        List<Team> userTeams = teamRepository.findByMembers(user);
+        
+        // Obtener todos los torneos donde estos equipos están registrados
+        List<Tournament> participatingTournaments = teamRegisteredTournamentRepository
+                .findAll()
+                .stream()
+                .filter(registration -> userTeams.contains(registration.getTeam()))
+                .map(TeamRegisteredTournament::getTournament)
+                .distinct()
+                .toList();
+
+        return participatingTournaments.stream()
                 .map(this::toDTO)
                 .toList();
     }

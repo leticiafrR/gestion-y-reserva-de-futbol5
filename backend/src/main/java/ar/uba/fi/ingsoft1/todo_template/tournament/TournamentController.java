@@ -197,6 +197,17 @@ public class TournamentController {
         return ResponseEntity.ok(tournaments);
     }
 
+    @GetMapping("/participating")
+    @Operation(summary = "Get tournaments by participant", description = "Returns a list of all tournaments where the authenticated user is participating as a team member")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of tournaments where the user is participating", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = TournamentSummaryDTO.class)))),
+            @ApiResponse(responseCode = "404", description = "User not found", content = @Content(mediaType = "text/plain"))
+    })
+    public ResponseEntity<List<TournamentSummaryDTO>> getTournamentsByParticipant() {
+        List<TournamentSummaryDTO> tournaments = tournamentService.getTournamentsByParticipant();
+        return ResponseEntity.ok(tournaments);
+    }
+
     @GetMapping("/{id}/teams")
     @Operation(summary = "Get tournament teams with statistics", description = "Returns all teams registered in the tournament with their current statistics")
     @ApiResponses(value = {
