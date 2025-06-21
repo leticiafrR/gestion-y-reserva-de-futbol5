@@ -60,6 +60,8 @@ export const useAvailableMatches = () => {
     queryKey: ["availableMatches", userProfile?.id],
     queryFn: () => fetchAvailableMatches(userProfile),
     enabled: !!userProfile,
+    staleTime: 0,
+    gcTime: 0,
   });
 }
 
@@ -137,6 +139,8 @@ export const useMyMatches = () => {
     queryKey: ["myMatches", userProfile?.id],
     queryFn: () => fetchMyMatches(userProfile),
     enabled: !!userProfile,
+    staleTime: 0,
+    gcTime: 0,
   });
 }
 

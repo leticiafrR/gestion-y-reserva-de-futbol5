@@ -151,6 +151,17 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
   const isOpenMatch = localMatch.matchType === "open" && !hasAssignedTeams;
   const isConfirmedMatch = hasAssignedTeams;
 
+  const formatDate = (dateString: string) => {
+    // Reemplazar guiones con barras para evitar problemas de zona horaria (UTC vs. local)
+    const date = new Date(dateString.replace(/-/g, "/"));
+    return new Intl.DateTimeFormat("es-ES", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(date);
+  };
+
   const getStatusText = () => {
     if (!localMatch.isActive) return "Cancelado";
     if (isConfirmedMatch) return "Confirmado";
@@ -323,12 +334,7 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <Calendar size={16} color="#6c757d" />
           <span style={{ fontSize: "14px", color: "#212529" }}>
-            {new Date(localMatch.booking.bookingDate).toLocaleDateString("es-ES", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            {formatDate(localMatch.booking.bookingDate)}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>

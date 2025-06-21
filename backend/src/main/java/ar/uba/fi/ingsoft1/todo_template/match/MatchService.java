@@ -159,7 +159,17 @@ public class MatchService {
         return closeMatchRepo.findByTeamOne_IdAndTeamTwo_Id(teamOneId, teamTwoId);
     }
     public List<CloseMatch> listActiveCloseMatches() {
-        return closeMatchRepo.findByIsActiveTrue();
+        LocalDate today = LocalDate.now();
+        List<CloseMatch> allActiveMatches = closeMatchRepo.findByIsActiveTrue();
+        List<CloseMatch> futureMatches = new ArrayList<>();
+
+        for (CloseMatch match : allActiveMatches) {
+            if (match.getBooking().getBookingDate().isAfter(today) ||
+                match.getBooking().getBookingDate().isEqual(today)) {
+                futureMatches.add(match);
+            }
+        }
+        return futureMatches;
     }
 
     @Transactional
