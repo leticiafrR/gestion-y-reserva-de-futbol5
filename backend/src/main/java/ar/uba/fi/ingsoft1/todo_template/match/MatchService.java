@@ -63,6 +63,29 @@ public class MatchService {
     }
 
     @Transactional
+    public void deleteMatch(Booking booking) {
+        Optional<OpenMatch> openMatchOpt = openMatchRepo.findByBooking(booking);
+
+        if (openMatchOpt.isPresent()) {
+            OpenMatch openMatch = openMatchOpt.get();
+
+            if (openMatch.getTeamOne() != null) {
+                openMatchTeamRepo.delete(openMatch.getTeamOne());
+            }
+            if (openMatch.getTeamTwo() != null) {
+                openMatchTeamRepo.delete(openMatch.getTeamTwo());
+            }
+
+            openMatchRepo.delete(openMatch);
+            return;
+        }
+
+        Optional<CloseMatch> closeMatchOpt = closeMatchRepo.findByBooking(booking);
+        closeMatchOpt.ifPresent(closeMatchRepo::delete);
+    }
+
+
+    @Transactional
     public OpenMatch joinOpenMatch(Long matchId, String creatorUsername) {
         OpenMatch match = openMatchRepo.findById(matchId).orElseThrow();
         User user = userService.findByUsernameOrThrow(creatorUsername);

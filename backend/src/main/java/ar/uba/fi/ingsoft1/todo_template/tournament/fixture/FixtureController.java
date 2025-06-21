@@ -26,7 +26,7 @@ public class FixtureController {
             @ApiResponse(responseCode = "200", description = "Fixture generado exitosamente"),
             @ApiResponse(responseCode = "403", description = "Solo el organizador puede generar el fixture"),
             @ApiResponse(responseCode = "404", description = "Torneo no encontrado"),
-            @ApiResponse(responseCode = "409", description = "El torneo aún está abierto a inscripciones")
+            @ApiResponse(responseCode = "409", description = "El torneo aún está abierto a inscripciones o ya existe un fixture para este torneo")
     })
     public ResponseEntity<List<TournamentMatch>> generateFixture(@PathVariable Long tournamentId) {
         return ResponseEntity.ok(fixtureService.generateFixture(tournamentId));
