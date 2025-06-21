@@ -82,6 +82,11 @@ public class FixtureService {
 
         checkActionCarriedOutByOrganizer(tournament.getOrganizer().username());
 
+        List<TournamentMatch> existingMatches = tournamentMatchRepository.findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
+        if (!existingMatches.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Fixture already exists for this tournament");
+        }
+
         if (tournament.isStillOpenForRegistration()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tournament is still open for registration");
         }
@@ -166,7 +171,6 @@ public class FixtureService {
         match.setAwayTeamScore(result.awayTeamScore());
         match.setStatus(MatchStatus.COMPLETED);
 
-        // Create CloseMatch for current match if it doesn't exist
         if (match.getHomeTeam() != null && match.getAwayTeam() != null && match.getMatch() == null) {
             createMatchForTournamentMatch(match);
         }
@@ -236,7 +240,6 @@ public class FixtureService {
             }
         }
 
-        // Match statistics
         if (!matches.isEmpty()) {
             int totalGoals = matches.stream()
                     .filter(match -> match.getStatus() == MatchStatus.COMPLETED)
