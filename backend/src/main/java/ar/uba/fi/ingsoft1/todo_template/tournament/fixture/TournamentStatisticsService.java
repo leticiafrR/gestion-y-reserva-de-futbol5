@@ -90,7 +90,7 @@ public class TournamentStatisticsService {
                 return Integer.compare(t2.getGoalsFor(), t1.getGoalsFor());
             });
 
-            if (tournament.getState() == TournamentState.FINISHED && teams.size() >= 1) {
+            if (!matches.isEmpty() && completedMatches == matches.size()) {
                 statistics.put("champion", teams.get(0).getTeam().getName());
                 if (teams.size() >= 2) {
                     statistics.put("runnerUp", teams.get(1).getTeam().getName());

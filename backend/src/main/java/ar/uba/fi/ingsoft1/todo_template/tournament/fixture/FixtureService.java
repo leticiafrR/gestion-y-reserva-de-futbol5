@@ -2,7 +2,6 @@ package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentState;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournamentRepository;
@@ -42,7 +41,8 @@ public class FixtureService {
     private final TimeSlotService timeSlotService;
     private final TournamentStatisticsService tournamentStatisticsService;
 
-    private static final LocalTime MATCH_START_TIME = LocalTime.of(18, 0); // 6:00 PM
+    private static final LocalTime MATCH_START_TIME = LocalTime.of(18, 0);
+    private static final LocalTime MATCH_END_TIME = LocalTime.of(23, 0);
     private static final int MATCH_DURATION_MINUTES = 90; // 90 minutos
 
     public FixtureService(
@@ -122,6 +122,14 @@ public class FixtureService {
             final int MAX_ATTEMPTS = 5000;
 
             while (!scheduled && attempts < MAX_ATTEMPTS) {
+                if (proposedTime.toLocalTime().isAfter(MATCH_END_TIME) || proposedTime.toLocalTime().isBefore(MATCH_START_TIME)) {
+                    if (proposedTime.toLocalTime().isAfter(MATCH_END_TIME)) {
+                        proposedTime = proposedTime.toLocalDate().plusDays(1).atTime(MATCH_START_TIME);
+                    } else {
+                        proposedTime = proposedTime.with(MATCH_START_TIME);
+                    }
+                    continue;
+                }
                 Field field = match.getField();
                 DayOfWeek dayOfWeek = proposedTime.getDayOfWeek();
                 int hour = proposedTime.getHour();
