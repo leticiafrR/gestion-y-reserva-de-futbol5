@@ -228,7 +228,13 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
   }
 
   const formatDate = (year: number, month: number, day: number) => {
-    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    // Crear la fecha directamente en formato YYYY-MM-DD sin usar Date constructor
+    // para evitar problemas de zona horaria
+    const monthStr = String(month + 1).padStart(2, "0") // month es 0-11, necesitamos 1-12
+    const dayStr = String(day).padStart(2, "0")
+    const yearStr = String(year)
+    
+    return `${yearStr}-${monthStr}-${dayStr}`
   }
 
   const handleDateSelect = (day: number) => {
@@ -257,7 +263,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
         } catch (refreshError) {
           console.error("Error refreshing blocked slots:", refreshError)
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("Error en applySpecificDate:", e)
         alert("Error al agregar el horario bloqueado: " + (e?.message || e))
       }
@@ -619,7 +625,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
               <>
                 {/* Mostrar fechas específicas configuradas */}
                 {blockedSlots.map((slot) => {
-                  const formattedDate = new Date(slot.date).toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+                  const formattedDate = new Date(slot.date).toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
 
                   return (
                     <div key={`${slot.date}-${slot.hour}`}>
@@ -671,7 +677,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                             Evento especial para fecha específica
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "14px" }}>{slot.hour}</span>
+                            <span style={{ fontSize: "14px" }}>{slot.hour.toString().padStart(2, "0")}:00</span>
                           </div>
                         </div>
                       </div>

@@ -117,9 +117,18 @@ public class MatchService {
     }
 
     @Transactional
-    
     public List<OpenMatch> listActiveOpenMatches() {
-        return openMatchRepo.findByIsActiveTrue();
+        LocalDate today = LocalDate.now();
+        List<OpenMatch> allActiveMatches = openMatchRepo.findByIsActiveTrue();
+        List<OpenMatch> futureMatches = new ArrayList<>();
+        
+        for (OpenMatch match : allActiveMatches) {
+            if (match.getBooking().getBookingDate().isAfter(today) || 
+                match.getBooking().getBookingDate().isEqual(today)) {
+                futureMatches.add(match);
+            }
+        }
+        return futureMatches;
     }
 
     @Transactional
@@ -162,30 +171,85 @@ public class MatchService {
 
     public List<OpenMatch> getPastOpenMatchesForUser(String username) {
         User user = userService.findByUsernameOrThrow(username);
+        LocalDate today = LocalDate.now();
+        List<OpenMatch> allMatches = openMatchRepo.findAll();
+        List<OpenMatch> pastMatches = new ArrayList<>();
 
-        LocalDate date = LocalDate.now();
-        List<OpenMatch> openMatches = openMatchRepo.findByIsActiveTrue();
-        List<OpenMatch> openMatchesFinal = new ArrayList<>();
-
-        for (OpenMatch openMatch : openMatches) {
-            if (openMatch.getBooking().getUser().equals(user) && openMatch.getBooking().getBookingDate().isBefore(date)) {
-                openMatchesFinal.add(openMatch);
+        for (OpenMatch openMatch : allMatches) {
+            boolean userParticipates = openMatch.getPlayers().stream()
+                .anyMatch(player -> player.getId().equals(user.getId()));
+            boolean isPastMatch = openMatch.getBooking().getBookingDate().isBefore(today);
+            
+            if (userParticipates && isPastMatch) {
+                pastMatches.add(openMatch);
             }
         }
-        return openMatchesFinal;
+        
+        return pastMatches;
     }
     public List<CloseMatch> getPastCloseMatchesForUser(String username) {
         User user = userService.findByUsernameOrThrow(username);
-
-        LocalDate date = LocalDate.now();
-        List<CloseMatch> closeMatches = closeMatchRepo.findByIsActiveTrue();
-        List<CloseMatch> closeMatchesFinal = new ArrayList<>();
-        for (CloseMatch closeMatch : closeMatches) {
-            if (closeMatch.getBooking().getUser().equals(user) && closeMatch.getBooking().getBookingDate().isBefore(date)) {
-                closeMatchesFinal.add(closeMatch);
+        LocalDate today = LocalDate.now();
+        List<CloseMatch> allMatches = closeMatchRepo.findAll();
+        List<CloseMatch> pastMatches = new ArrayList<>();
+        
+        for (CloseMatch closeMatch : allMatches) {
+            boolean userParticipates = false;
+            
+            if (closeMatch.getTeamOne() != null && closeMatch.getTeamOne().getMembers() != null) {
+                userParticipates = closeMatch.getTeamOne().getMembers().stream()
+                    .anyMatch(member -> member.getId().equals(user.getId()));
+            }
+            
+            if (!userParticipates && closeMatch.getTeamTwo() != null && closeMatch.getTeamTwo().getMembers() != null) {
+                userParticipates = closeMatch.getTeamTwo().getMembers().stream()
+                    .anyMatch(member -> member.getId().equals(user.getId()));
+            }
+            
+            boolean isPastMatch = closeMatch.getBooking().getBookingDate().isBefore(today);
+            
+            if (userParticipates && isPastMatch) {
+                pastMatches.add(closeMatch);
             }
         }
-        return closeMatchesFinal;
+        
+        return pastMatches;
+    }
+
+    public List<OpenMatch> getPastOpenMatchesForOwner(String ownerUsername) {
+        User owner = userService.findByUsernameOrThrow(ownerUsername);
+        LocalDate today = LocalDate.now();
+        List<OpenMatch> allMatches = openMatchRepo.findAll();
+        List<OpenMatch> pastMatches = new ArrayList<>();
+
+        for (OpenMatch openMatch : allMatches) {
+            boolean isOwnerField = openMatch.getBooking().getTimeSlot().getField().getOwner().getId().equals(owner.getId());
+            boolean isPastMatch = openMatch.getBooking().getBookingDate().isBefore(today);
+            
+            if (isOwnerField && isPastMatch) {
+                pastMatches.add(openMatch);
+            }
+        }
+        
+        return pastMatches;
+    }
+
+    public List<CloseMatch> getPastCloseMatchesForOwner(String ownerUsername) {
+        User owner = userService.findByUsernameOrThrow(ownerUsername);
+        LocalDate today = LocalDate.now();
+        List<CloseMatch> allMatches = closeMatchRepo.findAll();
+        List<CloseMatch> pastMatches = new ArrayList<>();
+        
+        for (CloseMatch closeMatch : allMatches) {
+            boolean isOwnerField = closeMatch.getBooking().getTimeSlot().getField().getOwner().getId().equals(owner.getId());
+            boolean isPastMatch = closeMatch.getBooking().getBookingDate().isBefore(today);
+            
+            if (isOwnerField && isPastMatch) {
+                pastMatches.add(closeMatch);
+            }
+        }
+        
+        return pastMatches;
     }
 
     public void notifyTeams(OpenMatch match) {

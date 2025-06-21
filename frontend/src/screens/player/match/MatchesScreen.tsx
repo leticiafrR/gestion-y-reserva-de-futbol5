@@ -2,14 +2,15 @@
 
 import { useState } from "react"
 import { ArrowLeft, Plus, Users, Calendar, Filter, History } from "lucide-react"
-import { useAvailableMatches, useMyMatches, useMatchHistory, useUserProfile } from "@/services/MatchServices"
+import { useAvailableMatches, useMyMatches, useMatchHistory } from "@/services/MatchServices"
+import { useUserProfile } from "@/services/UserServices"
 import { MatchCard } from "./MatchCard"
 import { CreateMatchModal } from "./CreateMatchModal"
 import { MatchDetailsModal } from "./MatchDetailsModal"
 import type { Match } from "@/models/Match"
 
 export const MatchesScreen = () => {
-  useUserProfile();
+  const { data: userProfile } = useUserProfile();
   const [activeTab, setActiveTab] = useState<"available" | "my-matches" | "history">("available")
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [showFilters, setShowFilters] = useState(false)
@@ -23,8 +24,6 @@ export const MatchesScreen = () => {
   const { data: availableMatches, isLoading: loadingAvailable } = useAvailableMatches()
   const { data: myMatches, isLoading: loadingMy } = useMyMatches()
   const { data: matchHistory, isLoading: loadingHistory } = useMatchHistory()
-
-  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
 
   const filteredAvailableMatches: Match[] = (availableMatches ?? []).filter((match: any) => {
     const matchesDate = dateFilter ? match.booking.bookingDate === dateFilter : true;
@@ -362,7 +361,7 @@ export const MatchesScreen = () => {
           <div>
             {loadingMy ? (
               <div style={{ textAlign: "center", padding: "40px", color: "#6c757d" }}>Cargando mis partidos...</div>
-            ) : myMatches.length === 0 ? (
+            ) : !myMatches || myMatches.length === 0 ? (
               <div
                 style={{
                   textAlign: "center",
@@ -382,7 +381,7 @@ export const MatchesScreen = () => {
                   gap: "20px",
                 }}
               >
-                {myMatches.map((match: any) => (
+                {myMatches?.map((match: any) => (
                   <MatchCard
                     key={match.id}
                     match={match}

@@ -1,4 +1,3 @@
-// @ts-nocheck - Mocked for development
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BASE_API_URL, getAuthToken } from "@/config/app-query-client";
 

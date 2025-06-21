@@ -250,9 +250,12 @@ export const FieldDetailsModal = ({ field, onClose }: FieldDetailsModalProps) =>
           preselectedField={{
             id: field.id,
             name: field.name,
-            location: field.address,
-            surface: field.grassType === "natural" ? "Césped natural" : "Césped sintético",
-            pricePerHour: field.price,
+            address: field.address,
+            zone: field.zone,
+            grassType: field.grassType,
+            lighting: field.lighting,
+            roofing: field.roofing,
+            price: field.price,
           }}
         />
       )}

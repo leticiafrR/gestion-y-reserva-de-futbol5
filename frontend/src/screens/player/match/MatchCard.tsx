@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Calendar, Clock, MapPin, Users, User, Crown, Trophy, Settings } from "lucide-react"
 import type { Match, Player } from "@/models/Match"
 import { useJoinMatch, useLeaveMatch } from "@/services/MatchServices"
+import { useUserProfile } from "@/services/UserServices"
 import { TeamAssignmentModal } from "@/screens/player/match/TeamAssignmentModal"
 
 interface MatchCardProps {
@@ -23,23 +24,23 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
   const [showTeamAssignment, setShowTeamAssignment] = useState(false)
   const [localMatch, setLocalMatch] = useState(match)
   const queryClient = useQueryClient()
+  const { data: userProfile } = useUserProfile()
 
   // Sincronizar localMatch con el prop match cuando cambie
   useEffect(() => {
     setLocalMatch(match)
   }, [match])
 
-  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
-
   const normalizeMail = (mail: string | undefined) => (mail || "").trim().toLowerCase();
 
-  const userEmail = normalizeMail(userProfile.email);
-  const userUsername = normalizeMail(userProfile.username);
+  const userEmail = normalizeMail(userProfile?.email);
+  const userUsername = normalizeMail(userProfile?.username);
 
   const handleJoinMatch = async (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!userProfile) return;
     try {
-      await joinMatch.mutateAsync(String(localMatch.id), 1)
+      await joinMatch.mutateAsync(String(localMatch.id))
       // Toast de éxito
       const toast = document.createElement('div')
       toast.style.position = 'fixed'
@@ -89,8 +90,9 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
 
   const handleLeaveMatch = async (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!userProfile) return;
     try {
-      await leaveMatch.mutateAsync(String(localMatch.id), 1)
+      await leaveMatch.mutateAsync({ matchId: String(localMatch.id) })
       // Toast de éxito
       const toast = document.createElement('div')
       toast.style.position = 'fixed'
@@ -170,14 +172,11 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
         ? localMatch.players
         : [];
 
-        const isParticipant = allPlayers.some((p: any) => p.username === userProfile.email);
-        const isOrganizer = localMatch.booking.user.username === userProfile.email;
-        const canAssignTeams = isOrganizer && allPlayers.length >= localMatch.minPlayers && isOpenMatch;
-        const canJoin = localMatch.isActive && allPlayers.length < localMatch.maxPlayers && !isOrganizer && isOpenMatch;
-        const canLeave = !isOrganizer && isParticipant && localMatch.isActive && isOpenMatch;
-
-
-
+  const isParticipant = userProfile ? allPlayers.some((p: any) => p.id === userProfile.id) : false;
+  const isOrganizer = userProfile ? localMatch.booking.user.id === userProfile.id : false;
+  const canAssignTeams = isOrganizer && allPlayers.length >= localMatch.minPlayers && isOpenMatch;
+  const canJoin = localMatch.isActive && allPlayers.length < localMatch.maxPlayers && !isOrganizer && isOpenMatch;
+  const canLeave = !isOrganizer && isParticipant && localMatch.isActive && isOpenMatch;
 
   const handleMatchUpdate = (updatedMatch: Match) => {
     setLocalMatch(updatedMatch)

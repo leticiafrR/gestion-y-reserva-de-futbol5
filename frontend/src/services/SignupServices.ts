@@ -1,10 +1,6 @@
-// @ts-nocheck - Mocked for development
 import { useMutation } from "@tanstack/react-query";
 import { SignupRequest } from "@/models/Signup";
 import { BASE_API_URL } from "@/config/app-query-client";
-
-// @ts-expect-error - Mocked for development
-// import { LoginResponseSchema } from "@/models/Login";
 
 export function useSignup() {
   return useMutation({
