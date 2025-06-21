@@ -120,7 +120,7 @@ public class TournamentService {
         return true;
     }
 
-    private Tournament getTournament(Long id) {
+    public Tournament getTournament(Long id) {
         return tournamentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
     }
