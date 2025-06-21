@@ -195,21 +195,6 @@ public class FixtureService {
     }
 
     @Transactional
-    public TournamentMatch startMatch(Long matchId) {
-        TournamentMatch match = tournamentMatchRepository.findById(matchId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Match not found"));
-
-        checkActionCarriedOutByOrganizer(match.getTournament().getOrganizer().username());
-
-        if (match.getStatus() != MatchStatus.SCHEDULED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Match is not in scheduled state");
-        }
-
-        match.setStatus(MatchStatus.IN_PROGRESS);
-        return tournamentMatchRepository.save(match);
-    }
-
-    @Transactional
     public TournamentMatch cancelMatch(Long matchId) {
         TournamentMatch match = tournamentMatchRepository.findById(matchId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Match not found"));

@@ -71,4 +71,14 @@ public class TournamentMatch {
     @ManyToOne
     @JoinColumn(name = "match_id")
     private Match match;
+
+    public MatchStatus getStatus() {
+        if (this.status == MatchStatus.COMPLETED || this.status == MatchStatus.CANCELLED) {
+            return this.status;
+        }
+        if (getScheduledDateTime().isAfter(LocalDateTime.now())) {
+            return MatchStatus.SCHEDULED;
+        }
+        return MatchStatus.IN_PROGRESS;
+    }
 }

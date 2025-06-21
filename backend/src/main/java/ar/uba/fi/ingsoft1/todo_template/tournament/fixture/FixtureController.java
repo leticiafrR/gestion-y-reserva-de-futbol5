@@ -63,21 +63,6 @@ public class FixtureController {
         return ResponseEntity.ok(fixtureService.updateMatchResult(matchId, result));
     }
 
-    @PostMapping("/matches/{matchId}/start")
-    @Operation(
-            summary = "Marcar un partido como 'en progreso'",
-            description = "Permite al organizador marcar un partido como 'en progreso'. Solo los partidos programados pueden ser iniciados."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Partido iniciado exitosamente"),
-            @ApiResponse(responseCode = "403", description = "Solo el organizador puede iniciar partidos"),
-            @ApiResponse(responseCode = "404", description = "Partido no encontrado"),
-            @ApiResponse(responseCode = "409", description = "El partido no está en estado programado")
-    })
-    public ResponseEntity<TournamentMatch> startMatch(@PathVariable Long tournamentId, @PathVariable Long matchId) {
-        return ResponseEntity.ok(fixtureService.startMatch(matchId));
-    }
-
     @PostMapping("/matches/{matchId}/cancel")
     @Operation(
             summary = "Cancelar un partido",
