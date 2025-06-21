@@ -1,5 +1,8 @@
 package ar.uba.fi.ingsoft1.todo_template.booking;
 
+import ar.uba.fi.ingsoft1.todo_template.match.CloseMatchRepository;
+import ar.uba.fi.ingsoft1.todo_template.match.MatchService;
+import ar.uba.fi.ingsoft1.todo_template.match.OpenMatchRepository;
 import ar.uba.fi.ingsoft1.todo_template.timeslot.TimeSlotService;
 import ar.uba.fi.ingsoft1.todo_template.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserService userService;
     private final TimeSlotService timeslotService;
+    private final MatchService matchService;
 
     public List<BookingDTO> getBookingsByField(Long fieldId) {
         return bookingRepository.findByTimeSlot_Field_IdAndActiveTrue(fieldId).stream()
@@ -68,6 +72,7 @@ public class BookingService {
             throw new IllegalStateException("Booking is already cancelled");
         }
 
+        matchService.deleteMatch(booking);
         booking.cancel();
         bookingRepository.save(booking);
     }

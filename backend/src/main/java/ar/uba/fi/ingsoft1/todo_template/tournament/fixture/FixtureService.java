@@ -28,6 +28,9 @@ import java.time.DayOfWeek;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -61,12 +64,15 @@ public class FixtureService {
         this.closeMatchRepository = closeMatchRepository;
         this.bookingRepository = bookingRepository;
         this.timeSlotService = timeSlotService;
-        RoundRobinGenerator roundRobinGenerator = new RoundRobinGenerator();
-        this.fixtureGenerators = new HashMap<>();
-        this.fixtureGenerators.put(TournamentFormat.SINGLE_ELIMINATION, new SingleEliminationGenerator());
-        this.fixtureGenerators.put(TournamentFormat.GROUP_STAGE_AND_ELIMINATION, new GroupStageAndEliminationGenerator(roundRobinGenerator));
-        this.fixtureGenerators.put(TournamentFormat.ROUND_ROBIN, roundRobinGenerator);
 
+        RoundRobinGenerator roundRobinGenerator = new RoundRobinGenerator();
+        SingleEliminationGenerator singleEliminationGenerator = new SingleEliminationGenerator();
+        GroupStageAndEliminationGenerator groupStageAndEliminationGenerator = new GroupStageAndEliminationGenerator(roundRobinGenerator, singleEliminationGenerator);
+
+        this.fixtureGenerators = new HashMap<>();
+        this.fixtureGenerators.put(TournamentFormat.ROUND_ROBIN, roundRobinGenerator);
+        this.fixtureGenerators.put(TournamentFormat.SINGLE_ELIMINATION, singleEliminationGenerator);
+        this.fixtureGenerators.put(TournamentFormat.GROUP_STAGE_AND_ELIMINATION, groupStageAndEliminationGenerator);
     }
 
     @Transactional
@@ -75,6 +81,11 @@ public class FixtureService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
 
         checkActionCarriedOutByOrganizer(tournament.getOrganizer().username());
+
+        List<TournamentMatch> existingMatches = tournamentMatchRepository.findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
+        if (!existingMatches.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Fixture already exists for this tournament");
+        }
 
         if (tournament.isStillOpenForRegistration()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tournament is still open for registration");
@@ -132,13 +143,14 @@ public class FixtureService {
             );
             bookingRepository.save(booking);
 
-            CloseMatch closeMatch = new CloseMatch();
-            closeMatch.setBooking(booking);
-            closeMatch.setTeamOne(match.getHomeTeam() != null ? match.getHomeTeam().getTeam() : null);
-            closeMatch.setTeamTwo(match.getAwayTeam() != null ? match.getAwayTeam().getTeam() : null);
-            closeMatchRepository.save(closeMatch);
-
-            match.setMatch(closeMatch);
+            if (match.getHomeTeam() != null && match.getAwayTeam() != null) {
+                CloseMatch closeMatch = new CloseMatch();
+                closeMatch.setBooking(booking);
+                closeMatch.setTeamOne(match.getHomeTeam().getTeam());
+                closeMatch.setTeamTwo(match.getAwayTeam().getTeam());
+                closeMatchRepository.save(closeMatch);
+                match.setMatch(closeMatch);
+            }
         }
 
         return tournamentMatchRepository.saveAll(matches);
@@ -159,8 +171,11 @@ public class FixtureService {
         match.setAwayTeamScore(result.awayTeamScore());
         match.setStatus(MatchStatus.COMPLETED);
 
-        updateTeamStatistics(match);
+        if (match.getHomeTeam() != null && match.getAwayTeam() != null && match.getMatch() == null) {
+            createMatchForTournamentMatch(match);
+        }
 
+        updateTeamStatistics(match);
         updateNextMatch(match);
         return tournamentMatchRepository.save(match);
     }
@@ -225,7 +240,6 @@ public class FixtureService {
             }
         }
 
-        // Match statistics
         if (!matches.isEmpty()) {
             int totalGoals = matches.stream()
                     .filter(match -> match.getStatus() == MatchStatus.COMPLETED)
@@ -263,8 +277,25 @@ public class FixtureService {
     }
 
     private void updateNextMatch(TournamentMatch completedMatch) {
+        Tournament tournament = completedMatch.getTournament();
+
+        if (tournament.getFormat() == TournamentFormat.ROUND_ROBIN) {
+            checkRoundRobinTournamentCompletion(tournament);
+            return;
+        }
+
         TournamentMatch nextMatch = completedMatch.getNextMatch();
-        if (nextMatch == null) return;
+
+        if (nextMatch == null) {
+            TeamRegisteredTournament champion = determineWinner(completedMatch);
+            TeamRegisteredTournament runnerUp = determineLoser(completedMatch);
+
+            if (champion != null) {
+                tournament.setEndDate(LocalDate.now());
+                tournamentRepository.save(tournament);
+            }
+            return;
+        }
 
         TeamRegisteredTournament winner = determineWinner(completedMatch);
         if (winner == null) return;
@@ -275,7 +306,67 @@ public class FixtureService {
             nextMatch.setAwayTeam(winner);
         }
 
+        if (nextMatch.getHomeTeam() != null && nextMatch.getAwayTeam() != null) {
+            createMatchForTournamentMatch(nextMatch);
+        }
+
         tournamentMatchRepository.save(nextMatch);
+    }
+
+    private void checkRoundRobinTournamentCompletion(Tournament tournament) {
+        List<TournamentMatch> allMatches = tournamentMatchRepository.findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
+
+        boolean allMatchesCompleted = allMatches.stream()
+                .allMatch(match -> match.getStatus() == MatchStatus.COMPLETED);
+
+        if (allMatchesCompleted) {
+            List<TeamRegisteredTournament> teams = teamRegisteredTournamentRepository.findByTournament(tournament);
+
+            teams.sort((t1, t2) -> {
+                if (t1.getPoints() != t2.getPoints()) {
+                    return Integer.compare(t2.getPoints(), t1.getPoints());
+                }
+                if (t1.getGoalDifference() != t2.getGoalDifference()) {
+                    return Integer.compare(t2.getGoalDifference(), t1.getGoalDifference());
+                }
+                return Integer.compare(t2.getGoalsFor(), t1.getGoalsFor());
+            });
+
+            if (!teams.isEmpty()) {
+                TeamRegisteredTournament champion = teams.get(0);
+                TeamRegisteredTournament runnerUp = teams.size() > 1 ? teams.get(1) : null;
+
+                tournament.setEndDate(LocalDate.now());
+                tournamentRepository.save(tournament);
+
+            }
+        }
+    }
+
+    private void createMatchForTournamentMatch(TournamentMatch tournamentMatch) {
+        DayOfWeek dayOfWeek = tournamentMatch.getScheduledDateTime().getDayOfWeek();
+        int hour = tournamentMatch.getScheduledDateTime().getHour();
+        TimeSlot timeSlot = timeSlotService.getTimeSlotByFieldAndDay(tournamentMatch.getField().getId(), dayOfWeek);
+
+        if (timeSlot == null || hour < timeSlot.getOpenTime() || hour >= timeSlot.getCloseTime()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No hay franja horaria para la cancha y hora del partido");
+        }
+
+        Booking booking = new Booking(
+                tournamentMatch.getTournament().getOrganizer(),
+                timeSlot,
+                tournamentMatch.getScheduledDateTime().toLocalDate(),
+                hour
+        );
+        bookingRepository.save(booking);
+
+        CloseMatch closeMatch = new CloseMatch();
+        closeMatch.setBooking(booking);
+        closeMatch.setTeamOne(tournamentMatch.getHomeTeam().getTeam());
+        closeMatch.setTeamTwo(tournamentMatch.getAwayTeam().getTeam());
+        closeMatchRepository.save(closeMatch);
+
+        tournamentMatch.setMatch(closeMatch);
     }
 
     private TeamRegisteredTournament determineWinner(TournamentMatch match) {
@@ -283,6 +374,15 @@ public class FixtureService {
             return match.getHomeTeam();
         } else if (match.getAwayTeamScore() > match.getHomeTeamScore()) {
             return match.getAwayTeam();
+        }
+        return null;
+    }
+
+    private TeamRegisteredTournament determineLoser(TournamentMatch match) {
+        if (match.getHomeTeamScore() > match.getAwayTeamScore()) {
+            return match.getAwayTeam();
+        } else if (match.getAwayTeamScore() > match.getHomeTeamScore()) {
+            return match.getHomeTeam();
         }
         return null;
     }
