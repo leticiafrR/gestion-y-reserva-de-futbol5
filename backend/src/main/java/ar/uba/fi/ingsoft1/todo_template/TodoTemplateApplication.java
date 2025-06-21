@@ -15,13 +15,4 @@ public class TodoTemplateApplication {
 		SpringApplication.run(TodoTemplateApplication.class, args);
 	}
 
-	@Bean
-	public CommandLineRunner logEntities(EntityManagerFactory emf) {
-		return args -> {
-			Metamodel metamodel = emf.getMetamodel();
-			System.out.println("Entidades detectadas por Hibernate:");
-			metamodel.getEntities().forEach(e -> System.out.println(" - " + e.getName()));
-		};
-	}
-
 }
