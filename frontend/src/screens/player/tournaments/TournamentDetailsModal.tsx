@@ -3,6 +3,8 @@ import { Edit, Trash2, X } from "lucide-react";
 import { EditTournamentModal } from "./EditTournamentModal";
 import { DeleteTournamentConfirmationModal } from "./DeleteTournamentConfirmationModal";
 import { useDeleteTournament } from "@/services/TournamentService";
+import { useFixtureService } from "@/services/FixtureService";
+import { useLocation } from "wouter";
 
 interface TournamentDetailsModalProps {
   tournament: any;
@@ -23,8 +25,10 @@ export const TournamentDetailsModal = ({
 }: TournamentDetailsModalProps) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [, setLocation] = useLocation();
   
   const { mutate: deleteTournament, isPending: isDeleting } = useDeleteTournament();
+  const { generateFixture, isGenerating: isGeneratingFixture } = useFixtureService();
 
   const isOrganizer = context === "organizing";
   
@@ -39,6 +43,19 @@ export const TournamentDetailsModal = ({
         onSuccessToast(`Error al eliminar: ${error.message}`);
       }
     });
+  };
+
+  const handleGenerateFixture = async () => {
+    try {
+      const data = await generateFixture(tournament.id);
+      console.log("Fixture generado exitosamente. Respuesta:", data);
+      onSuccessToast("Fixture generado exitosamente.");
+      setLocation(`/tournament/${encodeURIComponent(tournament.name)}/fixture`);
+      onClose();
+    } catch (error: any) {
+      console.error("Error al generar el fixture:", error);
+      onSuccessToast(`Error al generar el fixture: ${error.message}`);
+    }
   };
   
   const getStateLabel = (state: string) => {
@@ -90,6 +107,15 @@ export const TournamentDetailsModal = ({
             {tournament.registrationFee > 0 && <div style={{ color: "#374151", fontSize: 16, marginBottom: 8 }}><b>Inscripción:</b> ${tournament.registrationFee}</div>}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+            {isOrganizer && tournament.state === "CLOSE_TO_REGISTER_NOT_STARTED" && (
+                <button 
+                  onClick={handleGenerateFixture} 
+                  style={{ padding: "10px 18px", background: "#10b981", color: "white", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 15 }}
+                  disabled={isGeneratingFixture}
+                >
+                  {isGeneratingFixture ? "Generando..." : "Fixture"}
+                </button>
+            )}
             {isOrganizer && (
               <>
                 <button onClick={() => setShowEditModal(true)} style={{ padding: "10px 18px", background: "#3b82f6", color: "white", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", gap: 6 }}>
