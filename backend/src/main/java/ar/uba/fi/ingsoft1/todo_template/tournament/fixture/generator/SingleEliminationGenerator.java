@@ -18,13 +18,11 @@ public class SingleEliminationGenerator implements FixtureGenerator {
         List<TeamRegisteredTournament> shuffledTeams = new ArrayList<>(teams);
         Collections.shuffle(shuffledTeams);
 
-        // Calculate number of rounds and necessary "byes" for non-power-of-two teams
         int numTeams = shuffledTeams.size();
         int numRounds = (int) Math.ceil(Math.log(numTeams) / Math.log(2));
         int totalSlotsInFirstRound = (int) Math.pow(2, numRounds);
         int numByes = totalSlotsInFirstRound - numTeams;
 
-        // Generate all matches for all rounds without teams first
         List<TournamentMatch> allMatches = new ArrayList<>();
         int matchCounter = 1;
         for (int round = 1; round <= numRounds; round++) {
@@ -39,11 +37,9 @@ public class SingleEliminationGenerator implements FixtureGenerator {
             }
         }
 
-        // Link matches to their next match
         for (int i = 0; i < allMatches.size() - 1; i++) {
             TournamentMatch currentMatch = allMatches.get(i);
             if (currentMatch.getRoundNumber() < numRounds) {
-                // The next match is found by looking at the start of the next round's matches
                 int matchesInCurrentRound = (int) Math.pow(2, numRounds - currentMatch.getRoundNumber());
                 int matchesInNextRound = (int) Math.pow(2, numRounds - (currentMatch.getRoundNumber() + 1));
                 int baseIndexOfCurrentRound = (int) Math.pow(2, numRounds)
@@ -61,7 +57,6 @@ public class SingleEliminationGenerator implements FixtureGenerator {
             }
         }
 
-        // Assign teams to the first round
         List<TournamentMatch> firstRoundMatches = allMatches.stream()
                 .filter(m -> m.getRoundNumber() == 1)
                 .collect(Collectors.toList());
@@ -70,13 +65,10 @@ public class SingleEliminationGenerator implements FixtureGenerator {
         int byesToGive = numByes;
 
         for (TournamentMatch match : firstRoundMatches) {
-            // Teams with byes advance automatically
             if (byesToGive > 0) {
                 match.setHomeTeam(shuffledTeams.get(teamIndex++));
-                match.setAwayTeam(null); // This team has a bye
+                match.setAwayTeam(null);
                 byesToGive--;
-
-                // Automatically advance the team with the bye
                 updateNextMatchWithWinner(match, match.getHomeTeam());
 
             } else {
