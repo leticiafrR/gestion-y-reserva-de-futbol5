@@ -2,12 +2,12 @@ package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
+import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentRepository;
+import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournamentRepository;
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
 import ar.uba.fi.ingsoft1.todo_template.field.FieldRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.generator.*;
-import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
-import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
 import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -66,8 +66,7 @@ public class FixtureService {
 
         RoundRobinGenerator roundRobinGenerator = new RoundRobinGenerator();
         SingleEliminationGenerator singleEliminationGenerator = new SingleEliminationGenerator();
-        GroupStageAndEliminationGenerator groupStageAndEliminationGenerator = new GroupStageAndEliminationGenerator(
-                roundRobinGenerator, singleEliminationGenerator);
+        GroupStageAndEliminationGenerator groupStageAndEliminationGenerator = new GroupStageAndEliminationGenerator(roundRobinGenerator, singleEliminationGenerator);
 
         this.fixtureGenerators = new HashMap<>();
         this.fixtureGenerators.put(TournamentFormat.ROUND_ROBIN, roundRobinGenerator);
@@ -77,13 +76,23 @@ public class FixtureService {
 
     @Transactional
     public List<TournamentMatch> generateFixture(Long tournamentId) {
+        Tournament tournament = validateAndGetTournament(tournamentId);
+        List<TeamRegisteredTournament> teams = validateAndGetTeams(tournament);
+        List<TournamentMatch> matches = generateMatches(tournament, teams);
+        assignFieldsToMatches(matches);
+        scheduleMatches(matches, tournament);
+        createBookingsAndMatches(matches, tournament);
+
+        return tournamentMatchRepository.saveAll(matches);
+    }
+
+    private Tournament validateAndGetTournament(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
 
         checkActionCarriedOutByOrganizer(tournament.getOrganizer().username());
 
-        List<TournamentMatch> existingMatches = tournamentMatchRepository
-                .findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
+        List<TournamentMatch> existingMatches = tournamentMatchRepository.findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
         if (!existingMatches.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Fixture already exists for this tournament");
         }
@@ -92,18 +101,26 @@ public class FixtureService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tournament is still open for registration");
         }
 
+        return tournament;
+    }
+
+    private List<TeamRegisteredTournament> validateAndGetTeams(Tournament tournament) {
         List<TeamRegisteredTournament> teams = teamRegisteredTournamentRepository.findByTournament(tournament);
         if (teams.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No teams found for tournament");
         }
+        return teams;
+    }
 
+    private List<TournamentMatch> generateMatches(Tournament tournament, List<TeamRegisteredTournament> teams) {
         FixtureGenerator generator = fixtureGenerators.get(tournament.getFormat());
         if (generator == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid tournament format");
         }
+        return generator.generateFixture(tournament, teams);
+    }
 
-        List<TournamentMatch> matches = generator.generateFixture(tournament, teams);
-
+    private void assignFieldsToMatches(List<TournamentMatch> matches) {
         List<Field> availableFields = fieldRepository.findByActiveTrue();
         if (availableFields.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No available fields to schedule matches");
@@ -114,64 +131,86 @@ public class FixtureService {
             match.setField(availableFields.get(fieldIndex));
             fieldIndex = (fieldIndex + 1) % availableFields.size();
         }
+    }
 
+    private void scheduleMatches(List<TournamentMatch> matches, Tournament tournament) {
         LocalDateTime nextAvailableTime = LocalDateTime.of(tournament.getStartDate(), MATCH_START_TIME);
 
         for (TournamentMatch match : matches) {
-            LocalDateTime proposedTime = nextAvailableTime;
-            boolean scheduled = false;
-            int attempts = 0;
-            final int MAX_ATTEMPTS = 5000;
+            LocalDateTime scheduledTime = findAvailableTimeSlot(match, nextAvailableTime);
+            match.setScheduledDateTime(scheduledTime);
+            nextAvailableTime = scheduledTime.plusMinutes(MATCH_DURATION_MINUTES);
+        }
+    }
 
-            while (!scheduled && attempts < MAX_ATTEMPTS) {
-                if (proposedTime.toLocalTime().isAfter(MATCH_END_TIME)
-                        || proposedTime.toLocalTime().isBefore(MATCH_START_TIME)) {
-                    if (proposedTime.toLocalTime().isAfter(MATCH_END_TIME)) {
-                        proposedTime = proposedTime.toLocalDate().plusDays(1).atTime(MATCH_START_TIME);
-                    } else {
-                        proposedTime = proposedTime.with(MATCH_START_TIME);
-                    }
-                    continue;
+    private LocalDateTime findAvailableTimeSlot(TournamentMatch match, LocalDateTime startTime) {
+        LocalDateTime proposedTime = startTime;
+        int attempts = 0;
+        final int MAX_ATTEMPTS = 5000;
+
+        while (attempts < MAX_ATTEMPTS) {
+            if (isTimeWithinMatchWindow(proposedTime)) {
+                if (isTimeSlotAvailable(match.getField(), proposedTime)) {
+                    return proposedTime;
                 }
-                Field field = match.getField();
-                DayOfWeek dayOfWeek = proposedTime.getDayOfWeek();
-                int hour = proposedTime.getHour();
-                TimeSlot timeSlot = timeSlotService.getTimeSlotByFieldAndDay(field.getId(), dayOfWeek);
-
-                if (timeSlot != null && hour >= timeSlot.getOpenTime() && hour < timeSlot.getCloseTime()) {
-                    match.setScheduledDateTime(proposedTime);
-                    scheduled = true;
-                } else {
-                    proposedTime = proposedTime.plusMinutes(MATCH_DURATION_MINUTES);
-                }
-                attempts++;
+            } else {
+                proposedTime = adjustTimeToMatchWindow(proposedTime);
             }
-            if (!scheduled) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Could not find an available time slot for match.");
-            }
-
-            nextAvailableTime = match.getScheduledDateTime().plusMinutes(MATCH_DURATION_MINUTES);
-
-            Booking booking = new Booking(
-                    tournament.getOrganizer(),
-                    timeSlotService.getTimeSlotByFieldAndDay(match.getField().getId(),
-                            match.getScheduledDateTime().getDayOfWeek()),
-                    match.getScheduledDateTime().toLocalDate(),
-                    match.getScheduledDateTime().getHour());
-            bookingRepository.save(booking);
-
-            if (match.getHomeTeam() != null && match.getAwayTeam() != null) {
-                CloseMatch closeMatch = new CloseMatch();
-                closeMatch.setBooking(booking);
-                closeMatch.setTeamOne(match.getHomeTeam().getTeam());
-                closeMatch.setTeamTwo(match.getAwayTeam().getTeam());
-                closeMatchRepository.save(closeMatch);
-                match.setMatch(closeMatch);
-            }
+            proposedTime = proposedTime.plusMinutes(MATCH_DURATION_MINUTES);
+            attempts++;
         }
 
-        return tournamentMatchRepository.saveAll(matches);
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Could not find an available time slot for match.");
+    }
+
+    private boolean isTimeWithinMatchWindow(LocalDateTime time) {
+        LocalTime localTime = time.toLocalTime();
+        return !localTime.isAfter(MATCH_END_TIME) && !localTime.isBefore(MATCH_START_TIME);
+    }
+
+    private LocalDateTime adjustTimeToMatchWindow(LocalDateTime time) {
+        LocalTime localTime = time.toLocalTime();
+        if (localTime.isAfter(MATCH_END_TIME)) {
+            return time.toLocalDate().plusDays(1).atTime(MATCH_START_TIME);
+        } else {
+            return time.with(MATCH_START_TIME);
+        }
+    }
+
+    private boolean isTimeSlotAvailable(Field field, LocalDateTime time) {
+        DayOfWeek dayOfWeek = time.getDayOfWeek();
+        int hour = time.getHour();
+        TimeSlot timeSlot = timeSlotService.getTimeSlotByFieldAndDay(field.getId(), dayOfWeek);
+
+        return timeSlot != null && hour >= timeSlot.getOpenTime() && hour < timeSlot.getCloseTime();
+    }
+
+    private void createBookingsAndMatches(List<TournamentMatch> matches, Tournament tournament) {
+        for (TournamentMatch match : matches) {
+            Booking booking = createBookingForMatch(match, tournament);
+            createCloseMatchIfNeeded(match, booking);
+        }
+    }
+
+    private Booking createBookingForMatch(TournamentMatch match, Tournament tournament) {
+        Booking booking = new Booking(
+                tournament.getOrganizer(),
+                timeSlotService.getTimeSlotByFieldAndDay(match.getField().getId(), match.getScheduledDateTime().getDayOfWeek()),
+                match.getScheduledDateTime().toLocalDate(),
+                match.getScheduledDateTime().getHour()
+        );
+        return bookingRepository.save(booking);
+    }
+
+    private void createCloseMatchIfNeeded(TournamentMatch match, Booking booking) {
+        if (match.getHomeTeam() != null && match.getAwayTeam() != null) {
+            CloseMatch closeMatch = new CloseMatch();
+            closeMatch.setBooking(booking);
+            closeMatch.setTeamOne(match.getHomeTeam().getTeam());
+            closeMatch.setTeamTwo(match.getAwayTeam().getTeam());
+            closeMatchRepository.save(closeMatch);
+            match.setMatch(closeMatch);
+        }
     }
 
     @Transactional
@@ -246,8 +285,7 @@ public class FixtureService {
         }
 
         TeamRegisteredTournament winner = determineWinner(completedMatch);
-        if (winner == null)
-            return;
+        if (winner == null) return;
 
         if (completedMatch.isHomeTeamNextMatch()) {
             nextMatch.setHomeTeam(winner);
@@ -263,8 +301,7 @@ public class FixtureService {
     }
 
     private void checkRoundRobinTournamentCompletion(Tournament tournament) {
-        List<TournamentMatch> allMatches = tournamentMatchRepository
-                .findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
+        List<TournamentMatch> allMatches = tournamentMatchRepository.findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
 
         boolean allMatchesCompleted = allMatches.stream()
                 .allMatch(match -> match.getStatus() == MatchStatus.COMPLETED);
@@ -299,15 +336,15 @@ public class FixtureService {
         TimeSlot timeSlot = timeSlotService.getTimeSlotByFieldAndDay(tournamentMatch.getField().getId(), dayOfWeek);
 
         if (timeSlot == null || hour < timeSlot.getOpenTime() || hour >= timeSlot.getCloseTime()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "No hay franja horaria para la cancha y hora del partido");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No hay franja horaria para la cancha y hora del partido");
         }
 
         Booking booking = new Booking(
                 tournamentMatch.getTournament().getOrganizer(),
                 timeSlot,
                 tournamentMatch.getScheduledDateTime().toLocalDate(),
-                hour);
+                hour
+        );
         bookingRepository.save(booking);
 
         CloseMatch closeMatch = new CloseMatch();
