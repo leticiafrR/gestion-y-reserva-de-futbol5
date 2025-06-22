@@ -246,7 +246,7 @@ public class TournamentService {
 
     public List<TeamRegisteredTournament> getTournamentSortedStandings(Long tournamentId) {
         Tournament tournament = getTournament(tournamentId);
-        return teamRegisteredTournamentHelper.getSortedTeamsForTournament(tournament);
+        return teamRegisteredTournamentHelper.getSortedByStandingsTeamsForTournament(tournament);
     }
 
 }

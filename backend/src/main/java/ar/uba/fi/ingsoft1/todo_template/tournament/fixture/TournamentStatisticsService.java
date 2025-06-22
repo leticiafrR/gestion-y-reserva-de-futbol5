@@ -1,17 +1,20 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.stream.Collectors;
+
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentState;
+import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatchRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentStatisticsDTO;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentStatisticsDTO.TournamentStatisticsDTOBuilder;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatchHelper;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentHelper;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
-import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,6 +22,7 @@ import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -27,15 +31,16 @@ public class TournamentStatisticsService {
     private final TournamentRepository tournamentRepository;
     private final TeamRegisteredTournamentRepository teamRegisteredTournamentRepository;
     private final TournamentMatchRepository tournamentMatchRepository;
+    private final TournamentMatchHelper tournamentMatchHelper;
     private final TeamRegisteredTournamentHelper teamRegisteredTournamentHelper;
 
-    public TournamentStatisticsService(
-            TournamentRepository tournamentRepository,
+    public TournamentStatisticsService(TournamentRepository tournamentRepository,
             TeamRegisteredTournamentRepository teamRegisteredTournamentRepository,
             TournamentMatchRepository tournamentMatchRepository) {
         this.tournamentRepository = tournamentRepository;
         this.teamRegisteredTournamentRepository = teamRegisteredTournamentRepository;
         this.tournamentMatchRepository = tournamentMatchRepository;
+        this.tournamentMatchHelper = new TournamentMatchHelper(tournamentMatchRepository);
         this.teamRegisteredTournamentHelper = new TeamRegisteredTournamentHelper(teamRegisteredTournamentRepository);
     }
 
@@ -69,96 +74,97 @@ public class TournamentStatisticsService {
         teamRegisteredTournamentRepository.save(awayTeam);
     }
 
-    public Map<String, Object> getTournamentStatistics(Long tournamentId) {
+    public TournamentStatisticsDTO getTournamentStatistics(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
 
-        List<TeamRegisteredTournament> sortedTeamsRegistered = teamRegisteredTournamentHelper
-                .getSortedTeamsForTournament(tournament);
+        List<TeamRegisteredTournament> sortedByStandingsTeamsRegistered = teamRegisteredTournamentHelper
+                .getSortedByStandingsTeamsForTournament(tournament);
+        List<TeamName_Goals> teams_goals_SortedByGoals = teamRegisteredTournamentHelper
+                .getSortedTeamsByGoalsFor(tournament)
+                .stream()
+                .map(team -> new TeamName_Goals(team.getTeam().getName(), team.getGoalsFor()))
+                .collect(Collectors.toList());
 
         List<TournamentMatch> matchesTournament = tournamentMatchRepository
                 .findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
-
-        Map<String, Object> statistics = new java.util.HashMap<>();
-        statistics.put("tournamentName", tournament.getName());
-        statistics.put("format", tournament.getFormat());
-        statistics.put("state", tournament.getState());
-        statistics.put("totalTeams", sortedTeamsRegistered.size());
-        statistics.put("totalMatches", matchesTournament.size());
+        Optional<TeamRegisteredTournament> bestDefense = teamRegisteredTournamentHelper
+                .getBestDefensiveTeam(sortedByStandingsTeamsRegistered);
 
         int completedMatches = (int) matchesTournament.stream()
                 .filter(match -> match.getStatus() == MatchStatus.COMPLETED)
                 .count();
 
-        statistics.put("completedMatches", completedMatches);
+        TournamentStatisticsDTOBuilder builder = TournamentStatisticsDTO.builder()
+                .tournamentName(tournament.getName())
+                .format(tournament.getFormat())
+                .state(tournament.getState())
+                .totalTeams(sortedByStandingsTeamsRegistered.size())
+                .totalMatches(matchesTournament.size())
+                .cantCompletedMatches((int) completedMatches)
+                .topScoringTeams(teams_goals_SortedByGoals);
+        if (bestDefense.isPresent()) {
+            builder.bestDefensiveTeam(bestDefense.get().getTeam().getName());
+            builder.bestDefensiveTeamGoalsAgainst(bestDefense.get().getGoalsAgainst());
+        }
+        // Map<String, Object> statistics = new java.util.HashMap<>();
+        // statistics.put("tournamentName", tournament.getName());
+        // statistics.put("format", tournament.getFormat());
+        // statistics.put("state", tournament.getState());
+        // statistics.put("totalTeams", sortedTeamsRegistered.size());
+        // statistics.put("totalMatches", matchesTournament.size());
 
-        if (!sortedTeamsRegistered.isEmpty()) {
+        // builder.cantCompletedMatches(completedMatches);
+
+        if (!sortedByStandingsTeamsRegistered.isEmpty()) {
 
             if (!matchesTournament.isEmpty() && completedMatches == matchesTournament.size()) {
-                statistics.put("champion", sortedTeamsRegistered.get(0).getTeam().getName());
-                if (sortedTeamsRegistered.size() >= 2) {
-                    statistics.put("runnerUp", sortedTeamsRegistered.get(1).getTeam().getName());
+                builder.champion(sortedByStandingsTeamsRegistered.get(0).getTeam().getName());
+                if (sortedByStandingsTeamsRegistered.size() >= 2) {
+                    builder.runnerUp(sortedByStandingsTeamsRegistered.get(1).getTeam().getName());
                 }
             }
 
-            TeamRegisteredTournament topScorer = sortedTeamsRegistered.stream()
-                    .max((t1, t2) -> Integer.compare(t1.getGoalsFor(), t2.getGoalsFor()))
-                    .orElse(null);
-            if (topScorer != null) {
-                statistics.put("topScoringTeam", topScorer.getTeam().getName());
-                statistics.put("topScoringTeamGoals", topScorer.getGoalsFor());
-            }
-
-            TeamRegisteredTournament bestDefense = sortedTeamsRegistered.stream()
-                    .min((t1, t2) -> Integer.compare(t1.getGoalsAgainst(), t2.getGoalsAgainst()))
-                    .orElse(null);
-            if (bestDefense != null) {
-                statistics.put("bestDefensiveTeam", bestDefense.getTeam().getName());
-                statistics.put("bestDefensiveTeamGoalsAgainst", bestDefense.getGoalsAgainst());
-            }
         }
 
         if (!matchesTournament.isEmpty()) {
-            int totalGoals = matchesTournament.stream()
-                    .filter(match -> match.getStatus() == MatchStatus.COMPLETED)
-                    .mapToInt(match -> (match.getHomeTeamScore() != null ? match.getHomeTeamScore() : 0) +
-                            (match.getAwayTeamScore() != null ? match.getAwayTeamScore() : 0))
-                    .sum();
-            statistics.put("totalGoals", totalGoals);
+            int totalGoals = tournamentMatchHelper.calculateTotalGoals(matchesTournament);
+            builder.totalGoals(totalGoals);
 
-            // Obtener nombres de matches completados
-            List<String> completedMatchesNames = matchesTournament.stream()
-                    .filter(match -> match.getStatus() == MatchStatus.COMPLETED)
-                    .map(match -> match.getHomeTeam().getTeam().getName() + " vs "
-                            + match.getAwayTeam().getTeam().getName())
-                    .collect(Collectors.toList());
-            statistics.put("completedMatchesNames", completedMatchesNames);
+            List<String> completedMatchesNames = tournamentMatchHelper.getCompletedMatchesNames(matchesTournament);
+            builder.completedMatchesNames(completedMatchesNames);
 
             if (completedMatches > 0) {
-                statistics.put("averageGoalsPerMatch", (double) totalGoals / completedMatches);
+                double averageGoals = tournamentMatchHelper.calculateAverageGoalsPerMatch(totalGoals, completedMatches);
+                builder.averageGoalsPerMatch(averageGoals);
             }
         }
 
-        return statistics;
+        return builder.build();
     }
 
-    public TournamentStatisticsDTO getTournamentStatisticsDTO(Long tournamentId) {
-        Map<String, Object> stats = getTournamentStatistics(tournamentId);
-        return new TournamentStatisticsDTO(
-                (String) stats.get("tournamentName"),
-                (TournamentFormat) stats.get("format"),
-                (TournamentState) stats.get("state"),
-                ((Integer) stats.get("totalTeams")).intValue(),
-                ((Integer) stats.get("totalMatches")).intValue(),
-                stats.get("completedMatches") == null ? 0 : ((Long) stats.get("completedMatches")).intValue(),
-                (List<String>) stats.get("completedMatchesNames"),
-                (String) stats.get("champion"),
-                (String) stats.get("runnerUp"),
-                (String) stats.get("topScoringTeam"),
-                (Integer) stats.get("topScoringTeamGoals"),
-                (String) stats.get("bestDefensiveTeam"),
-                (Integer) stats.get("bestDefensiveTeamGoalsAgainst"),
-                stats.get("totalGoals") == null ? 0 : ((Integer) stats.get("totalGoals")).intValue(),
-                stats.get("averageGoalsPerMatch") == null ? 0.0 : (Double) stats.get("averageGoalsPerMatch"));
-    }
+    // public TournamentStatisticsDTO getTournamentStatisticsDTO(Long tournamentId)
+    // {
+    // return getTournamentStatistics(tournamentId);
+    // // return new TournamentStatisticsDTO(
+    // // (String) stats.get("tournamentName"),
+    // // (TournamentFormat) stats.get("format"),
+    // // (TournamentState) stats.get("state"),
+    // // ((Integer) stats.get("totalTeams")).intValue(),
+    // ((Integer) stats.get("totalMatches")).intValue(),
+    // stats.get("completedMatches") == null ? 0 : ((Long)
+    // stats.get("completedMatches")).intValue(),
+    // stats.get("completedMatchesNames") != null ? (List<String>)
+    // stats.get("completedMatchesNames")
+    // : new ArrayList<>(),
+    // (String) stats.get("champion"),
+    // (String) stats.get("runnerUp"),
+    // (List<TeamName_Goals>) stats.get("topScoringTeams"),
+    // (String) stats.get("bestDefensiveTeam"),
+    // (Integer) stats.get("bestDefensiveTeamGoalsAgainst"),
+    // stats.get("totalGoals") == null ? 0 : ((Integer)
+    // stats.get("totalGoals")).intValue(),
+    // stats.get("averageGoalsPerMatch") == null ? 0.0 : (Double)
+    // stats.get("averageGoalsPerMatch"));
+    // }
 }

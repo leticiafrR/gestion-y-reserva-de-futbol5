@@ -221,7 +221,7 @@ public class FixtureService {
     }
 
     public TournamentStatisticsDTO getTournamentStatisticsDTO(Long tournamentId) {
-        return tournamentStatisticsService.getTournamentStatisticsDTO(tournamentId);
+        return tournamentStatisticsService.getTournamentStatistics(tournamentId);
     }
 
     private void updateNextMatch(TournamentMatch completedMatch) {
