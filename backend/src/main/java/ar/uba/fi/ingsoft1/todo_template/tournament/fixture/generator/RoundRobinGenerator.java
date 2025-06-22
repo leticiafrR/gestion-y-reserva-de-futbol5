@@ -7,7 +7,6 @@ import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Component
