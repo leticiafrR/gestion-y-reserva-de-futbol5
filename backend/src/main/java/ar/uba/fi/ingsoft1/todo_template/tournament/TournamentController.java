@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import ar.uba.fi.ingsoft1.todo_template.config.GlobalControllerExceptionHandler.IncorrectValueResponse;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
+import ar.uba.fi.ingsoft1.todo_template.tournament.update.TournamentUpdateDTO;
 
 @RestController
 @RequestMapping("/tournaments")
@@ -225,7 +227,7 @@ public class TournamentController {
             @ApiResponse(responseCode = "404", description = "Tournament not found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
     })
     public ResponseEntity<List<TeamRegisteredTournament>> getTournamentStandings(@PathVariable Long id) {
-        List<TeamRegisteredTournament> standings = tournamentService.getTournamentStandings(id);
+        List<TeamRegisteredTournament> standings = tournamentService.getTournamentSortedStandings(id);
         return ResponseEntity.ok(standings);
     }
 

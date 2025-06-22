@@ -1,6 +1,7 @@
-package ar.uba.fi.ingsoft1.todo_template.tournament;
+package ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration;
 
 import ar.uba.fi.ingsoft1.todo_template.team.Team;
+import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
 import jakarta.persistence.*;
 import lombok.*;
 

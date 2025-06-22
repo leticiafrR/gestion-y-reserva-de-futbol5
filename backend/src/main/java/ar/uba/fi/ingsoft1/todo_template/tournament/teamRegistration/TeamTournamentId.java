@@ -1,4 +1,4 @@
-package ar.uba.fi.ingsoft1.todo_template.tournament;
+package ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration;
 
 import jakarta.persistence.Embeddable;
 import java.io.Serializable;

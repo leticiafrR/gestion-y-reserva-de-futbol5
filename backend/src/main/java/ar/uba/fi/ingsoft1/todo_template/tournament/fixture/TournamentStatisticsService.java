@@ -1,10 +1,16 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournamentRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
+import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentState;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatchRepository;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentStatisticsDTO;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentStatisticsDTO.TournamentStatisticsDTOBuilder;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentHelper;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -20,6 +26,7 @@ public class TournamentStatisticsService {
     private final TournamentRepository tournamentRepository;
     private final TeamRegisteredTournamentRepository teamRegisteredTournamentRepository;
     private final TournamentMatchRepository tournamentMatchRepository;
+    private final TeamRegisteredTournamentHelper teamRegisteredTournamentHelper;
 
     public TournamentStatisticsService(
             TournamentRepository tournamentRepository,
@@ -28,6 +35,7 @@ public class TournamentStatisticsService {
         this.tournamentRepository = tournamentRepository;
         this.teamRegisteredTournamentRepository = teamRegisteredTournamentRepository;
         this.tournamentMatchRepository = tournamentMatchRepository;
+        this.teamRegisteredTournamentHelper = new TeamRegisteredTournamentHelper(teamRegisteredTournamentRepository);
     }
 
     public void updateTeamStatistics(TournamentMatch match) {
@@ -64,40 +72,35 @@ public class TournamentStatisticsService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
 
-        List<TeamRegisteredTournament> teams = teamRegisteredTournamentRepository.findByTournament(tournament);
-        List<TournamentMatch> matches = tournamentMatchRepository.findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
+        List<TeamRegisteredTournament> sortedTeamsRegistered = teamRegisteredTournamentHelper
+                .getSortedTeamsForTournament(tournament);
+
+        List<TournamentMatch> matchesTournament = tournamentMatchRepository
+                .findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
 
         Map<String, Object> statistics = new java.util.HashMap<>();
         statistics.put("tournamentName", tournament.getName());
         statistics.put("format", tournament.getFormat());
         statistics.put("state", tournament.getState());
-        statistics.put("totalTeams", teams.size());
-        statistics.put("totalMatches", matches.size());
+        statistics.put("totalTeams", sortedTeamsRegistered.size());
+        statistics.put("totalMatches", matchesTournament.size());
 
-        long completedMatches = matches.stream()
+        int completedMatches = (int) matchesTournament.stream()
                 .filter(match -> match.getStatus() == MatchStatus.COMPLETED)
                 .count();
+
         statistics.put("completedMatches", completedMatches);
 
-        if (!teams.isEmpty()) {
-            teams.sort((t1, t2) -> {
-                if (t1.getPoints() != t2.getPoints()) {
-                    return Integer.compare(t2.getPoints(), t1.getPoints());
-                }
-                if (t1.getGoalDifference() != t2.getGoalDifference()) {
-                    return Integer.compare(t2.getGoalDifference(), t1.getGoalDifference());
-                }
-                return Integer.compare(t2.getGoalsFor(), t1.getGoalsFor());
-            });
+        if (!sortedTeamsRegistered.isEmpty()) {
 
-            if (!matches.isEmpty() && completedMatches == matches.size()) {
-                statistics.put("champion", teams.get(0).getTeam().getName());
-                if (teams.size() >= 2) {
-                    statistics.put("runnerUp", teams.get(1).getTeam().getName());
+            if (!matchesTournament.isEmpty() && completedMatches == matchesTournament.size()) {
+                statistics.put("champion", sortedTeamsRegistered.get(0).getTeam().getName());
+                if (sortedTeamsRegistered.size() >= 2) {
+                    statistics.put("runnerUp", sortedTeamsRegistered.get(1).getTeam().getName());
                 }
             }
 
-            TeamRegisteredTournament topScorer = teams.stream()
+            TeamRegisteredTournament topScorer = sortedTeamsRegistered.stream()
                     .max((t1, t2) -> Integer.compare(t1.getGoalsFor(), t2.getGoalsFor()))
                     .orElse(null);
             if (topScorer != null) {
@@ -105,7 +108,7 @@ public class TournamentStatisticsService {
                 statistics.put("topScoringTeamGoals", topScorer.getGoalsFor());
             }
 
-            TeamRegisteredTournament bestDefense = teams.stream()
+            TeamRegisteredTournament bestDefense = sortedTeamsRegistered.stream()
                     .min((t1, t2) -> Integer.compare(t1.getGoalsAgainst(), t2.getGoalsAgainst()))
                     .orElse(null);
             if (bestDefense != null) {
@@ -114,8 +117,8 @@ public class TournamentStatisticsService {
             }
         }
 
-        if (!matches.isEmpty()) {
-            int totalGoals = matches.stream()
+        if (!matchesTournament.isEmpty()) {
+            int totalGoals = matchesTournament.stream()
                     .filter(match -> match.getStatus() == MatchStatus.COMPLETED)
                     .mapToInt(match -> (match.getHomeTeamScore() != null ? match.getHomeTeamScore() : 0) +
                             (match.getAwayTeamScore() != null ? match.getAwayTeamScore() : 0))
@@ -134,10 +137,10 @@ public class TournamentStatisticsService {
         Map<String, Object> stats = getTournamentStatistics(tournamentId);
         return new TournamentStatisticsDTO(
                 (String) stats.get("tournamentName"),
-                stats.get("format").toString(),
-                stats.get("state").toString(),
-                (Integer) stats.get("totalTeams"),
-                (Integer) stats.get("totalMatches"),
+                (TournamentFormat) stats.get("format"),
+                (TournamentState) stats.get("state"),
+                ((Integer) stats.get("totalTeams")).intValue(),
+                ((Integer) stats.get("totalMatches")).intValue(),
                 stats.get("completedMatches") == null ? 0 : ((Long) stats.get("completedMatches")).intValue(),
                 (String) stats.get("champion"),
                 (String) stats.get("runnerUp"),
@@ -145,8 +148,7 @@ public class TournamentStatisticsService {
                 (Integer) stats.get("topScoringTeamGoals"),
                 (String) stats.get("bestDefensiveTeam"),
                 (Integer) stats.get("bestDefensiveTeamGoalsAgainst"),
-                stats.get("totalGoals") == null ? 0 : (Integer) stats.get("totalGoals"),
-                (Double) stats.get("averageGoalsPerMatch")
-        );
+                stats.get("totalGoals") == null ? 0 : ((Integer) stats.get("totalGoals")).intValue(),
+                stats.get("averageGoalsPerMatch") == null ? 0.0 : (Double) stats.get("averageGoalsPerMatch"));
     }
-} 
+}

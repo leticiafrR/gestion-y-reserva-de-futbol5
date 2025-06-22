@@ -1,8 +1,8 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture.generator;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatch;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchStatus;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +46,8 @@ public class SingleEliminationGenerator implements FixtureGenerator {
                 // The next match is found by looking at the start of the next round's matches
                 int matchesInCurrentRound = (int) Math.pow(2, numRounds - currentMatch.getRoundNumber());
                 int matchesInNextRound = (int) Math.pow(2, numRounds - (currentMatch.getRoundNumber() + 1));
-                int baseIndexOfCurrentRound = (int) Math.pow(2, numRounds) - (int) Math.pow(2, numRounds - currentMatch.getRoundNumber() + 1);
+                int baseIndexOfCurrentRound = (int) Math.pow(2, numRounds)
+                        - (int) Math.pow(2, numRounds - currentMatch.getRoundNumber() + 1);
                 int baseIndexOfNextRound = baseIndexOfCurrentRound + matchesInCurrentRound;
 
                 int matchIndexInRound = i - baseIndexOfCurrentRound;
