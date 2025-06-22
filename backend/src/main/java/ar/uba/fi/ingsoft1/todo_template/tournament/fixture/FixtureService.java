@@ -2,13 +2,14 @@ package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentRepository;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournamentRepository;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.generator.*;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
+import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
 import ar.uba.fi.ingsoft1.todo_template.field.FieldRepository;
-import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.generator.*;
-import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +67,8 @@ public class FixtureService {
 
         RoundRobinGenerator roundRobinGenerator = new RoundRobinGenerator();
         SingleEliminationGenerator singleEliminationGenerator = new SingleEliminationGenerator();
-        GroupStageAndEliminationGenerator groupStageAndEliminationGenerator = new GroupStageAndEliminationGenerator(roundRobinGenerator, singleEliminationGenerator);
+        GroupStageAndEliminationGenerator groupStageAndEliminationGenerator = new GroupStageAndEliminationGenerator(
+                roundRobinGenerator, singleEliminationGenerator);
 
         this.fixtureGenerators = new HashMap<>();
         this.fixtureGenerators.put(TournamentFormat.ROUND_ROBIN, roundRobinGenerator);
@@ -92,7 +94,8 @@ public class FixtureService {
 
         checkActionCarriedOutByOrganizer(tournament.getOrganizer().username());
 
-        List<TournamentMatch> existingMatches = tournamentMatchRepository.findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
+        List<TournamentMatch> existingMatches = tournamentMatchRepository
+                .findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
         if (!existingMatches.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Fixture already exists for this tournament");
         }
@@ -195,10 +198,10 @@ public class FixtureService {
     private Booking createBookingForMatch(TournamentMatch match, Tournament tournament) {
         Booking booking = new Booking(
                 tournament.getOrganizer(),
-                timeSlotService.getTimeSlotByFieldAndDay(match.getField().getId(), match.getScheduledDateTime().getDayOfWeek()),
+                timeSlotService.getTimeSlotByFieldAndDay(match.getField().getId(),
+                        match.getScheduledDateTime().getDayOfWeek()),
                 match.getScheduledDateTime().toLocalDate(),
-                match.getScheduledDateTime().getHour()
-        );
+                match.getScheduledDateTime().getHour());
         return bookingRepository.save(booking);
     }
 
@@ -285,7 +288,8 @@ public class FixtureService {
         }
 
         TeamRegisteredTournament winner = determineWinner(completedMatch);
-        if (winner == null) return;
+        if (winner == null)
+            return;
 
         if (completedMatch.isHomeTeamNextMatch()) {
             nextMatch.setHomeTeam(winner);
@@ -301,7 +305,8 @@ public class FixtureService {
     }
 
     private void checkRoundRobinTournamentCompletion(Tournament tournament) {
-        List<TournamentMatch> allMatches = tournamentMatchRepository.findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
+        List<TournamentMatch> allMatches = tournamentMatchRepository
+                .findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
 
         boolean allMatchesCompleted = allMatches.stream()
                 .allMatch(match -> match.getStatus() == MatchStatus.COMPLETED);
@@ -336,15 +341,15 @@ public class FixtureService {
         TimeSlot timeSlot = timeSlotService.getTimeSlotByFieldAndDay(tournamentMatch.getField().getId(), dayOfWeek);
 
         if (timeSlot == null || hour < timeSlot.getOpenTime() || hour >= timeSlot.getCloseTime()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No hay franja horaria para la cancha y hora del partido");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No hay franja horaria para la cancha y hora del partido");
         }
 
         Booking booking = new Booking(
                 tournamentMatch.getTournament().getOrganizer(),
                 timeSlot,
                 tournamentMatch.getScheduledDateTime().toLocalDate(),
-                hour
-        );
+                hour);
         bookingRepository.save(booking);
 
         CloseMatch closeMatch = new CloseMatch();
