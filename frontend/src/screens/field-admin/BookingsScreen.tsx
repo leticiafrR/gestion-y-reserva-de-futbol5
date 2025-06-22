@@ -1,29 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import { getOwnerBookings, OwnerBooking } from '@/services/bookingService';
+import React, { useState } from 'react';
+import { useOwnerBookingsDetailed, OwnerBooking, bookingService } from '@/services/bookingService';
 import { navigate } from "wouter/use-browser-location";
-import { Calendar, MapPin, Clock } from 'lucide-react';
+import { Calendar, MapPin, Clock, User, X } from 'lucide-react';
+import { DeleteBookingConfirmationModal } from '@/components/DeleteBookingConfirmationModal';
 
 export const BookingsScreen: React.FC = () => {
-  const [bookings, setBookings] = useState<OwnerBooking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: bookings, isLoading, error } = useOwnerBookingsDetailed();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
+  const [cancellingBooking, setCancellingBooking] = useState<number | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<number | null>(null);
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const data = await getOwnerBookings();
-        setBookings(data);
-        setError(null);
-      } catch (error: any) {
-        setBookings([]);
-        setError(error.message || 'Error desconocido');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBookings();
-  }, []);
+  const handleCancelBooking = async (bookingId: number) => {
+    setBookingToDelete(bookingId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!bookingToDelete) return;
+    
+    setCancellingBooking(bookingToDelete);
+    try {
+      await bookingService.cancelBooking(bookingToDelete);
+      // The hook will automatically refetch data
+      window.location.reload(); // Simple refresh for now
+    } catch (error: any) {
+      console.error('Error cancelling booking:', error);
+      // You could add a toast notification here instead of alert
+    } finally {
+      setCancellingBooking(null);
+      setShowDeleteModal(false);
+      setBookingToDelete(null);
+    }
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setBookingToDelete(null);
+  };
 
   // Separar reservas en próximas e historial
   const now = new Date();
@@ -42,7 +56,150 @@ export const BookingsScreen: React.FC = () => {
     return dt < now || !b.active;
   });
 
-  if (loading) {
+  // Función para verificar si una reserva se puede cancelar (solo futuras y activas)
+  const canCancelBooking = (booking: OwnerBooking) => {
+    const dt = parseDateTime(booking.bookingDate, booking.bookingHour);
+    return dt >= now && booking.active;
+  };
+
+  const renderMatchTypeBadge = (matchType: 'open' | 'closed' | null | undefined) => {
+    if (!matchType) {
+      return (
+        <span style={{
+          padding: '2px 8px',
+          backgroundColor: '#6b7280',
+          color: 'white',
+          borderRadius: '4px',
+          fontSize: '11px',
+          fontWeight: '500',
+        }}>
+          Sin partido
+        </span>
+      );
+    }
+    
+    return (
+      <span style={{
+        padding: '2px 8px',
+        backgroundColor: matchType === 'open' ? '#10b981' : '#8b5cf6',
+        color: 'white',
+        borderRadius: '4px',
+        fontSize: '11px',
+        fontWeight: '500',
+      }}>
+        {matchType === 'open' ? 'Partido Abierto' : 'Partido Cerrado'}
+      </span>
+    );
+  };
+
+  const renderBookingCard = (booking: OwnerBooking) => (
+    <div
+      key={booking.id}
+      style={{
+        border: '1px solid #e5e7eb',
+        borderRadius: '10px',
+        background: booking.active ? 'white' : '#f8f9fa',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+        padding: '1.2rem 1.5rem',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '1.5rem',
+        opacity: booking.active ? 1 : 0.7,
+      }}
+    >
+      {/* Field Photo */}
+      <img
+        src={booking.fieldPhotoUrl || '/placeholder.svg'}
+        alt={booking.fieldName || 'Cancha'}
+        style={{
+          width: 80,
+          height: 80,
+          objectFit: 'cover',
+          borderRadius: '8px',
+          border: '1px solid #e5e7eb',
+          flexShrink: 0,
+        }}
+      />
+      
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
+          <h2 style={{ margin: 0, color: '#3b82f6', fontSize: '1.2rem', fontWeight: 600 }}>
+            Reserva #{booking.id}
+          </h2>
+          <span style={{
+            marginLeft: 12,
+            padding: '2px 10px',
+            backgroundColor: booking.active ? '#10b981' : '#ef4444',
+            color: 'white',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: '500',
+          }}>
+            {booking.active ? 'Activa' : 'Inactiva'}
+          </span>
+          {renderMatchTypeBadge(booking.matchType)}
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '4px' }}>
+          <User size={14} style={{ color: '#6b7280' }} />
+          <div style={{ color: '#374151', fontSize: 15 }}>
+            <b>Organizador:</b> {booking.userName} {booking.userLastName}
+          </div>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '4px' }}>
+          <MapPin size={14} style={{ color: '#6b7280' }} />
+          <div style={{ color: '#374151', fontSize: 15 }}>
+            <b>Cancha:</b> {booking.fieldName} - {booking.fieldAddress}
+          </div>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '4px' }}>
+          <Calendar size={14} style={{ color: '#6b7280' }} />
+          <div style={{ color: '#374151', fontSize: 15 }}>
+            <b>Fecha:</b> {booking.bookingDate}
+          </div>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
+          <Clock size={14} style={{ color: '#6b7280' }} />
+          <div style={{ color: '#374151', fontSize: 15 }}>
+            <b>Hora:</b> {booking.bookingHour}:00
+          </div>
+        </div>
+        
+        <div style={{ color: '#6b7280', fontSize: 14 }}>
+          <b>Email:</b> {booking.userEmail}
+        </div>
+      </div>
+      
+      {canCancelBooking(booking) && (
+        <button
+          onClick={() => handleCancelBooking(booking.id)}
+          disabled={cancellingBooking === booking.id}
+          style={{
+            padding: '8px 12px',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: cancellingBooking === booking.id ? 'not-allowed' : 'pointer',
+            fontSize: '12px',
+            fontWeight: '500',
+            opacity: cancellingBooking === booking.id ? 0.6 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+        >
+          <X size={14} />
+          {cancellingBooking === booking.id ? 'Cancelando...' : 'Cancelar'}
+        </button>
+      )}
+    </div>
+  );
+
+  if (isLoading) {
     return <div style={{ textAlign: 'center', marginTop: '2rem' }}>Cargando reservas...</div>;
   }
 
@@ -133,47 +290,7 @@ export const BookingsScreen: React.FC = () => {
                 No hay próximas reservas.
               </div>
             )}
-            {upcomingBookings.map((booking) => (
-              <div
-                key={booking.id}
-                style={{
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '10px',
-                  background: booking.active ? 'white' : '#f8f9fa',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
-                  padding: '1.2rem 1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1.5rem',
-                  opacity: booking.active ? 1 : 0.7,
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <h2 style={{ margin: 0, color: '#3b82f6', fontSize: '1.2rem', fontWeight: 600 }}>
-                      Reserva #{booking.id}
-                    </h2>
-                    <span style={{
-                      marginLeft: 12,
-                      padding: '2px 10px',
-                      backgroundColor: booking.active ? '#10b981' : '#ef4444',
-                      color: 'white',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                    }}>
-                      {booking.active ? 'Activa' : 'Inactiva'}
-                    </span>
-                  </div>
-                  <div style={{ color: '#374151', fontSize: 15, marginTop: 4 }}>
-                    <b>Fecha:</b> {booking.bookingDate}
-                  </div>
-                  <div style={{ color: '#374151', fontSize: 15 }}>
-                    <b>Hora:</b> {booking.bookingHour}:00
-                  </div>
-                </div>
-              </div>
-            ))}
+            {upcomingBookings.map(renderBookingCard)}
           </div>
         )}
 
@@ -184,50 +301,20 @@ export const BookingsScreen: React.FC = () => {
                 No hay reservas anteriores.
               </div>
             )}
-            {historyBookings.map((booking) => (
-              <div
-                key={booking.id}
-                style={{
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '10px',
-                  background: booking.active ? 'white' : '#f8f9fa',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
-                  padding: '1.2rem 1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1.5rem',
-                  opacity: booking.active ? 1 : 0.7,
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <h2 style={{ margin: 0, color: '#3b82f6', fontSize: '1.2rem', fontWeight: 600 }}>
-                      Reserva #{booking.id}
-                    </h2>
-                    <span style={{
-                      marginLeft: 12,
-                      padding: '2px 10px',
-                      backgroundColor: booking.active ? '#10b981' : '#ef4444',
-                      color: 'white',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                    }}>
-                      {booking.active ? 'Activa' : 'Inactiva'}
-                    </span>
-                  </div>
-                  <div style={{ color: '#374151', fontSize: 15, marginTop: 4 }}>
-                    <b>Fecha:</b> {booking.bookingDate}
-                  </div>
-                  <div style={{ color: '#374151', fontSize: 15 }}>
-                    <b>Hora:</b> {booking.bookingHour}:00
-                  </div>
-                </div>
-              </div>
-            ))}
+            {historyBookings.map(renderBookingCard)}
           </div>
         )}
       </div>
+
+      {showDeleteModal && (
+        <DeleteBookingConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={closeDeleteModal}
+          onConfirm={confirmDelete}
+          bookingId={bookingToDelete || 0}
+          isLoading={cancellingBooking !== null}
+        />
+      )}
     </div>
   );
 }; 

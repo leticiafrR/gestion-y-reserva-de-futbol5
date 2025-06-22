@@ -1,4 +1,3 @@
-// @ts-nocheck - Mocked for development
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Team } from "@/models/Team";
 import { BASE_API_URL } from "@/config/app-query-client";
@@ -22,6 +21,15 @@ export function useUserTeams() {
   const [token] = useToken();
   return useQuery({
     queryKey: ["userTeams"],
+    queryFn: () => getMyTeams(token),
+    enabled: token.state === "LOGGED_IN",
+  });
+}
+
+export function useAllTeams() {
+  const [token] = useToken();
+  return useQuery({
+    queryKey: ["allTeams"],
     queryFn: () => getAllTeams(token),
     enabled: token.state === "LOGGED_IN",
   });
@@ -94,7 +102,7 @@ export function useRemoveTeamMember() {
   });
 }
 
-async function getAllTeams(token: any): Promise<Team[]> {
+async function getMyTeams(token: any): Promise<Team[]> {
   try {
     const response = await fetch(`${BASE_API_URL}/teams/my-teams`, {
       method: "GET",
@@ -105,6 +113,44 @@ async function getAllTeams(token: any): Promise<Team[]> {
       },
     });
 
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener equipos: ${response.status}`);
+    }
+
+    const teams = await response.json();
+    
+    if (!Array.isArray(teams)) {
+      throw new Error('La respuesta del servidor no tiene el formato esperado');
+    }
+
+    const mappedTeams = teams.map((team: any) => {
+      return {
+        id: team.id.toString(),
+        name: team.name,
+        logo: team.logo || "",
+        colors: [team.primaryColor, team.secondaryColor],
+        ownerId: team.captain,
+        members: team.membersUsernames || [],
+      };
+    });
+
+    return mappedTeams;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getAllTeams(token: any): Promise<Team[]> {
+  try {
+    const response = await fetch(`${BASE_API_URL}/teams`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`Error al obtener equipos: ${response.status}`);

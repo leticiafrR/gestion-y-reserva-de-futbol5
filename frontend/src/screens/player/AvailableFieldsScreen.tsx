@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MapPin, List, Filter } from "lucide-react"
 import { FieldsMap } from "@/components/FieldsMap/FieldsMap"
 import type { Field } from "@/models/Field"
 import { useAvailableFields } from "@/services/AvailableFieldsServices"
+import { useUserProfile } from "@/services/UserServices"
 import { FieldFilters } from "./FieldFilters"
 import { FieldCard } from "./FieldCard"
 import { FieldDetailsModal } from "./FieldDetailsModal"
@@ -13,6 +14,7 @@ export const AvailableFieldsScreen = () => {
   const { data: fields, isLoading, error } = useAvailableFields()
   const [selectedField, setSelectedField] = useState<Field | null>(null)
   const [viewMode, setViewMode] = useState<"list" | "map">("list")
+  const { data: userProfile } = useUserProfile()
 
   // Estados para los filtros
   const [search, setSearch] = useState("")
@@ -22,6 +24,12 @@ export const AvailableFieldsScreen = () => {
   const [onlyRoofed, setOnlyRoofed] = useState(false)
   const [maxPrice, setMaxPrice] = useState<number>(100)
   const [filtersExpanded, setFiltersExpanded] = useState(true)
+
+  useEffect(() => {
+    if (userProfile?.zone) {
+      setZoneSearch(userProfile.zone)
+    }
+  }, [userProfile])
 
   // Filtrado de canchas
   const filteredFields = (fields ?? []).filter((field: Field) => {

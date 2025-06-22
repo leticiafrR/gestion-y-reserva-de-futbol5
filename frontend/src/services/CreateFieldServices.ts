@@ -1,4 +1,3 @@
-// @ts-nocheck - Mocked for development
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BASE_API_URL, getAuthToken } from "@/config/app-query-client";
 import type { Field } from "@/models/Field";
@@ -23,7 +22,6 @@ export function useGetOwnerFields() {
 }
 
 async function getOwnerFields(): Promise<Field[]> {
-  // return mockFields;
   const accessToken = getAuthToken();
   const response = await fetch(`${BASE_API_URL}/fields/own`, {
     method: "GET",

@@ -6,6 +6,7 @@ import { useJoinMatch, useLeaveMatch, useConfirmMatch } from "@/services/MatchSe
 import { TeamAssignmentModal } from "@/screens/player/match/TeamAssignmentModal"
 import type { Match } from "@/models/Match" 
 import { useQueryClient } from "@tanstack/react-query"
+import { useUserProfile } from "@/services/UserServices"
 
 interface MatchDetailsModalProps {
   match: Match
@@ -20,13 +21,12 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   const leaveMatch = useLeaveMatch()
   const confirmMatch = useConfirmMatch()
   const queryClient = useQueryClient()
+  const { data: userProfile } = useUserProfile()
 
   // Sincronizar localMatch con el prop match cuando cambie
   useEffect(() => {
     setLocalMatch(match)
   }, [match])
-
-  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
 
   const basePlayers =
     (Array.isArray(localMatch.teamOne?.members) && localMatch.teamOne.members.length > 0) ||
@@ -43,8 +43,8 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
 
   const normalize = (str: string | undefined) => (str || "").trim().toLowerCase();
 
-  const isParticipant = allPlayers.some((p: any) => p.username === userProfile.email);
-  const isOrganizer = localMatch.booking.user.username === userProfile.email;
+  const userIsParticipant = userProfile ? basePlayers.some((p) => p.id === userProfile.id) : false
+  const isOrganizer = userProfile ? localMatch.booking.user.id === userProfile.id : false
   // Un partido abierto con equipos asignados se considera confirmado
   const hasAssignedTeams = (localMatch.teamOne?.members && localMatch.teamOne.members.length > 0) || 
                           (localMatch.teamTwo?.members && localMatch.teamTwo.members.length > 0);
@@ -52,7 +52,7 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   const isConfirmedMatch = hasAssignedTeams;
   const canAssignTeams = isOrganizer && allPlayers.length >= localMatch.minPlayers && isOpenMatch;
   const canJoin = localMatch.isActive && allPlayers.length < localMatch.maxPlayers && !isOrganizer && isOpenMatch;
-  const canLeave = !isOrganizer && isParticipant && localMatch.isActive && isOpenMatch;
+  const canLeave = !isOrganizer && userIsParticipant && localMatch.isActive && isOpenMatch;
 
   const getStatusColor = () => {
     if (!localMatch.isActive) return "#dc3545"
@@ -71,9 +71,10 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   }
 
   const handleJoinMatch = async () => {
+    if (!userProfile) return
     setIsLoading(true)
     try {
-      await joinMatch.mutateAsync(String(localMatch.id), 1)
+      await joinMatch.mutateAsync(String(localMatch.id))
       // Update local state
       setLocalMatch({
         ...localMatch,
@@ -92,61 +93,15 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   }
 
   const handleLeaveMatch = async () => {
-    setIsLoading(true)
+    if (!userProfile) return;
     try {
-      await leaveMatch.mutateAsync(String(localMatch.id), 1)
+      const updatedMatch = await leaveMatch.mutateAsync({ matchId: localMatch.id.toString() });
       // Update local state
-      setLocalMatch({
-        ...localMatch,
-        players: Array.isArray(localMatch.players) ? localMatch.players.filter((p) => p.id !== localMatch.booking.user.id) : [],
-      })
+      setLocalMatch(updatedMatch)
       queryClient.invalidateQueries({ queryKey: ['availableMatches'] })
       queryClient.invalidateQueries({ queryKey: ['myMatches'] })
-      // Toast de éxito
-      const toast = document.createElement('div')
-      toast.style.position = 'fixed'
-      toast.style.top = '20px'
-      toast.style.right = '20px'
-      toast.style.backgroundColor = '#22c55e'
-      toast.style.color = 'white'
-      toast.style.padding = '12px 24px'
-      toast.style.borderRadius = '8px'
-      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
-      toast.style.zIndex = '2000'
-      toast.style.fontSize = '16px'
-      toast.style.fontWeight = '500'
-      toast.textContent = 'Saliste del partido'
-      document.body.appendChild(toast)
-      setTimeout(() => {
-        toast.style.opacity = '0'
-        toast.style.transition = 'opacity 0.3s ease-out'
-        setTimeout(() => document.body.removeChild(toast), 300)
-      }, 3000)
-      onClose();
-    } catch (error) {
-      // Toast de error
-      const toast = document.createElement('div')
-      toast.style.position = 'fixed'
-      toast.style.top = '20px'
-      toast.style.right = '20px'
-      toast.style.backgroundColor = '#ef4444'
-      toast.style.color = 'white'
-      toast.style.padding = '12px 24px'
-      toast.style.borderRadius = '8px'
-      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
-      toast.style.zIndex = '2000'
-      toast.style.fontSize = '16px'
-      toast.style.fontWeight = '500'
-      toast.textContent = 'Error al salir del partido'
-      document.body.appendChild(toast)
-      setTimeout(() => {
-        toast.style.opacity = '0'
-        toast.style.transition = 'opacity 0.3s ease-out'
-        setTimeout(() => document.body.removeChild(toast), 300)
-      }, 3000)
+    } catch (error: any) {
       console.error("Error leaving match:", error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -168,7 +123,6 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
   }
 
   const handleMatchUpdate = (updatedMatch: Match) => {
-
     setLocalMatch(updatedMatch)
     // Invalidar las queries para refrescar los datos
     queryClient.invalidateQueries({ queryKey: ["availableMatches"] })

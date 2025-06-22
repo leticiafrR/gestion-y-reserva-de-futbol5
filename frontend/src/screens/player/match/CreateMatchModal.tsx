@@ -1,14 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { X, ArrowLeft, ArrowRight, MapPin, Clock, DollarSign, Calendar } from "lucide-react"
+import { X, ArrowLeft, ArrowRight, MapPin, Clock, DollarSign, Calendar, Leaf } from "lucide-react"
 import { createOpenMatch, createClosedMatch } from "@/services/MatchServices"
-import type { Field, AvailableSlot, CreateOpenMatchData, CreateClosedMatchData } from "@/models/Match"
+import type { AvailableSlot, CreateOpenMatchData, CreateClosedMatchData } from "@/models/Match"
+import type { Field } from "@/models/Field"
 import { useFieldAvailableHours, bookingService } from "@/services/bookingService"
 import { fieldAvailabilityService } from "@/services/fieldAvailabilityService"
 import { CalendarTimePicker } from "@/components/ScheduleConfiguration/CalendarTimePicker"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { useUserTeams } from "@/services/TeamServices"
+import { useUserTeams, useAllTeams } from "@/services/TeamServices"
+import { useAvailableFields } from "@/services/AvailableFieldsServices"
 import type { Team } from "@/models/Team"
 
 interface CreateMatchModalProps {
@@ -16,67 +18,7 @@ interface CreateMatchModalProps {
   preselectedField?: Field
 }
 
-// Mock data para canchas disponibles
-const mockFields: Field[] = [
-  {
-    id: "1",
-    name: "Cancha Principal",
-    location: "Zona Norte",
-    surface: "Césped natural",
-    pricePerHour: 80000,
-  },
-  {
-    id: "2",
-    name: "Cancha Sintética 1",
-    location: "Zona Sur",
-    surface: "Césped sintético",
-    pricePerHour: 60000,
-  },
-  {
-    id: "3",
-    name: "Cancha Premium",
-    location: "Centro",
-    surface: "Césped natural",
-    pricePerHour: 120000,
-  },
-  {
-    id: "4",
-    name: "Cancha Nocturna",
-    location: "Zona Este",
-    surface: "Césped sintético",
-    pricePerHour: 70000,
-  },
-]
 
-const mockAvailableSlots: AvailableSlot[] = [
-  {
-    id: "1",
-    date: "2024-01-15",
-    startTime: "16:00",
-    endTime: "18:00",
-    field: mockFields[0],
-    pricePerHour: 80000,
-    isAvailable: true,
-  },
-  {
-    id: "2",
-    date: "2024-01-15",
-    startTime: "18:00",
-    endTime: "20:00",
-    field: mockFields[0],
-    pricePerHour: 80000,
-    isAvailable: true,
-  },
-  {
-    id: "3",
-    date: "2024-01-16",
-    startTime: "14:00",
-    endTime: "16:00",
-    field: mockFields[1],
-    pricePerHour: 60000,
-    isAvailable: true,
-  },
-]
 
 export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModalProps) => {
   const [step, setStep] = useState(1)
@@ -85,8 +27,11 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
   const [selectedHour, setSelectedHour] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
-  const { data: teams } = useUserTeams()
+  const { data: userTeams } = useUserTeams()
+  const { data: allTeams } = useAllTeams()
+  const { data: availableFields, isLoading: loadingFields, error: errorFields } = useAvailableFields()
 
+  console.log(availableFields)
   // Form data
   const [formData, setFormData] = useState({
     type: "open" as "open" | "closed",
@@ -100,19 +45,12 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
     },
   })
 
+  // Use all teams for closed matches, user teams for other purposes
+  const teams = formData.type === "closed" ? allTeams : userTeams
+
   // Obtener los horarios disponibles reales
   const { data: availableHours, isLoading: loadingSlots, error: errorSlots } = useFieldAvailableHours(selectedField?.id)
 
-  const getAvailableDates = () => {
-    if (!availableHours) return []
-    return Object.keys(availableHours).filter(date => 
-      Array.isArray(availableHours[date]) && availableHours[date].length > 0
-    )
-  }
-
-  const getAvailableHoursForDate = (date: string) => {
-    return availableHours && availableHours[date] ? availableHours[date] : []
-  }
 
   const handleFieldSelect = (field: Field) => {
     if (!preselectedField) setSelectedField(field)
@@ -125,8 +63,8 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
 
   const calculatePricePerPlayer = () => {
     if (!selectedField || !selectedDate || !selectedHour) return 0
-    const totalHours = selectedHour
-    const totalCost = (selectedField.pricePerHour || 0) * totalHours
+    const matchDuration = 1 // Los partidos de fútbol 5 duran 1 hora
+    const totalCost = (selectedField.price || 0) * matchDuration
     return Math.ceil(totalCost / formData.maxPlayers)
   }
 
@@ -288,18 +226,45 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                         </h4>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
                           <MapPin size={14} style={{ color: "#6c757d" }} />
-                          <span style={{ fontSize: "13px", color: "#6c757d" }}>{preselectedField.location}</span>
+                          <span style={{ fontSize: "13px", color: "#6c757d" }}>{preselectedField.address}</span>
                         </div>
-                        <div style={{ fontSize: "13px", color: "#6c757d", marginBottom: "8px" }}>{preselectedField.surface}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                          <Leaf size={14} style={{ color: "#6c757d" }} />
+                          <span style={{ fontSize: "13px", color: "#6c757d" }}>{preselectedField.grassType}</span>
+                        </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <DollarSign size={14} style={{ color: "#28a745" }} />
                           <span style={{ fontSize: "13px", color: "#28a745", fontWeight: "500" }}>
-                            ${preselectedField.pricePerHour ? preselectedField.pricePerHour.toLocaleString() : "-"}/hora
+                            ${preselectedField.price ? preselectedField.price.toLocaleString() : "-"}/hora
                           </span>
                         </div>
                       </div>
-                    ) : (
-                      mockFields.map((field) => (
+                    ) : loadingFields ? (
+                      <div
+                        style={{
+                          padding: "40px",
+                          textAlign: "center",
+                          color: "#6c757d",
+                          border: "1px solid #dee2e6",
+                          borderRadius: "12px",
+                        }}
+                      >
+                        Cargando canchas disponibles...
+                      </div>
+                    ) : errorFields ? (
+                      <div
+                        style={{
+                          padding: "40px",
+                          textAlign: "center",
+                          color: "#ef4444",
+                          border: "1px solid #dee2e6",
+                          borderRadius: "12px",
+                        }}
+                      >
+                        Error al cargar canchas disponibles
+                      </div>
+                    ) : availableFields && availableFields.length > 0 ? (
+                      availableFields.map((field) => (
                         <div
                           key={field.id}
                           onClick={() => handleFieldSelect(field)}
@@ -317,17 +282,32 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                           </h4>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
                             <MapPin size={14} style={{ color: "#6c757d" }} />
-                            <span style={{ fontSize: "13px", color: "#6c757d" }}>{field.location}</span>
+                            <span style={{ fontSize: "13px", color: "#6c757d" }}>{field.address}</span>
                           </div>
-                          <div style={{ fontSize: "13px", color: "#6c757d", marginBottom: "8px" }}>{field.surface}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                            <Leaf size={14} style={{ color: "#6c757d" }} />
+                            <span style={{ fontSize: "13px", color: "#6c757d" }}>{field.grassType}</span>
+                          </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                             <DollarSign size={14} style={{ color: "#28a745" }} />
                             <span style={{ fontSize: "13px", color: "#28a745", fontWeight: "500" }}>
-                              ${field.pricePerHour ? field.pricePerHour.toLocaleString() : "-"}/hora
+                              ${field.price ? field.price.toLocaleString() : "-"}/hora
                             </span>
                           </div>
                         </div>
                       ))
+                    ) : (
+                      <div
+                        style={{
+                          padding: "40px",
+                          textAlign: "center",
+                          color: "#6c757d",
+                          border: "1px solid #dee2e6",
+                          borderRadius: "12px",
+                        }}
+                      >
+                        No hay canchas disponibles
+                      </div>
                     )}
                   </div>
                 </div>
@@ -389,17 +369,20 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                       }}
                     >
                       <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "600", color: "#212529" }}>
-                        Cancha Seleccionada
+                        Cancha Seleccionada: {selectedField.name}
                       </h4>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
                         <MapPin size={14} style={{ color: "#6c757d" }} />
-                        <span style={{ fontSize: "13px", color: "#6c757d" }}>{selectedField.name}</span>
+                        <span style={{ fontSize: "13px", color: "#6c757d" }}>{selectedField.address}</span>
                       </div>
-                      <div style={{ fontSize: "13px", color: "#6c757d", marginBottom: "8px" }}>{selectedField.surface}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                        <Leaf size={14} style={{ color: "#6c757d" }} />
+                        <span style={{ fontSize: "13px", color: "#6c757d" }}>{selectedField.grassType}</span>
+                      </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <DollarSign size={14} style={{ color: "#28a745" }} />
                         <span style={{ fontSize: "13px", color: "#28a745", fontWeight: "500" }}>
-                          ${selectedField.pricePerHour ? selectedField.pricePerHour.toLocaleString() : "-"}/hora
+                          ${selectedField.price ? selectedField.price.toLocaleString() : "-"}/hora
                         </span>
                       </div>
                     </div>
@@ -536,7 +519,7 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                       Cálculo de Precio
                     </h4>
                     <div style={{ fontSize: "13px", color: "#6c757d", marginBottom: "8px" }}>
-                      Costo total: ${selectedDate && selectedHour && selectedField?.pricePerHour ? (selectedField.pricePerHour * 2).toLocaleString() : 0}
+                      Costo total: ${selectedDate && selectedHour && selectedField?.price ? (selectedField.price * 1).toLocaleString() : 0}
                     </div>
                     <div style={{ fontSize: "16px", fontWeight: "600", color: "#28a745" }}>
                       Precio por jugador: ${calculatePricePerPlayer().toLocaleString()}

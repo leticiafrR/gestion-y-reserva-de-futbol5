@@ -1,16 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, Plus, Users, Calendar, Filter, History } from "lucide-react"
-import { useAvailableMatches, useMyMatches, useMatchHistory, useUserProfile } from "@/services/MatchServices"
+import { ArrowLeft, Plus, Users, Calendar, Filter } from "lucide-react"
+import { useAvailableMatches, useMyMatches } from "@/services/MatchServices"
+import { useUserProfile } from "@/services/UserServices"
 import { MatchCard } from "./MatchCard"
 import { CreateMatchModal } from "./CreateMatchModal"
 import { MatchDetailsModal } from "./MatchDetailsModal"
 import type { Match } from "@/models/Match"
 
 export const MatchesScreen = () => {
-  useUserProfile();
-  const [activeTab, setActiveTab] = useState<"available" | "my-matches" | "history">("available")
+  const { data: userProfile } = useUserProfile();
+  const [activeTab, setActiveTab] = useState<"available" | "my-matches">("available")
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [showFilters, setShowFilters] = useState(false)
 
@@ -22,19 +23,8 @@ export const MatchesScreen = () => {
 
   const { data: availableMatches, isLoading: loadingAvailable } = useAvailableMatches()
   const { data: myMatches, isLoading: loadingMy } = useMyMatches()
-  const { data: matchHistory, isLoading: loadingHistory } = useMatchHistory()
-
-  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
 
   const filteredAvailableMatches: Match[] = (availableMatches ?? []).filter((match: any) => {
-    const matchesDate = dateFilter ? match.booking.bookingDate === dateFilter : true;
-    const matchesTime = timeFilter ? match.booking.bookingHour.toString().includes(timeFilter) : true;
-    const matchesField = fieldFilter ? match.booking.timeSlot.field.name.toLowerCase().includes(fieldFilter.toLowerCase()) : true;
-    const matchesType = typeFilter ? (!match.teamOne && !match.teamTwo ? "open" : "closed") === typeFilter : true;
-    return matchesDate && matchesTime && matchesField && matchesType;
-  });
-
-  const filteredHistory: Match[] = (matchHistory ?? []).filter((match: any) => {
     const matchesDate = dateFilter ? match.booking.bookingDate === dateFilter : true;
     const matchesTime = timeFilter ? match.booking.bookingHour.toString().includes(timeFilter) : true;
     const matchesField = fieldFilter ? match.booking.timeSlot.field.name.toLowerCase().includes(fieldFilter.toLowerCase()) : true;
@@ -82,7 +72,7 @@ export const MatchesScreen = () => {
               ⚽ Partidos
             </h1>
             <p style={{ color: "#6c757d", margin: 0, fontSize: "14px" }}>
-              Encuentra partidos abiertos, gestiona tus partidos y revisa tu historial
+              Encuentra partidos abiertos y gestiona tus partidos
             </p>
           </div>
 
@@ -166,32 +156,10 @@ export const MatchesScreen = () => {
             <Calendar size={16} />
             Mis Partidos
           </button>
-          <button
-            onClick={() => setActiveTab("history")}
-            style={{
-              flex: 1,
-              padding: "12px 24px",
-              backgroundColor: activeTab === "history" ? "#007bff" : "transparent",
-              color: activeTab === "history" ? "white" : "#6c757d",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              transition: "all 0.2s ease",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-            }}
-          >
-            <History size={16} />
-            Historial
-          </button>
         </div>
 
         {/* Filtros */}
-        {(activeTab === "available" || activeTab === "history") && (
+        {activeTab === "available" && (
           <div
             style={{
               backgroundColor: "white",
@@ -292,29 +260,6 @@ export const MatchesScreen = () => {
                     }}
                   />
                 </div>
-
-                {activeTab === "history" && (
-                  <div>
-                    <label style={{ display: "block", marginBottom: "4px", fontSize: "12px", color: "#6c757d" }}>
-                      Tipo
-                    </label>
-                    <select
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value as "" | "open" | "closed")}
-                      style={{
-                        width: "100%",
-                        padding: "8px 12px",
-                        border: "1px solid #dee2e6",
-                        borderRadius: "6px",
-                        fontSize: "14px",
-                      }}
-                    >
-                      <option value="">Todos</option>
-                      <option value="open">Partido Abierto</option>
-                      <option value="closed">Partido Cerrado</option>
-                    </select>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -358,11 +303,11 @@ export const MatchesScreen = () => {
               </div>
             )}
           </div>
-        ) : activeTab === "my-matches" ? (
+        ) : (
           <div>
             {loadingMy ? (
               <div style={{ textAlign: "center", padding: "40px", color: "#6c757d" }}>Cargando mis partidos...</div>
-            ) : myMatches.length === 0 ? (
+            ) : !myMatches || myMatches.length === 0 ? (
               <div
                 style={{
                   textAlign: "center",
@@ -382,48 +327,12 @@ export const MatchesScreen = () => {
                   gap: "20px",
                 }}
               >
-                {myMatches.map((match: any) => (
+                {myMatches?.map((match: any) => (
                   <MatchCard
                     key={match.id}
                     match={match}
                     onClick={() => setSelectedMatch(match)}
                     showJoinButton={false}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div>
-            {loadingHistory ? (
-              <div style={{ textAlign: "center", padding: "40px", color: "#6c757d" }}>Cargando historial...</div>
-            ) : filteredHistory.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "40px",
-                  backgroundColor: "white",
-                  borderRadius: "12px",
-                  color: "#6c757d",
-                }}
-              >
-                No hay partidos en el historial que coincidan con los filtros
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-                  gap: "20px",
-                }}
-              >
-                {filteredHistory.map((match) => (
-                  <MatchCard
-                    key={match.id}
-                    match={match}
-                    onClick={() => setSelectedMatch(match)}
-                    showJoinButton={false}
-                    isHistory={true}
                   />
                 ))}
               </div>

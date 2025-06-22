@@ -30,8 +30,8 @@ export const PlayerMainScreen = () => {
       emoji: "🏆"
     },
     {
-      title: "Mis reservas",
-      description: "Gestiona tus reservas activas",
+      title: "Historial de partidos",
+      description: "Consulta tus partidos y reservas pasadas",
       path: "/bookings",
       emoji: "📅"
     },

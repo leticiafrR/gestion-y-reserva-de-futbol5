@@ -1,4 +1,3 @@
-// @ts-nocheck - Mocked for development
 import { useQuery } from "@tanstack/react-query";
 import type { User } from "@/models/User";
 import { BASE_API_URL, getAuthToken } from "@/config/app-query-client";
@@ -25,8 +24,7 @@ async function getProfile(): Promise<User> {
     throw new Error(`Failed to fetch profile with status ${response.status}: ${await response.text()}`);
   }
 
-  const data = await response.json();
-  
+  const data = await response.json();  
   // Map the backend DTO to our frontend User type
   const user = {
     id: data.id || "1", // Backend doesn't return id, but we need it for frontend

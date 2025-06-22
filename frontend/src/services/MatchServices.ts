@@ -12,8 +12,9 @@ import type {
 } from "../models/Match"
 import { BASE_API_URL, getAuthToken } from "@/config/app-query-client"
 import { useQuery } from "@tanstack/react-query"
+import { useUserProfile } from "./UserServices"
 
-const fetchAvailableMatches = async () => {
+const fetchAvailableMatches = async (userProfile: any) => {
   const accessToken = getAuthToken();
   const response = await fetch(`${BASE_API_URL}/matches/open`, {
     headers: {
@@ -23,7 +24,7 @@ const fetchAvailableMatches = async () => {
     },
   });
   const matches = await response.json();
-  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
+  if (!userProfile) return [];
   // Filtrar partidos donde el usuario NO participa
   const filtered = matches.filter((match: any) => {
     // Abierto
@@ -53,13 +54,18 @@ const fetchAvailableMatches = async () => {
   }));
 };
 
-export const useAvailableMatches = () =>
-  useQuery({
-    queryKey: ["availableMatches"],
-    queryFn: fetchAvailableMatches,
+export const useAvailableMatches = () => {
+  const { data: userProfile } = useUserProfile();
+  return useQuery({
+    queryKey: ["availableMatches", userProfile?.id],
+    queryFn: () => fetchAvailableMatches(userProfile),
+    enabled: !!userProfile,
+    staleTime: 0,
+    gcTime: 0,
   });
+}
 
-const fetchMyMatches = async () => {
+const fetchMyMatches = async (userProfile: any) => {
   const accessToken = getAuthToken();
   const [openMatchesResponse, closedMatchesResponse] = await Promise.all([
     fetch(`${BASE_API_URL}/matches/open`, {
@@ -86,7 +92,7 @@ const fetchMyMatches = async () => {
 
   const openMatches = await openMatchesResponse.json();
   const closedMatches = await closedMatchesResponse.json();
-  const userProfile = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("userProfile") || '{}') : {};
+  if (!userProfile) return [];
 
   // Filtrar partidos donde el usuario participa
   const filteredOpen = openMatches.filter((match: any) => {
@@ -127,20 +133,25 @@ const fetchMyMatches = async () => {
   return [...openWithType, ...closedWithType];
 };
 
-export const useMyMatches = () =>
-  useQuery({
-    queryKey: ["myMatches"],
-    queryFn: fetchMyMatches,
+export const useMyMatches = () => {
+  const { data: userProfile } = useUserProfile();
+  return useQuery({
+    queryKey: ["myMatches", userProfile?.id],
+    queryFn: () => fetchMyMatches(userProfile),
+    enabled: !!userProfile,
+    staleTime: 0,
+    gcTime: 0,
   });
+}
 
 export const useJoinMatch = () => {
   const [isPending, setIsPending] = useState(false)
 
-  const mutateAsync = async (matchId: string, userId: number) => {
+  const mutateAsync = async (matchId: string) => {
     setIsPending(true)
     try {
       const accessToken = getAuthToken()
-      const response = await fetch(`${BASE_API_URL}/matches/open/${matchId}/join?userId=${userId}`, {
+      const response = await fetch(`${BASE_API_URL}/matches/open/${matchId}/join`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -299,11 +310,11 @@ export const useAssignTeamsByAge = () => {
 export const useLeaveMatch = () => {
   const [isPending, setIsPending] = useState(false)
 
-  const mutateAsync = async (matchId: string, userId: number) => {
+  const mutateAsync = async ({ matchId}: { matchId: string}) => {
     setIsPending(true)
     try {
       const accessToken = getAuthToken()
-      const response = await fetch(`${BASE_API_URL}/matches/open/${matchId}/leave?userId=${userId}`, {
+      const response = await fetch(`${BASE_API_URL}/matches/open/${matchId}/leave`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -393,6 +404,174 @@ export const useMatchHistory = () => {
   return { data, isLoading }
 }
 
+export const usePastOpenMatches = () => {
+  const [data, setData] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchPastOpenMatches = async () => {
+      try {
+        const accessToken = getAuthToken()
+        const response = await fetch(`${BASE_API_URL}/matches/past/open`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Server error: ${errorText}`)
+        }
+
+        const matches = await response.json()
+        setData(matches.map((match: any) => ({
+          ...match,
+          matchType: "open"
+        })))
+      } catch (error) {
+        console.error('Error fetching past open matches:', error)
+        setError('Error al cargar partidos abiertos pasados')
+        setData([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchPastOpenMatches()
+  }, [])
+
+  return { data, isLoading, error }
+}
+
+export const usePastCloseMatches = () => {
+  const [data, setData] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchPastCloseMatches = async () => {
+      try {
+        const accessToken = getAuthToken()
+        const response = await fetch(`${BASE_API_URL}/matches/past/close`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Server error: ${errorText}`)
+        }
+
+        const matches = await response.json()
+        setData(matches.map((match: any) => ({
+          ...match,
+          matchType: "closed"
+        })))
+      } catch (error) {
+        console.error('Error fetching past close matches:', error)
+        setError('Error al cargar partidos cerrados pasados')
+        setData([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchPastCloseMatches()
+  }, [])
+
+  return { data, isLoading, error }
+}
+
+export const useOwnerPastOpenMatches = () => {
+  const [data, setData] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchOwnerPastOpenMatches = async () => {
+      try {
+        const accessToken = getAuthToken()
+        const response = await fetch(`${BASE_API_URL}/matches/past/owner/open`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Server error: ${errorText}`)
+        }
+
+        const matches = await response.json()
+        setData(matches.map((match: any) => ({
+          ...match,
+          matchType: "open"
+        })))
+      } catch (error) {
+        console.error('Error fetching owner past open matches:', error)
+        setError('Error al cargar partidos abiertos pasados del dueño')
+        setData([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchOwnerPastOpenMatches()
+  }, [])
+
+  return { data, isLoading, error }
+}
+
+export const useOwnerPastCloseMatches = () => {
+  const [data, setData] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchOwnerPastCloseMatches = async () => {
+      try {
+        const accessToken = getAuthToken()
+        const response = await fetch(`${BASE_API_URL}/matches/past/owner/close`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Server error: ${errorText}`)
+        }
+
+        const matches = await response.json()
+        setData(matches.map((match: any) => ({
+          ...match,
+          matchType: "closed"
+        })))
+      } catch (error) {
+        console.error('Error fetching owner past close matches:', error)
+        setError('Error al cargar partidos cerrados pasados del dueño')
+        setData([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchOwnerPastCloseMatches()
+  }, [])
+
+  return { data, isLoading, error }
+}
+
 export const createOpenMatch = async (matchData: CreateOpenMatchData) => {
   const accessToken = getAuthToken()
   const response = await fetch(`${BASE_API_URL}/matches/open`, {
@@ -430,25 +609,3 @@ export const createClosedMatch = async (matchData: CreateClosedMatchData) => {
 
   return response.json()
 }
-
-export const useUserProfile = () => {
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const accessToken = getAuthToken();
-        const response = await fetch(`${BASE_API_URL}/users/me`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            Accept: "application/json",
-          },
-        });
-        if (!response.ok) return;
-        const profile = await response.json();
-        localStorage.setItem("userProfile", JSON.stringify(profile));
-      } catch (e) {
-        // ignore
-      }
-    };
-    fetchProfile();
-  }, []);
-};
