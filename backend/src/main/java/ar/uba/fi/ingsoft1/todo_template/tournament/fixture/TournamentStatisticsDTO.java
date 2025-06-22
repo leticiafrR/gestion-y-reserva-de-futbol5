@@ -2,6 +2,8 @@ package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentState;
+import java.util.List;
+import java.util.ArrayList;
 
 public record TournamentStatisticsDTO(
                 String tournamentName,
@@ -9,7 +11,8 @@ public record TournamentStatisticsDTO(
                 TournamentState state,
                 int totalTeams,
                 int totalMatches,
-                int completedMatches,
+                int cantCompletedMatches,
+                List<String> completedMatchesNames,
                 String champion,
                 String runnerUp,
                 String topScoringTeam,
@@ -28,7 +31,8 @@ public record TournamentStatisticsDTO(
                 private TournamentState state;
                 private int totalTeams;
                 private int totalMatches;
-                private int completedMatches;
+                private int cantCompletedMatches;
+                private List<String> completedMatchesNames;
                 private String champion;
                 private String runnerUp;
                 private String topScoringTeam;
@@ -63,8 +67,13 @@ public record TournamentStatisticsDTO(
                         return this;
                 }
 
-                public TournamentStatisticsDTOBuilder completedMatches(int completedMatches) {
-                        this.completedMatches = completedMatches;
+                public TournamentStatisticsDTOBuilder cantCompletedMatches(int cantCompletedMatches) {
+                        this.cantCompletedMatches = cantCompletedMatches;
+                        return this;
+                }
+
+                public TournamentStatisticsDTOBuilder completedMatchesNames(List<String> completedMatchesNames) {
+                        this.completedMatchesNames = completedMatchesNames;
                         return this;
                 }
 
@@ -116,7 +125,8 @@ public record TournamentStatisticsDTO(
                                         state,
                                         totalTeams,
                                         totalMatches,
-                                        completedMatches,
+                                        cantCompletedMatches,
+                                        completedMatchesNames,
                                         champion,
                                         runnerUp,
                                         topScoringTeam,

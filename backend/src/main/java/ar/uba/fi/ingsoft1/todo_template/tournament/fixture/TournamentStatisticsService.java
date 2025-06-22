@@ -10,6 +10,7 @@ import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentStatisticsD
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentHelper;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -125,6 +126,14 @@ public class TournamentStatisticsService {
                     .sum();
             statistics.put("totalGoals", totalGoals);
 
+            // Obtener nombres de matches completados
+            List<String> completedMatchesNames = matchesTournament.stream()
+                    .filter(match -> match.getStatus() == MatchStatus.COMPLETED)
+                    .map(match -> match.getHomeTeam().getTeam().getName() + " vs "
+                            + match.getAwayTeam().getTeam().getName())
+                    .collect(Collectors.toList());
+            statistics.put("completedMatchesNames", completedMatchesNames);
+
             if (completedMatches > 0) {
                 statistics.put("averageGoalsPerMatch", (double) totalGoals / completedMatches);
             }
@@ -142,6 +151,7 @@ public class TournamentStatisticsService {
                 ((Integer) stats.get("totalTeams")).intValue(),
                 ((Integer) stats.get("totalMatches")).intValue(),
                 stats.get("completedMatches") == null ? 0 : ((Long) stats.get("completedMatches")).intValue(),
+                (List<String>) stats.get("completedMatchesNames"),
                 (String) stats.get("champion"),
                 (String) stats.get("runnerUp"),
                 (String) stats.get("topScoringTeam"),
