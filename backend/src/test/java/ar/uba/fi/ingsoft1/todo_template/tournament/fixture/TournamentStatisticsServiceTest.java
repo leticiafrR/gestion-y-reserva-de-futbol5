@@ -3,11 +3,7 @@ package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
-import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatch;
-import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchStatus;
 import java.util.List;
-
-import java.util.Map;
 import java.time.LocalDate;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
@@ -59,30 +55,19 @@ class TournamentStatisticsServiceTest {
 
     @Test
     void testGetTournamentStatistics_TournamentFoundByName() {
-
         setupTournamentInProgress();
-        Map<String, Object> stats = tournamentStatisticsService.getTournamentStatistics(1L);
-
+        TournamentStatisticsDTO stats = tournamentStatisticsService.getTournamentStatistics(1L);
         assertNotNull(stats);
-        assertEquals("Test Tournament", stats.get("tournamentName"));
-
+        assertEquals("Test Tournament", stats.getTournamentName());
     }
 
     @Test
-    void testGetTournamentStatistics_TournamentFound() {
+    void testGetTournamentStatistics_TournamentWith3TeamsShouldReturn3TotalTeams() {
 
         setupTournamentInProgress();
-        Map<String, Object> stats = tournamentStatisticsService.getTournamentStatistics(1L);
-
+        TournamentStatisticsDTO stats = tournamentStatisticsService.getTournamentStatistics(1L);
         assertNotNull(stats);
-        // assertEquals("Test Tournament", stats.get("tournamentName"));
-        assertEquals(TournamentFormat.ROUND_ROBIN, stats.get("format"));
-        // assertEquals(TournamentState.IN_PROGRESS, stats.get("state"));
-        // assertEquals(0, stats.get("totalTeams"));
-        // assertEquals(0, stats.get("totalMatches"));
-        // assertEquals(0, stats.get("completedMatches"));
-        // assertEquals(0, stats.get("totalGoals"));
-        // assertEquals(0.0, stats.get("averageGoalsPerMatch"));
+        assertEquals(3, stats.getTotalTeams());
     }
 
     @Test
@@ -129,11 +114,11 @@ class TournamentStatisticsServiceTest {
                 .thenReturn(new ArrayList<>(List.of(match1, match2)));
 
         // Obtener estadísticas
-        Map<String, Object> stats = tournamentStatisticsService.getTournamentStatistics(1L);
+        TournamentStatisticsDTO stats = tournamentStatisticsService.getTournamentStatistics(1L);
         assertNotNull(stats);
 
         // Verificar nombres de matches completados
-        List<String> completedMatchesNames = (List<String>) stats.get("completedMatchesNames");
+        List<String> completedMatchesNames = stats.getCompletedMatchesNames();
         assertNotNull(completedMatchesNames);
         assertEquals(2, completedMatchesNames.size());
         assertTrue(completedMatchesNames.contains("Equipo A vs Equipo B"));
