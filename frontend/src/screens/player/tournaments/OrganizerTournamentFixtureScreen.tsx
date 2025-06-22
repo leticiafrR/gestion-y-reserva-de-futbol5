@@ -6,6 +6,7 @@ import { Calendar, Users, Target, Eye, Trophy, BarChart3, Gamepad2 } from "lucid
 import { useTournamentByName, useUserTournaments } from "@/services/TournamentService"
 import { useFixtureService, TournamentMatch, useStandings, useTournamentStatistics, TeamStanding, TournamentStatistics } from "@/services/FixtureService"
 import { useQuery } from "@tanstack/react-query"
+import { ConfirmFinishMatchModal } from "./ConfirmFinishMatchModal"
 
 interface TournamentFixtureScreenProps {
   tournamentName: string
@@ -39,6 +40,7 @@ export const OrganizerTournamentFixtureScreen = ({ tournamentName }: TournamentF
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>("matches")
   const [editingMatch, setEditingMatch] = useState<{ matchId: number; homeScore: string; awayScore: string } | null>(null)
+  const [confirmingFinishMatch, setConfirmingFinishMatch] = useState<TournamentMatch | null>(null)
 
   const handleGenerateFixture = async () => {
     if (!tournament?.id) return
@@ -65,16 +67,60 @@ export const OrganizerTournamentFixtureScreen = ({ tournamentName }: TournamentF
   }
 
   const handleUpdateMatchResult = async (matchId: number, homeScore: number, awayScore: number) => {
-    if (!tournament?.id) return
+    if (!tournament?.id) return;
 
     try {
-      await updateMatchResult({ tournamentId: tournament.id, matchId, homeScore, awayScore })
-      setEditingMatch(null)
+      setErrorMessage(null);
+      await updateMatchResult({ tournamentId: tournament.id, matchId, homeScore, awayScore });
+      setEditingMatch(null);
+      
+      const toast = document.createElement('div');
+      toast.style.position = 'fixed';
+      toast.style.top = '20px';
+      toast.style.right = '20px';
+      toast.style.backgroundColor = '#22c55e';
+      toast.style.color = 'white';
+      toast.style.padding = '12px 24px';
+      toast.style.borderRadius = '8px';
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+      toast.style.zIndex = '2000';
+      toast.style.fontSize = '16px';
+      toast.style.fontWeight = '500';
+      toast.textContent = 'Resultado actualizado exitosamente.';
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
+
     } catch (error: any) {
-      console.error("Error updating match result:", error)
-      setErrorMessage(`Error al actualizar el resultado: ${error.message}`)
+      console.error("Error updating match result:", error);
+      const toast = document.createElement('div');
+      toast.style.position = 'fixed';
+      toast.style.top = '20px';
+      toast.style.right = '20px';
+      toast.style.backgroundColor = '#ef4444';
+      toast.style.color = 'white';
+      toast.style.padding = '12px 24px';
+      toast.style.borderRadius = '8px';
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+      toast.style.zIndex = '2000';
+      toast.style.fontSize = '16px';
+      toast.style.fontWeight = '500';
+      if (error.message && error.message.includes("not in progress")) {
+        toast.textContent = "Error: El partido debe estar 'En Progreso' para actualizar el resultado.";
+      } else {
+        toast.textContent = `Error al actualizar el resultado.`;
+      }
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
     }
-  }
+  };
 
   const canGenerateFixture = () => {
     return (
@@ -173,14 +219,6 @@ export const OrganizerTournamentFixtureScreen = ({ tournamentName }: TournamentF
           </button>
         </div>
       </header>
-
-      {/* Error Message */}
-      {errorMessage && (
-        <div style={{ maxWidth: "1200px", margin: "0 auto 24px auto", padding: "16px", backgroundColor: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", color: "#dc2626" }}>
-          <div style={{ fontWeight: "600", marginBottom: "4px" }}>Error:</div>
-          <div>{errorMessage}</div>
-        </div>
-      )}
 
       {/* Main Content Area */}
       <main style={{ maxWidth: "1200px", margin: "0 auto" }}>
@@ -326,7 +364,7 @@ export const OrganizerTournamentFixtureScreen = ({ tournamentName }: TournamentF
                               </span>
                               {isOrganizer && match.status !== "COMPLETED" && (
                                 <button
-                                  onClick={() => setEditingMatch({ matchId: match.id, homeScore: match.homeTeamScore?.toString() || "0", awayScore: match.awayTeamScore?.toString() || "0" })}
+                                  onClick={() => setConfirmingFinishMatch(match)}
                                   style={{ padding: "4px 8px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
                                 >
                                   Editar
@@ -414,35 +452,29 @@ export const OrganizerTournamentFixtureScreen = ({ tournamentName }: TournamentF
                     </div>
                   </div>
                   
-                  {statistics.champion && (
-                    <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Campeón</h3>
-                      <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
-                        <div><strong>🏆 {statistics.champion}</strong></div>
-                        {statistics.runnerUp && <div><strong>🥈 {statistics.runnerUp}</strong></div>}
-                      </div>
+                  <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Podio</h3>
+                    <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
+                      <div><strong>🏆 Campeón:</strong> {statistics.champion || "-"}</div>
+                      <div><strong>🥈 Subcampeón:</strong> {statistics.runnerUp || "-"}</div>
                     </div>
-                  )}
+                  </div>
                   
-                  {statistics.topScoringTeam && (
-                    <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Mejor Ataque</h3>
-                      <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
-                        <div><strong>{statistics.topScoringTeam}</strong></div>
-                        <div>{statistics.topScoringTeamGoals} goles</div>
-                      </div>
+                  <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Mejor Ataque</h3>
+                    <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
+                      <div><strong>Equipo:</strong> {statistics.topScoringTeam || "-"}</div>
+                      <div><strong>Goles:</strong> {statistics.topScoringTeamGoals ?? "-"}</div>
                     </div>
-                  )}
+                  </div>
                   
-                  {statistics.bestDefensiveTeam && (
-                    <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Mejor Defensa</h3>
-                      <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
-                        <div><strong>{statistics.bestDefensiveTeam}</strong></div>
-                        <div>{statistics.bestDefensiveTeamGoalsAgainst} goles en contra</div>
-                      </div>
+                  <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Mejor Defensa</h3>
+                    <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
+                      <div><strong>Equipo:</strong> {statistics.bestDefensiveTeam || "-"}</div>
+                      <div><strong>Goles en contra:</strong> {statistics.bestDefensiveTeamGoalsAgainst ?? "-"}</div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
@@ -460,6 +492,22 @@ export const OrganizerTournamentFixtureScreen = ({ tournamentName }: TournamentF
           </div>
         )}
       </main>
+
+      {/* Finish Match Confirmation Modal */}
+      {confirmingFinishMatch && (
+        <ConfirmFinishMatchModal
+          isConfirming={isUpdating}
+          onClose={() => setConfirmingFinishMatch(null)}
+          onConfirm={() => {
+            setEditingMatch({ 
+              matchId: confirmingFinishMatch.id, 
+              homeScore: confirmingFinishMatch.homeTeamScore?.toString() || "0", 
+              awayScore: confirmingFinishMatch.awayTeamScore?.toString() || "0" 
+            });
+            setConfirmingFinishMatch(null);
+          }}
+        />
+      )}
 
       {/* Generate Fixture Modal */}
       {showGenerateModal && (

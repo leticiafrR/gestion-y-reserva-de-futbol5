@@ -73,7 +73,7 @@ export const MyTournamentsScreen = () => {
       }}
         onClick={() => {
           if (isOrganizer) {
-            setSelectedTournamentName(tournament.name);
+          setSelectedTournamentName(tournament.name);
             setContext('organizing');
           } else {
             setLocation(`/tournament/${tournament.name}/fixture`);

@@ -184,7 +184,6 @@ async function getFixture(tournamentId: number): Promise<TournamentMatch[]> {
   }
 
   const fixtureData = await response.json()
-  console.log("Datos del fixture recibidos:", fixtureData)
   return fixtureData
 }
 
