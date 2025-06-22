@@ -3,7 +3,7 @@
 import { useParams } from "wouter"
 import { useTournamentByName } from "@/services/TournamentService"
 import { SingleEliminationFixtureScreen } from "./SingleEliminationFixtureScreen"
-import { OrganizerTournamentFixtureScreen } from "./OrganizerTournamentFixtureScreen"
+import { RoundRobinFixtureScreen } from "./RoundRobinFixtureScreen"
 
 export const TournamentFixtureWrapper = () => {
   const { tournamentName } = useParams<{ tournamentName: string }>()
@@ -33,6 +33,6 @@ export const TournamentFixtureWrapper = () => {
   if (tournament.format === "SINGLE_ELIMINATION") {
     return <SingleEliminationFixtureScreen tournament={tournament} />
   } else {
-    return <OrganizerTournamentFixtureScreen tournamentName={tournamentName || ""} />
+    return <RoundRobinFixtureScreen tournament={tournament} />
   }
 } 
