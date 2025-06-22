@@ -1,7 +1,7 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
 import ar.uba.fi.ingsoft1.todo_template.match.Match;
 import jakarta.persistence.*;
@@ -63,7 +63,6 @@ public class TournamentMatch {
     @ManyToOne(optional = true)
     @JoinColumn(name = "next_match_id")
     private TournamentMatch nextMatch;
-
 
     @Column(name = "is_home_team_next_match", nullable = false)
     private boolean homeTeamNextMatch;
