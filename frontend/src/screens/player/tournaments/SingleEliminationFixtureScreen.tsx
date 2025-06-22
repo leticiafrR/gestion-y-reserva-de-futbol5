@@ -30,7 +30,7 @@ export const SingleEliminationFixtureScreen = ({ tournament }: SingleElimination
 
   const { generateFixture, isGenerating, getFixture, updateMatchResult, isUpdating } = useFixtureService()
 
-  const { data: fixture = [], error: fixtureError, refetch } = useQuery<TournamentMatch[]>({
+  const { data: fixture = [], error: fixtureError, refetch, isLoading: isFixtureLoading } = useQuery<TournamentMatch[]>({
     queryKey: ["fixture", tournament?.id],
     queryFn: () => getFixture(tournament!.id),
     enabled: !!tournament?.id,
@@ -43,6 +43,7 @@ export const SingleEliminationFixtureScreen = ({ tournament }: SingleElimination
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>("fixture")
   const [editingMatch, setEditingMatch] = useState<{ matchId: number; homeScore: string; awayScore: string } | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Organizar partidos por rondas
   const matchesByRound = useMemo(() => {
@@ -66,12 +67,14 @@ export const SingleEliminationFixtureScreen = ({ tournament }: SingleElimination
   }, [fixture])
 
   const handleGenerateFixture = async () => {
-    if (!tournament?.id) return
+    if (!tournament?.id || isSubmitting) return
+
+    setIsSubmitting(true)
+    setShowGenerateModal(false)
 
     try {
       setErrorMessage(null)
       await generateFixture(tournament.id)
-      setShowGenerateModal(false)
       refetch() 
     } catch (error: any) {
       console.error("Error generating fixture:", error)
@@ -81,6 +84,8 @@ export const SingleEliminationFixtureScreen = ({ tournament }: SingleElimination
       } else {
         setErrorMessage(`Error al generar el fixture: ${error.message}`)
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -254,7 +259,13 @@ export const SingleEliminationFixtureScreen = ({ tournament }: SingleElimination
 
       {/* Main Content Area */}
       <main style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {fixture.length > 0 ? (
+        {isFixtureLoading ? (
+          <div style={{ backgroundColor: "var(--card)", borderRadius: "12px", padding: "48px", boxShadow: "0 2px 8px var(--border)", textAlign: "center" }}>
+            <div style={{ fontSize: "18px", color: "var(--muted-foreground)", marginBottom: "16px" }}>
+              Cargando fixture, puede demorar unos segundos...
+            </div>
+          </div>
+        ) : fixture.length > 0 ? (
           <>
             {/* Tabs */}
             <div style={{ display: "flex", gap: "2px", marginBottom: "24px", backgroundColor: "var(--border)", borderRadius: "8px", padding: "4px" }}>
@@ -614,8 +625,8 @@ export const SingleEliminationFixtureScreen = ({ tournament }: SingleElimination
               <button onClick={() => setShowGenerateModal(false)} style={{ padding: "10px 16px", backgroundColor: "var(--secondary)", color: "var(--secondary-foreground)", border: "1px solid var(--border)", borderRadius: "8px", cursor: "pointer" }}>
                 Cancelar
               </button>
-              <button onClick={handleGenerateFixture} disabled={isGenerating} style={{ padding: "10px 16px", backgroundColor: "#10b981", color: "white", border: "none", borderRadius: "8px", cursor: isGenerating ? "not-allowed" : "pointer", opacity: isGenerating ? 0.7 : 1 }}>
-                {isGenerating ? "Generando..." : "Generar Fixture"}
+              <button onClick={handleGenerateFixture} disabled={isGenerating || isSubmitting} style={{ padding: "10px 16px", backgroundColor: "#10b981", color: "white", border: "none", borderRadius: "8px", cursor: (isGenerating || isSubmitting) ? "not-allowed" : "pointer", opacity: (isGenerating || isSubmitting) ? 0.7 : 1 }}>
+                {isGenerating || isSubmitting ? "Generando..." : "Generar Fixture"}
               </button>
             </div>
           </div>

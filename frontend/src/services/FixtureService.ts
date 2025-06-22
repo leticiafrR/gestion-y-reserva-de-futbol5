@@ -170,6 +170,7 @@ export function useFixture(tournamentId: number) {
 
 async function getFixture(tournamentId: number): Promise<TournamentMatch[]> {
   const accessToken = getAuthToken()
+  console.log("Getting fixture for tournamentId:", tournamentId)
   const response = await fetch(`${BASE_API_URL}/tournaments/${tournamentId}/fixture`, {
     headers: {
       Accept: "application/json",

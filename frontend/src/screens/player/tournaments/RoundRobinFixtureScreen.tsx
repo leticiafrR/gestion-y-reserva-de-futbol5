@@ -25,7 +25,7 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
 
   const { generateFixture, isGenerating, getFixture, updateMatchResult, isUpdating } = useFixtureService()
 
-  const { data: fixture = [], error: fixtureError, refetch } = useQuery<TournamentMatch[]>({
+  const { data: fixture = [], error: fixtureError, refetch, isLoading: isFixtureLoading } = useQuery<TournamentMatch[]>({
     queryKey: ["fixture", tournament?.id],
     queryFn: () => getFixture(tournament!.id),
     enabled: !!tournament?.id,
@@ -40,14 +40,17 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
   const [activeTab, setActiveTab] = useState<TabType>("matches")
   const [editingMatch, setEditingMatch] = useState<{ matchId: number; homeScore: string; awayScore: string } | null>(null)
   const [confirmingFinishMatch, setConfirmingFinishMatch] = useState<TournamentMatch | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleGenerateFixture = async () => {
-    if (!tournament?.id) return
+    if (!tournament?.id || isSubmitting) return
+
+    setIsSubmitting(true)
+    setShowGenerateModal(false)
 
     try {
       setErrorMessage(null)
       await generateFixture(tournament.id)
-      setShowGenerateModal(false)
       refetch()
     } catch (error: any) {
       console.error("Error generating fixture:", error)
@@ -57,6 +60,8 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
       } else {
         setErrorMessage(`Error al generar el fixture: ${error.message}`)
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -214,7 +219,13 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
 
       {/* Main Content Area */}
       <main style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {fixture.length > 0 ? (
+        {isFixtureLoading ? (
+          <div style={{ backgroundColor: "var(--card)", borderRadius: "12px", padding: "48px", boxShadow: "0 2px 8px var(--border)", textAlign: "center" }}>
+            <div style={{ fontSize: "18px", color: "var(--muted-foreground)", marginBottom: "16px" }}>
+              Cargando fixture, puede demorar unos segundos...
+            </div>
+          </div>
+        ) : fixture.length > 0 ? (
           <>
             {/* Tabs */}
             <div style={{ display: "flex", gap: "2px", marginBottom: "24px", backgroundColor: "var(--border)", borderRadius: "8px", padding: "4px" }}>
@@ -346,7 +357,7 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
                         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <span style={{ fontWeight: "600", fontSize: "16px", color: "var(--foreground)" }}>
-                              {match.homeTeam.team.name}
+                              {match.homeTeam?.team.name || "Por definir"}
                             </span>
                             <input
                               type="number"
@@ -358,7 +369,7 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <span style={{ fontWeight: "600", fontSize: "16px", color: "var(--foreground)" }}>
-                              {match.awayTeam.team.name}
+                              {match.awayTeam?.team.name || "Por definir"}
                             </span>
                             <input
                               type="number"
@@ -404,7 +415,7 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
                               fontSize: "16px",
                               color: "var(--foreground)"
                             }}>
-                              {match.homeTeam.team.name}
+                              {match.homeTeam?.team.name || "Por definir"}
                             </span>
                             <span style={{ 
                               fontWeight: "700", 
@@ -429,7 +440,7 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
                               fontSize: "16px",
                               color: "var(--foreground)"
                             }}>
-                              {match.awayTeam.team.name}
+                              {match.awayTeam?.team.name || "Por definir"}
                             </span>
                             <span style={{ 
                               fontWeight: "700", 
@@ -441,7 +452,7 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
                           </div>
 
                           {/* Edit button for organizer */}
-                          {isOrganizer && match.status !== "COMPLETED" && (
+                          {isOrganizer && match.status !== "COMPLETED" && match.homeTeam && match.awayTeam && (
                             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
                               <button
                                 onClick={() => setEditingMatch({ 
@@ -494,7 +505,6 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
                     <tbody>
                       {standings.map((standing, index) => (
                         <tr key={standing.id.teamId} style={{ 
-                          backgroundColor: index < 3 ? "var(--background)" : "transparent",
                           borderBottom: "1px solid var(--border)"
                         }}>
                           <td style={{ padding: "12px", textAlign: "left", fontWeight: "600", color: "var(--foreground)" }}>
@@ -545,7 +555,7 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
                       <div><strong>Equipos:</strong> {statistics.totalTeams}</div>
                       <div><strong>Partidos:</strong> {statistics.totalMatches}</div>
                       <div><strong>Completados:</strong> {statistics.completedMatches}</div>
-                      <div><strong>Formato:</strong> Todos contra Todos</div>
+                      <div><strong>Formato:</strong> Todos contra todos</div>
                     </div>
                   </div>
                   
@@ -604,8 +614,8 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
               <button onClick={() => setShowGenerateModal(false)} style={{ padding: "10px 16px", backgroundColor: "var(--secondary)", color: "var(--secondary-foreground)", border: "1px solid var(--border)", borderRadius: "8px", cursor: "pointer" }}>
                 Cancelar
               </button>
-              <button onClick={handleGenerateFixture} disabled={isGenerating} style={{ padding: "10px 16px", backgroundColor: "#10b981", color: "white", border: "none", borderRadius: "8px", cursor: isGenerating ? "not-allowed" : "pointer", opacity: isGenerating ? 0.7 : 1 }}>
-                {isGenerating ? "Generando..." : "Generar Fixture"}
+              <button onClick={handleGenerateFixture} disabled={isGenerating || isSubmitting} style={{ padding: "10px 16px", backgroundColor: "#10b981", color: "white", border: "none", borderRadius: "8px", cursor: (isGenerating || isSubmitting) ? "not-allowed" : "pointer", opacity: (isGenerating || isSubmitting) ? 0.7 : 1 }}>
+                {isGenerating || isSubmitting ? "Generando..." : "Generar Fixture"}
               </button>
             </div>
           </div>

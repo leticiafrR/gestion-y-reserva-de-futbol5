@@ -17,7 +17,7 @@ export const PlayerGroupStageAndEliminationFixtureScreen = ({ tournament }: Play
   const [, setLocation] = useLocation()
   const { getFixture } = useFixtureService()
 
-  const { data: fixture = [], error: fixtureError } = useQuery<TournamentMatch[]>({
+  const { data: fixture = [], error: fixtureError, isLoading: isFixtureLoading } = useQuery<TournamentMatch[]>({
     queryKey: ["fixture", tournament?.id],
     queryFn: () => getFixture(tournament!.id),
     enabled: !!tournament?.id,
@@ -61,6 +61,22 @@ export const PlayerGroupStageAndEliminationFixtureScreen = ({ tournament }: Play
       console.error('Error formatting date:', error)
       return null
     }
+  }
+
+  const formatMatchNumber = (matchNumber: number, groupName?: string) => {
+    if (groupName) {
+      return `${groupName}${matchNumber}`
+    }
+    
+    // Handle large numbers from backend (1000+ offset per group)
+    if (matchNumber >= 1000) {
+      const groupIndex = Math.floor(matchNumber / 1000)
+      const actualMatchNumber = matchNumber % 1000
+      const groupLetter = String.fromCharCode(65 + groupIndex) // A, B, C, etc.
+      return `${groupLetter}${actualMatchNumber}`
+    }
+    
+    return matchNumber.toString()
   }
 
   if (!tournament) {
@@ -107,7 +123,13 @@ export const PlayerGroupStageAndEliminationFixtureScreen = ({ tournament }: Play
 
       {/* Main Content Area */}
       <main style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {fixture.length > 0 ? (
+        {isFixtureLoading ? (
+          <div style={{ backgroundColor: "var(--card)", borderRadius: "12px", padding: "48px", boxShadow: "0 2px 8px var(--border)", textAlign: "center" }}>
+            <div style={{ fontSize: "18px", color: "var(--muted-foreground)", marginBottom: "16px" }}>
+              Cargando fixture, puede demorar unos segundos...
+            </div>
+          </div>
+        ) : fixture.length > 0 ? (
           <>
             {/* Tabs */}
             <div style={{ display: "flex", gap: "2px", marginBottom: "24px", backgroundColor: "var(--border)", borderRadius: "8px", padding: "4px" }}>
@@ -132,10 +154,10 @@ export const PlayerGroupStageAndEliminationFixtureScreen = ({ tournament }: Play
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                           <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--muted-foreground)" }}>
-                            Partido #{match.groupName ? `${match.groupName}${match.matchNumber}` : match.matchNumber}
+                            Partido #{formatMatchNumber(match.matchNumber, match.groupName)}
                           </span>
                           <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--foreground)", backgroundColor: "var(--background)", padding: "4px 8px", borderRadius: "4px" }}>
-                            {match.groupName ? `Fase de Grupos - Grupo ${match.groupName}` : "Fase de Eliminación"}
+                            {match.matchNumber >= 1000 || match.groupName ? `Fase de Grupos - Grupo ${match.groupName || String.fromCharCode(65 + Math.floor(match.matchNumber / 1000))}` : "Fase de Eliminación"}
                           </span>
                           {match.scheduledDateTime && <span style={{ fontSize: "14px", color: "var(--muted-foreground)" }}>📅 {formatDateTime(match.scheduledDateTime)}</span>}
                           {match.field && <span style={{ fontSize: "14px", color: "var(--muted-foreground)" }}>🏟️ {match.field.name}</span>}

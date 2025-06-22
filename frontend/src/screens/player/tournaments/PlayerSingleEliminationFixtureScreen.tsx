@@ -15,7 +15,7 @@ export const PlayerSingleEliminationFixtureScreen = ({ tournament }: PlayerSingl
   const [, setLocation] = useLocation()
   const { getFixture } = useFixtureService()
 
-  const { data: fixture = [], error: fixtureError } = useQuery<TournamentMatch[]>({
+  const { data: fixture = [], error: fixtureError, isLoading: isFixtureLoading } = useQuery<TournamentMatch[]>({
     queryKey: ["fixture", tournament?.id],
     queryFn: () => getFixture(tournament!.id),
     enabled: !!tournament?.id,
@@ -102,7 +102,13 @@ export const PlayerSingleEliminationFixtureScreen = ({ tournament }: PlayerSingl
 
       {/* Main Content Area */}
       <main style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {fixture.length > 0 ? (
+        {isFixtureLoading ? (
+          <div style={{ backgroundColor: "var(--card)", borderRadius: "12px", padding: "48px", boxShadow: "0 2px 8px var(--border)", textAlign: "center" }}>
+            <div style={{ fontSize: "18px", color: "var(--muted-foreground)", marginBottom: "16px" }}>
+              Cargando fixture, puede demorar unos segundos...
+            </div>
+          </div>
+        ) : fixture.length > 0 ? (
           <div style={{ backgroundColor: "var(--card)", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px var(--border)" }}>
             <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "24px", color: "var(--foreground)" }}>Partidos del Torneo</h2>
             {Object.entries(matchesByRound).map(([roundNumber, matches]) => (
