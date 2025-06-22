@@ -44,7 +44,7 @@ export const TournamentDetailsModal = ({
   };
 
   const handleGoToFixture = () => {
-    setLocation(`/tournament/${encodeURIComponent(tournament.name)}/organizer-fixture`);
+    setLocation(`/my-tournaments/fixture/${encodeURIComponent(tournament.name)}`);
     onClose();
   };
   

@@ -76,7 +76,7 @@ export const MyTournamentsScreen = () => {
           setSelectedTournamentName(tournament.name);
             setContext('organizing');
           } else {
-            setLocation(`/tournament/${tournament.name}/fixture`);
+            setLocation(`/tournaments/fixture/${encodeURIComponent(tournament.name)}`);
           }
         }}
       >

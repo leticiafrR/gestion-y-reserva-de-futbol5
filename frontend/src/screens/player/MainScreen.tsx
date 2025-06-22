@@ -26,7 +26,7 @@ export const PlayerMainScreen = () => {
     {
       title: "Torneos disponibles",
       description: "Participa en torneos y competencias",
-      path: "/tournaments",
+      path: "/available-tournaments",
       emoji: "🏆"
     },
     {
