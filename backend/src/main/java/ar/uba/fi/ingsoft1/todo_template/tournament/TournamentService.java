@@ -115,6 +115,9 @@ public class TournamentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "The tournament has already started and cannot be deleted");
         }
+        
+        // Delete all team registrations for the tournament first
+        teamRegisteredTournamentRepository.deleteAll(teamRegisteredTournamentRepository.findByTournament(tournament));
 
         tournamentRepository.delete(tournament);
         return true;
