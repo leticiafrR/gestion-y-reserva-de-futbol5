@@ -3,6 +3,9 @@ package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatch;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchStatus;
+import java.util.List;
 
 import java.util.Map;
 import java.time.LocalDate;
@@ -80,6 +83,61 @@ class TournamentStatisticsServiceTest {
         // assertEquals(0, stats.get("completedMatches"));
         // assertEquals(0, stats.get("totalGoals"));
         // assertEquals(0.0, stats.get("averageGoalsPerMatch"));
+    }
+
+    @Test
+    void testGetTournamentStatistics_CompletedMatchesNames() {
+        // Crear equipos de prueba
+        Team team1 = new Team();
+        team1.setName("Equipo A");
+        Team team2 = new Team();
+        team2.setName("Equipo B");
+        Team team3 = new Team();
+        team3.setName("Equipo C");
+
+        // Crear registros de equipos en el torneo
+        TeamRegisteredTournament reg1 = new TeamRegisteredTournament();
+        reg1.setTeam(team1);
+        TeamRegisteredTournament reg2 = new TeamRegisteredTournament();
+        reg2.setTeam(team2);
+        TeamRegisteredTournament reg3 = new TeamRegisteredTournament();
+        reg3.setTeam(team3);
+
+        // Crear matches completados
+        TournamentMatch match1 = new TournamentMatch();
+        match1.setHomeTeam(reg1);
+        match1.setAwayTeam(reg2);
+        match1.setStatus(MatchStatus.COMPLETED);
+
+        TournamentMatch match2 = new TournamentMatch();
+        match2.setHomeTeam(reg2);
+        match2.setAwayTeam(reg3);
+        match2.setStatus(MatchStatus.COMPLETED);
+
+        Tournament tournament = new Tournament();
+        tournament.setId(1L);
+        tournament.setName("Test Tournament");
+        tournament.setFormat(TournamentFormat.ROUND_ROBIN);
+        tournament.setStartDate(LocalDate.now().minusDays(1));
+        tournament.setEndDate(LocalDate.now().plusDays(10));
+        tournament.setOpenInscription(true);
+
+        when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
+        when(teamRegisteredTournamentRepository.findByTournament(tournament))
+                .thenReturn(new ArrayList<>(List.of(reg1, reg2, reg3)));
+        when(tournamentMatchRepository.findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament))
+                .thenReturn(new ArrayList<>(List.of(match1, match2)));
+
+        // Obtener estadísticas
+        Map<String, Object> stats = tournamentStatisticsService.getTournamentStatistics(1L);
+        assertNotNull(stats);
+
+        // Verificar nombres de matches completados
+        List<String> completedMatchesNames = (List<String>) stats.get("completedMatchesNames");
+        assertNotNull(completedMatchesNames);
+        assertEquals(2, completedMatchesNames.size());
+        assertTrue(completedMatchesNames.contains("Equipo A vs Equipo B"));
+        assertTrue(completedMatchesNames.contains("Equipo B vs Equipo C"));
     }
 
     void setupTournamentInProgress() {
