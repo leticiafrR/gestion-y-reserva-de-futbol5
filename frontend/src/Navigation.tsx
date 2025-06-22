@@ -18,7 +18,8 @@ import { AcceptInvitationScreen } from "./screens/auth/AcceptInvitationScreen";
 import { BookingsScreen as PlayerBookingsScreen } from "@/screens/player/bookings/BookingsScreen";
 import { BookingsScreen as AdminBookingsScreen } from "@/screens/field-admin/BookingsScreen";
 import { AvailableTournamentsScreen } from "@/screens/player/tournaments/AvailableTournamentsScreen";
-import { TournamentFixtureScreen } from "@/screens/player/tournaments/TournamentFixtureScreen";
+import { PlayerTournamentFixtureScreen } from "@/screens/player/tournaments/PlayerTournamentFixtureScreen";
+import { OrganizerTournamentFixtureScreen } from "@/screens/player/tournaments/OrganizerTournamentFixtureScreen";
 
 export const Navigation = () => {
   const [tokenState] = useToken();
@@ -101,7 +102,10 @@ export const Navigation = () => {
           <AvailableTournamentsScreen />
         </Route>
         <Route path="/tournament/:tournamentName/fixture">
-          {({ tournamentName }) => <TournamentFixtureScreen tournamentName={tournamentName} />}
+          {({ tournamentName }) => <PlayerTournamentFixtureScreen tournamentName={tournamentName} />}
+        </Route>
+        <Route path="/tournament/:tournamentName/organizer-fixture">
+          {({ tournamentName }) => <OrganizerTournamentFixtureScreen tournamentName={tournamentName} />}
         </Route>
         <Route path="/bookings">
           <PlayerBookingsScreen />

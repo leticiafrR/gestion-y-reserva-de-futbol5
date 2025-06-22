@@ -11,7 +11,7 @@ interface TournamentFixtureScreenProps {
   tournamentName: string
 }
 
-export const TournamentFixtureScreen = ({ tournamentName }: TournamentFixtureScreenProps) => {
+export const PlayerTournamentFixtureScreen = ({ tournamentName }: TournamentFixtureScreenProps) => {
   const [, setLocation] = useLocation()
   const { data: tournament, isLoading } = useTournamentByName(tournamentName)
   const { data: organizedTournaments = [] } = useUserTournaments()

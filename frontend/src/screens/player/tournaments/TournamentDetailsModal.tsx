@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Edit, Trash2, X } from "lucide-react";
+import { Edit, Trash2, X, Eye } from "lucide-react";
 import { EditTournamentModal } from "./EditTournamentModal";
 import { DeleteTournamentConfirmationModal } from "./DeleteTournamentConfirmationModal";
 import { useDeleteTournament } from "@/services/TournamentService";
-import { useFixtureService } from "@/services/FixtureService";
 import { useLocation } from "wouter";
 
 interface TournamentDetailsModalProps {
@@ -28,7 +27,6 @@ export const TournamentDetailsModal = ({
   const [, setLocation] = useLocation();
   
   const { mutate: deleteTournament, isPending: isDeleting } = useDeleteTournament();
-  const { generateFixture, isGenerating: isGeneratingFixture } = useFixtureService();
 
   const isOrganizer = context === "organizing";
   
@@ -45,17 +43,9 @@ export const TournamentDetailsModal = ({
     });
   };
 
-  const handleGenerateFixture = async () => {
-    try {
-      const data = await generateFixture(tournament.id);
-      console.log("Fixture generado exitosamente. Respuesta:", data);
-      onSuccessToast("Fixture generado exitosamente.");
-      setLocation(`/tournament/${encodeURIComponent(tournament.name)}/fixture`);
-      onClose();
-    } catch (error: any) {
-      console.error("Error al generar el fixture:", error);
-      onSuccessToast(`Error al generar el fixture: ${error.message}`);
-    }
+  const handleGoToFixture = () => {
+    setLocation(`/tournament/${encodeURIComponent(tournament.name)}/organizer-fixture`);
+    onClose();
   };
   
   const getStateLabel = (state: string) => {
@@ -84,6 +74,12 @@ export const TournamentDetailsModal = ({
     .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 
+  const canShowFixtureButton = isOrganizer && (
+    tournament.state === "CLOSE_TO_REGISTER_NOT_STARTED" ||
+    tournament.state === "IN_PROGRESS" ||
+    tournament.state === "FINISHED"
+  );
+
   return (
     <>
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
@@ -107,13 +103,12 @@ export const TournamentDetailsModal = ({
             {tournament.registrationFee > 0 && <div style={{ color: "#374151", fontSize: 16, marginBottom: 8 }}><b>Inscripción:</b> ${tournament.registrationFee}</div>}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-            {isOrganizer && tournament.state === "CLOSE_TO_REGISTER_NOT_STARTED" && (
+            {canShowFixtureButton && (
                 <button 
-                  onClick={handleGenerateFixture} 
-                  style={{ padding: "10px 18px", background: "#10b981", color: "white", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 15 }}
-                  disabled={isGeneratingFixture}
+                  onClick={handleGoToFixture} 
+                  style={{ padding: "10px 18px", background: "#10b981", color: "white", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", gap: 6 }}
                 >
-                  {isGeneratingFixture ? "Generando..." : "Fixture"}
+                  <Eye size={16} /> Fixture
                 </button>
             )}
             {isOrganizer && (

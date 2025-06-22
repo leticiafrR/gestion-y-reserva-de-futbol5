@@ -183,7 +183,9 @@ async function getFixture(tournamentId: number): Promise<TournamentMatch[]> {
     throw new Error(`Error al obtener el fixture: ${errorText}`)
   }
 
-  return await response.json()
+  const fixtureData = await response.json()
+  console.log("Datos del fixture recibidos:", fixtureData)
+  return fixtureData
 }
 
 export function useStandings(tournamentId: number) {
