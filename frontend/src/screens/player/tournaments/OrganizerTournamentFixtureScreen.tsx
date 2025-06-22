@@ -431,52 +431,69 @@ export const OrganizerTournamentFixtureScreen = ({ tournamentName }: TournamentF
             )}
 
             {activeTab === "statistics" && statistics && (
-              <div style={{ backgroundColor: "var(--card)", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px var(--border)" }}>
-                <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "24px", color: "var(--foreground)" }}>Estadísticas del Torneo</h2>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px" }}>
-                  <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Información General</h3>
-                    <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
-                      <div><strong>Equipos:</strong> {statistics.totalTeams}</div>
-                      <div><strong>Partidos:</strong> {statistics.totalMatches}</div>
-                      <div><strong>Completados:</strong> {statistics.completedMatches}</div>
-                      <div><strong>Formato:</strong> {statistics.format}</div>
-                    </div>
+              <>
+                {/* Podium Section */}
+                <div style={{
+                  display: "flex",
+                  gap: "24px",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  padding: "24px",
+                  marginBottom: "24px",
+                  borderRadius: "12px",
+                  background: statistics.champion ? "linear-gradient(135deg, #fef9c3, #fef08a)" : "var(--card)",
+                  border: statistics.champion ? "1px solid #fde047" : "1px solid var(--border)",
+                  transition: "background 0.3s ease, border-color 0.3s ease"
+                }}>
+                  <div>
+                    <h3 style={{ marginTop: 0, marginBottom: "8px", fontSize: "1.5rem", fontWeight: 700, color: statistics.champion ? "#b45309" : "var(--muted-foreground)" }}>🏆 Campeón</h3>
+                    <p style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: statistics.champion ? "#78350f" : "var(--foreground)" }}>{statistics.champion || "-"}</p>
                   </div>
-                  
-                  <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Goles</h3>
-                    <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
-                      <div><strong>Total:</strong> {statistics.totalGoals}</div>
-                      <div><strong>Promedio por partido:</strong> {statistics.averageGoalsPerMatch?.toFixed(2) || "0"}</div>
-                    </div>
+                  <div style={{ borderLeft: "2px solid", paddingLeft: "24px", borderLeftColor: statistics.champion ? '#fcd34d' : 'var(--border)' }}>
+                    <h3 style={{ marginTop: 0, marginBottom: "8px", fontSize: "1.5rem", fontWeight: 700, color: statistics.champion ? "#71717a" : "var(--muted-foreground)" }}>🥈 Subcampeón</h3>
+                    <p style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: statistics.champion ? "#52525b" : "var(--foreground)" }}>{statistics.runnerUp || "-"}</p>
                   </div>
-                  
-                  <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Podio</h3>
-                    <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
-                      <div><strong>🏆 Campeón:</strong> {statistics.champion || "-"}</div>
-                      <div><strong>🥈 Subcampeón:</strong> {statistics.runnerUp || "-"}</div>
+                </div>
+
+                <div style={{ backgroundColor: "var(--card)", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px var(--border)" }}>
+                  <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "24px", color: "var(--foreground)" }}>Estadísticas Detalladas</h2>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px" }}>
+                    <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Información General</h3>
+                      <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
+                        <div><strong>Equipos:</strong> {statistics.totalTeams}</div>
+                        <div><strong>Partidos:</strong> {statistics.totalMatches}</div>
+                        <div><strong>Completados:</strong> {statistics.completedMatches}</div>
+                        <div><strong>Formato:</strong> {statistics.format}</div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Mejor Ataque</h3>
-                    <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
-                      <div><strong>Equipo:</strong> {statistics.topScoringTeam || "-"}</div>
-                      <div><strong>Goles:</strong> {statistics.topScoringTeamGoals ?? "-"}</div>
+                    
+                    <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Goles</h3>
+                      <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
+                        <div><strong>Total:</strong> {statistics.totalGoals}</div>
+                        <div><strong>Promedio por partido:</strong> {statistics.averageGoalsPerMatch?.toFixed(2) || "0"}</div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Mejor Defensa</h3>
-                    <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
-                      <div><strong>Equipo:</strong> {statistics.bestDefensiveTeam || "-"}</div>
-                      <div><strong>Goles en contra:</strong> {statistics.bestDefensiveTeamGoalsAgainst ?? "-"}</div>
+                    
+                    <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Mejor Ataque</h3>
+                      <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
+                        <div><strong>Equipo:</strong> {statistics.topScoringTeam || "-"}</div>
+                        <div><strong>Goles:</strong> {statistics.topScoringTeamGoals ?? "-"}</div>
+                      </div>
+                    </div>
+                    
+                    <div style={{ padding: "16px", backgroundColor: "var(--background)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px", color: "var(--foreground)" }}>Mejor Defensa</h3>
+                      <div style={{ fontSize: "14px", color: "var(--foreground)" }}>
+                        <div><strong>Equipo:</strong> {statistics.bestDefensiveTeam || "-"}</div>
+                        <div><strong>Goles en contra:</strong> {statistics.bestDefensiveTeamGoalsAgainst ?? "-"}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </>
         ) : (
