@@ -9,7 +9,6 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class TeamRegisteredTournament {
     @EmbeddedId
@@ -25,13 +24,36 @@ public class TeamRegisteredTournament {
     @JoinColumn(name = "team_id")
     private Team team;
 
-    // Estadísticas del equipo
+    @Builder.Default
     private int points = 0;
+
+    @Builder.Default
     private int goalsFor = 0;
+
+    @Builder.Default
     private int goalsAgainst = 0;
+
+    @Builder.Default
     private int wins = 0;
+
+    @Builder.Default
     private int draws = 0;
+
+    @Builder.Default
     private int losses = 0;
+
+    public TeamRegisteredTournament(TeamTournamentId id, Tournament tournament, Team team, int points, int goalsFor,
+            int goalsAgainst, int wins, int draws, int losses) {
+        this.id = id;
+        this.tournament = tournament;
+        this.team = team;
+        this.points = points;
+        this.goalsFor = goalsFor;
+        this.goalsAgainst = goalsAgainst;
+        this.wins = wins;
+        this.draws = draws;
+        this.losses = losses;
+    }
 
     public int getGoalDifference() {
         return goalsFor - goalsAgainst;
