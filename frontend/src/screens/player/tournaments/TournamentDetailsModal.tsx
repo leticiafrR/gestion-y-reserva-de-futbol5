@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Edit, Trash2, X } from "lucide-react";
+import { Edit, Trash2, X, Eye } from "lucide-react";
 import { EditTournamentModal } from "./EditTournamentModal";
 import { DeleteTournamentConfirmationModal } from "./DeleteTournamentConfirmationModal";
 import { useDeleteTournament } from "@/services/TournamentService";
+import { useLocation } from "wouter";
 
 interface TournamentDetailsModalProps {
   tournament: any;
@@ -23,6 +24,7 @@ export const TournamentDetailsModal = ({
 }: TournamentDetailsModalProps) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [, setLocation] = useLocation();
   
   const { mutate: deleteTournament, isPending: isDeleting } = useDeleteTournament();
 
@@ -39,6 +41,11 @@ export const TournamentDetailsModal = ({
         onSuccessToast(`Error al eliminar: ${error.message}`);
       }
     });
+  };
+
+  const handleGoToFixture = () => {
+    setLocation(`/my-tournaments/fixture/${encodeURIComponent(tournament.name)}`);
+    onClose();
   };
   
   const getStateLabel = (state: string) => {
@@ -67,6 +74,12 @@ export const TournamentDetailsModal = ({
     .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 
+  const canShowFixtureButton = isOrganizer && (
+    tournament.state === "CLOSE_TO_REGISTER_NOT_STARTED" ||
+    tournament.state === "IN_PROGRESS" ||
+    tournament.state === "FINISHED"
+  );
+
   return (
     <>
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
@@ -90,6 +103,14 @@ export const TournamentDetailsModal = ({
             {tournament.registrationFee > 0 && <div style={{ color: "#374151", fontSize: 16, marginBottom: 8 }}><b>Inscripción:</b> ${tournament.registrationFee}</div>}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+            {canShowFixtureButton && (
+                <button 
+                  onClick={handleGoToFixture} 
+                  style={{ padding: "10px 18px", background: "#10b981", color: "white", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  <Eye size={16} /> Fixture
+                </button>
+            )}
             {isOrganizer && (
               <>
                 <button onClick={() => setShowEditModal(true)} style={{ padding: "10px 18px", background: "#3b82f6", color: "white", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", gap: 6 }}>

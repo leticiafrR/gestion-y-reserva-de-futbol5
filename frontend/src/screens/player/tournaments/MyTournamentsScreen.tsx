@@ -72,8 +72,12 @@ export const MyTournamentsScreen = () => {
         cursor: "pointer"
       }}
         onClick={() => {
+          if (isOrganizer) {
           setSelectedTournamentName(tournament.name);
-          setContext(isOrganizer ? 'organizing' : 'participant');
+            setContext('organizing');
+          } else {
+            setLocation(`/tournaments/fixture/${encodeURIComponent(tournament.name)}`);
+          }
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "0.5rem" }}>

@@ -54,13 +54,28 @@ public class FixtureController {
             @ApiResponse(responseCode = "200", description = "Resultado actualizado exitosamente"),
             @ApiResponse(responseCode = "403", description = "Solo el organizador puede actualizar resultados"),
             @ApiResponse(responseCode = "404", description = "Partido no encontrado"),
-            @ApiResponse(responseCode = "409", description = "El partido no está en estado programado")
+            @ApiResponse(responseCode = "409", description = "El partido no está en progreso")
     })
     public ResponseEntity<TournamentMatch> updateMatchResult(
             @PathVariable Long tournamentId,
             @PathVariable Long matchId,
             @RequestBody MatchResultDTO result) {
         return ResponseEntity.ok(fixtureService.updateMatchResult(matchId, result));
+    }
+
+    @PostMapping("/matches/{matchId}/cancel")
+    @Operation(
+            summary = "Cancelar un partido",
+            description = "Permite al organizador cancelar un partido. No se pueden cancelar partidos completados."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Partido cancelado exitosamente"),
+            @ApiResponse(responseCode = "403", description = "Solo el organizador puede cancelar partidos"),
+            @ApiResponse(responseCode = "404", description = "Partido no encontrado"),
+            @ApiResponse(responseCode = "409", description = "No se puede cancelar un partido completado")
+    })
+    public ResponseEntity<TournamentMatch> cancelMatch(@PathVariable Long tournamentId, @PathVariable Long matchId) {
+        return ResponseEntity.ok(fixtureService.cancelMatch(matchId));
     }
 
     @GetMapping("/statistics")

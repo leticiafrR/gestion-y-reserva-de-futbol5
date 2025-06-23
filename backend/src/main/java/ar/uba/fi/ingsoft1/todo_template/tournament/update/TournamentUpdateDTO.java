@@ -1,4 +1,4 @@
-package ar.uba.fi.ingsoft1.todo_template.tournament;
+package ar.uba.fi.ingsoft1.todo_template.tournament.update;
 
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -8,8 +8,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.List;
 
-import ar.uba.fi.ingsoft1.todo_template.tournament.update.TournamentUpdateCommand;
-import ar.uba.fi.ingsoft1.todo_template.tournament.update.UpdateCommandFactory;
+import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
 
 public record TournamentUpdateDTO(
                 String name,

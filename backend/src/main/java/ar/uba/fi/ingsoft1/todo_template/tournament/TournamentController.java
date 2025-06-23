@@ -16,8 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import ar.uba.fi.ingsoft1.todo_template.booking.BookingDTO;
 import ar.uba.fi.ingsoft1.todo_template.config.GlobalControllerExceptionHandler.IncorrectValueResponse;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
+import ar.uba.fi.ingsoft1.todo_template.tournament.update.TournamentUpdateDTO;
 
 @RestController
 @RequestMapping("/tournaments")
@@ -170,6 +171,14 @@ public class TournamentController {
         return ResponseEntity.ok(tournamentService.getTournamentByName(name));
     }
 
+    @GetMapping("/{id}")
+    @ApiResponse(responseCode = "404", description = "No tournament found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "200", description = "Tournament found successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Tournament.class)))
+    @Operation(summary = "Get the details of the tournament specified by the id", description = "Returns a list of all active tournaments")
+    public ResponseEntity<Tournament> getTournamentSummaryById(@PathVariable Long id) {
+        return ResponseEntity.ok(tournamentService.getTournament(id));
+    }
+
     @PatchMapping("/{id_tournament}/close_registration")
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Update details of a tournament", description = "Allows updating one or more details of a tournament")
@@ -226,7 +235,7 @@ public class TournamentController {
             @ApiResponse(responseCode = "404", description = "Tournament not found", content = @Content(mediaType = "text/plain", schema = @Schema(implementation = String.class)))
     })
     public ResponseEntity<List<TeamRegisteredTournament>> getTournamentStandings(@PathVariable Long id) {
-        List<TeamRegisteredTournament> standings = tournamentService.getTournamentStandings(id);
+        List<TeamRegisteredTournament> standings = tournamentService.getTournamentSortedStandings(id);
         return ResponseEntity.ok(standings);
     }
 

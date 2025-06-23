@@ -1,7 +1,7 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture.generator;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatch;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +15,8 @@ public class GroupStageAndEliminationGenerator implements FixtureGenerator {
     private static final int MIN_TEAMS_PER_GROUP = 3;
     private static final int MAX_TEAMS_PER_GROUP = 6;
 
-    public GroupStageAndEliminationGenerator(RoundRobinGenerator roundRobinGenerator, SingleEliminationGenerator singleEliminationGenerator) {
+    public GroupStageAndEliminationGenerator(RoundRobinGenerator roundRobinGenerator,
+            SingleEliminationGenerator singleEliminationGenerator) {
         this.roundRobinGenerator = roundRobinGenerator;
         this.singleEliminationGenerator = singleEliminationGenerator;
     }
@@ -53,8 +54,8 @@ public class GroupStageAndEliminationGenerator implements FixtureGenerator {
             List<TournamentMatch> groupMatches = roundRobinGenerator.generateFixture(tournament, group);
 
             for (TournamentMatch match : groupMatches) {
-                String groupPrefix = String.valueOf((char)('A' + i));
-                match.setMatchNumber(Integer.parseInt(groupPrefix + match.getMatchNumber()));
+                int groupOffset = (i + 1) * 1000;
+                match.setMatchNumber(groupOffset + match.getMatchNumber());
             }
 
             allMatches.addAll(groupMatches);
@@ -65,7 +66,8 @@ public class GroupStageAndEliminationGenerator implements FixtureGenerator {
             advancingTeams.addAll(group.stream().limit(2).collect(Collectors.toList()));
         }
 
-        List<TournamentMatch> eliminationMatches = singleEliminationGenerator.generateFixture(tournament, advancingTeams);
+        List<TournamentMatch> eliminationMatches = singleEliminationGenerator.generateFixture(tournament,
+                advancingTeams);
 
         int maxGroupRound = allMatches.stream()
                 .mapToInt(TournamentMatch::getRoundNumber)

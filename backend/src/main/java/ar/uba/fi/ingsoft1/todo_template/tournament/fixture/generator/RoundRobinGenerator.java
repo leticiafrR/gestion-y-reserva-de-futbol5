@@ -1,13 +1,12 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture.generator;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatch;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Component

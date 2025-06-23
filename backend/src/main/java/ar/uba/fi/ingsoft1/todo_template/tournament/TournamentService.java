@@ -3,6 +3,10 @@ package ar.uba.fi.ingsoft1.todo_template.tournament;
 import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
 import ar.uba.fi.ingsoft1.todo_template.team.Team;
 import ar.uba.fi.ingsoft1.todo_template.team.TeamRepository;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentHelper;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamTournamentId;
 import ar.uba.fi.ingsoft1.todo_template.tournament.update.TournamentUpdateCommand;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
@@ -22,13 +26,15 @@ public class TournamentService {
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
     private final TeamRegisteredTournamentRepository teamRegisteredTournamentRepository;
+    private final TeamRegisteredTournamentHelper teamRegisteredTournamentHelper;
 
     public TournamentService(TournamentRepository tournamentRepository, UserRepository userRepository,
-                             TeamRepository teamRepository, TeamRegisteredTournamentRepository teamRegisteredTournamentRepository) {
+            TeamRepository teamRepository, TeamRegisteredTournamentRepository teamRegisteredTournamentRepository) {
         this.tournamentRepository = tournamentRepository;
         this.userRepository = userRepository;
         this.teamRepository = teamRepository;
         this.teamRegisteredTournamentRepository = teamRegisteredTournamentRepository;
+        this.teamRegisteredTournamentHelper = new TeamRegisteredTournamentHelper(teamRegisteredTournamentRepository);
     }
 
     public boolean isTeamAlreadyRegistered(Long teamId, Long tournamentId) {
@@ -37,7 +43,7 @@ public class TournamentService {
     }
 
     private void checkConditionsToResgitTeam(String authenticatedUsername, Tournament tournament,
-                                             String captainUsername) {
+            String captainUsername) {
         if (!authenticatedUsername.equals(captainUsername)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Only the team's captain can regist the team into a tournament. " + authenticatedUsername
@@ -66,7 +72,6 @@ public class TournamentService {
                 .team(team)
                 .tournament(tournament)
                 .build();
-
 
         teamRegisteredTournamentRepository.save(registration);
     }
@@ -115,12 +120,15 @@ public class TournamentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "The tournament has already started and cannot be deleted");
         }
+        
+        // Delete all team registrations for the tournament first
+        teamRegisteredTournamentRepository.deleteAll(teamRegisteredTournamentRepository.findByTournament(tournament));
 
         tournamentRepository.delete(tournament);
         return true;
     }
 
-    private Tournament getTournament(Long id) {
+    public Tournament getTournament(Long id) {
         return tournamentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
     }
@@ -201,10 +209,8 @@ public class TournamentService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        // Obtener todos los equipos donde el usuario es miembro
         List<Team> userTeams = teamRepository.findByMembers(user);
-        
-        // Obtener todos los torneos donde estos equipos están registrados
+
         List<Tournament> participatingTournaments = teamRegisteredTournamentRepository
                 .findAll()
                 .stream()
@@ -241,21 +247,9 @@ public class TournamentService {
         return teamRegisteredTournamentRepository.findByTournament(tournament);
     }
 
-    public List<TeamRegisteredTournament> getTournamentStandings(Long tournamentId) {
+    public List<TeamRegisteredTournament> getTournamentSortedStandings(Long tournamentId) {
         Tournament tournament = getTournament(tournamentId);
-        List<TeamRegisteredTournament> teams = teamRegisteredTournamentRepository.findByTournament(tournament);
-
-        // Ordenar por points (descending), goal difference (descending), goals for (descending)
-        teams.sort((t1, t2) -> {
-            if (t1.getPoints() != t2.getPoints()) {
-                return Integer.compare(t2.getPoints(), t1.getPoints());
-            }
-            if (t1.getGoalDifference() != t2.getGoalDifference()) {
-                return Integer.compare(t2.getGoalDifference(), t1.getGoalDifference());
-            }
-            return Integer.compare(t2.getGoalsFor(), t1.getGoalsFor());
-        });
-
-        return teams;
+        return teamRegisteredTournamentHelper.getSortedByStandingsTeamsForTournament(tournament);
     }
+
 }
