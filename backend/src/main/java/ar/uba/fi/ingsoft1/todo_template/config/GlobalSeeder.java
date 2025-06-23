@@ -562,6 +562,58 @@ public class GlobalSeeder {
             
             closeMatchRepository.save(closeMatch);
         }
+        
+        // Crear un partido abierto especial organizado por PLAYER.1 con 10 usuarios
+        User player1 = players.get(0); // PLAYER.1
+        List<TimeSlot> timeSlots = timeSlotRepository.findAll();
+        TimeSlot timeSlot = timeSlots.get(0);
+        
+        Booking booking = new Booking(
+            player1,
+            timeSlot,
+            LocalDate.now().plusDays(2), // En 2 días
+            21 // A las 21 horas
+        );
+        booking = bookingRepository.save(booking);
+        
+        OpenMatchTeam teamOne = OpenMatchTeam.builder()
+                .members(new ArrayList<>())
+                .build();
+        teamOne = openMatchTeamRepository.save(teamOne);
+        
+        OpenMatchTeam teamTwo = OpenMatchTeam.builder()
+                .members(new ArrayList<>())
+                .build();
+        teamTwo = openMatchTeamRepository.save(teamTwo);
+        
+        OpenMatch openMatch = new OpenMatch();
+        openMatch.setBooking(booking);
+        openMatch.setIsActive(true);
+        openMatch.setMinPlayers(8);
+        openMatch.setMaxPlayers(12);
+        openMatch.setTeamOne(teamOne);
+        openMatch.setTeamTwo(teamTwo);
+        openMatch.setPlayers(new ArrayList<>());
+        
+        // Agregar PLAYER.1 y 9 usuarios aleatorios más (10 en total)
+        List<User> matchPlayers = new ArrayList<>();
+        matchPlayers.add(player1); // PLAYER.1 como organizador
+        
+        // Agregar 9 usuarios aleatorios más
+        List<User> availablePlayers = new ArrayList<>(players);
+        availablePlayers.remove(player1); // Remover PLAYER.1 para evitar duplicados
+        
+        Random random = new Random();
+        for (int i = 0; i < 9; i++) {
+            if (!availablePlayers.isEmpty()) {
+                int randomIndex = random.nextInt(availablePlayers.size());
+                User randomPlayer = availablePlayers.remove(randomIndex);
+                matchPlayers.add(randomPlayer);
+            }
+        }
+        
+        openMatch.setPlayers(matchPlayers);
+        openMatchRepository.save(openMatch);
     }
 
     private void seedPastMatches(List<User> players) {
