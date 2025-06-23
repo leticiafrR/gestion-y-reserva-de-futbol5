@@ -20,7 +20,7 @@ public record UserCreateDTO(
         @Schema(description = "User's gender") @NotBlank(message = "The user gender cannot be empty to register a user.") String gender,
         @Schema(description = "User's age") @NotBlank(message = "The user age cannot be empty to register a user.") String age,
         @Schema(description = "User's zone") @NotBlank(message = "The user zone cannot be empty to register a user.") String zone,
-        @Schema(description = "User profile picture") @NotBlank(message = "The user profile picture cannot be empty to register a user.") @URL String urlProfilePicture)
+        @Schema(description = "User profile picture") @URL String urlProfilePicture)
 
         implements UserCredentials {
 

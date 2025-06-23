@@ -63,8 +63,7 @@ public class User implements UserDetails, UserCredentials {
     @Column(nullable = false)
     private Boolean active = true;
 
-    @Column(nullable = false)
-    @URL
+    @Column(nullable = true)
     private String profilePicture;
 
     public User() {
@@ -80,7 +79,7 @@ public class User implements UserDetails, UserCredentials {
         this.role = role;
         this.name = name;
         this.last_name = last_name;
-        this.profilePicture = profilePicture;
+        this.profilePicture = profilePicture != null ? profilePicture : "https://picsum.photos/200?random=default";
     }
 
     private Integer BirthYearFromStringAge(String age) {
