@@ -1,17 +1,10 @@
 package ar.uba.fi.ingsoft1.todo_template.tournament.fixture;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
-import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentState;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentRepository;
-import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatchRepository;
-import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentStatisticsDTO;
 import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentStatisticsDTO.TournamentStatisticsDTOBuilder;
-import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatchHelper;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentHelper;
 import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
@@ -19,9 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
-
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -44,36 +35,6 @@ public class TournamentStatisticsService {
         this.teamRegisteredTournamentHelper = new TeamRegisteredTournamentHelper(teamRegisteredTournamentRepository);
     }
 
-    public void updateTeamStatistics(TournamentMatch match) {
-        TeamRegisteredTournament homeTeam = match.getHomeTeam();
-        TeamRegisteredTournament awayTeam = match.getAwayTeam();
-        int homeScore = match.getHomeTeamScore();
-        int awayScore = match.getAwayTeamScore();
-
-        homeTeam.setGoalsFor(homeTeam.getGoalsFor() + homeScore);
-        homeTeam.setGoalsAgainst(homeTeam.getGoalsAgainst() + awayScore);
-        awayTeam.setGoalsFor(awayTeam.getGoalsFor() + awayScore);
-        awayTeam.setGoalsAgainst(awayTeam.getGoalsAgainst() + homeScore);
-
-        if (homeScore > awayScore) {
-            homeTeam.setPoints(homeTeam.getPoints() + 3);
-            homeTeam.setWins(homeTeam.getWins() + 1);
-            awayTeam.setLosses(awayTeam.getLosses() + 1);
-        } else if (awayScore > homeScore) {
-            awayTeam.setPoints(awayTeam.getPoints() + 3);
-            awayTeam.setWins(awayTeam.getWins() + 1);
-            homeTeam.setLosses(homeTeam.getLosses() + 1);
-        } else {
-            homeTeam.setPoints(homeTeam.getPoints() + 1);
-            awayTeam.setPoints(awayTeam.getPoints() + 1);
-            homeTeam.setDraws(homeTeam.getDraws() + 1);
-            awayTeam.setDraws(awayTeam.getDraws() + 1);
-        }
-
-        teamRegisteredTournamentRepository.save(homeTeam);
-        teamRegisteredTournamentRepository.save(awayTeam);
-    }
-
     public TournamentStatisticsDTO getTournamentStatistics(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tournament not found"));
@@ -85,7 +46,6 @@ public class TournamentStatisticsService {
                 .stream()
                 .map(team -> new TeamName_Goals(team.getTeam().getName(), team.getGoalsFor()))
                 .collect(Collectors.toList());
-
         List<TournamentMatch> matchesTournament = tournamentMatchRepository
                 .findAllByTournamentOrderByRoundNumberAscMatchNumberAsc(tournament);
         Optional<TeamRegisteredTournament> bestDefense = teamRegisteredTournamentHelper
@@ -103,14 +63,13 @@ public class TournamentStatisticsService {
                 .totalMatches(matchesTournament.size())
                 .cantCompletedMatches((int) completedMatches)
                 .topScoringTeams(teams_goals_SortedByGoals);
-        
-        // Asignar el mejor ataque (primer equipo de la lista ordenada por goles)
+
         if (!teams_goals_SortedByGoals.isEmpty()) {
             TeamName_Goals topScorer = teams_goals_SortedByGoals.get(0);
             builder.topScoringTeam(topScorer.getName());
             builder.topScoringTeamGoals(topScorer.getGoals());
         }
-        
+
         if (bestDefense.isPresent()) {
             builder.bestDefensiveTeam(bestDefense.get().getTeam().getName());
             builder.bestDefensiveTeamGoalsAgainst(bestDefense.get().getGoalsAgainst());
@@ -143,28 +102,34 @@ public class TournamentStatisticsService {
         return builder.build();
     }
 
-    // public TournamentStatisticsDTO getTournamentStatisticsDTO(Long tournamentId)
-    // {
-    // return getTournamentStatistics(tournamentId);
-    // // return new TournamentStatisticsDTO(
-    // // (String) stats.get("tournamentName"),
-    // // (TournamentFormat) stats.get("format"),
-    // // (TournamentState) stats.get("state"),
-    // // ((Integer) stats.get("totalTeams")).intValue(),
-    // ((Integer) stats.get("totalMatches")).intValue(),
-    // stats.get("completedMatches") == null ? 0 : ((Long)
-    // stats.get("completedMatches")).intValue(),
-    // stats.get("completedMatchesNames") != null ? (List<String>)
-    // stats.get("completedMatchesNames")
-    // : new ArrayList<>(),
-    // (String) stats.get("champion"),
-    // (String) stats.get("runnerUp"),
-    // (List<TeamName_Goals>) stats.get("topScoringTeams"),
-    // (String) stats.get("bestDefensiveTeam"),
-    // (Integer) stats.get("bestDefensiveTeamGoalsAgainst"),
-    // stats.get("totalGoals") == null ? 0 : ((Integer)
-    // stats.get("totalGoals")).intValue(),
-    // stats.get("averageGoalsPerMatch") == null ? 0.0 : (Double)
-    // stats.get("averageGoalsPerMatch"));
-    // }
+    public void updateTeamStatistics(TournamentMatch match) {
+        TeamRegisteredTournament homeTeam = match.getHomeTeam();
+        TeamRegisteredTournament awayTeam = match.getAwayTeam();
+        int homeScore = match.getHomeTeamScore();
+        int awayScore = match.getAwayTeamScore();
+
+        homeTeam.setGoalsFor(homeTeam.getGoalsFor() + homeScore);
+        homeTeam.setGoalsAgainst(homeTeam.getGoalsAgainst() + awayScore);
+        awayTeam.setGoalsFor(awayTeam.getGoalsFor() + awayScore);
+        awayTeam.setGoalsAgainst(awayTeam.getGoalsAgainst() + homeScore);
+
+        if (homeScore > awayScore) {
+            homeTeam.setPoints(homeTeam.getPoints() + 3);
+            homeTeam.setWins(homeTeam.getWins() + 1);
+            awayTeam.setLosses(awayTeam.getLosses() + 1);
+        } else if (awayScore > homeScore) {
+            awayTeam.setPoints(awayTeam.getPoints() + 3);
+            awayTeam.setWins(awayTeam.getWins() + 1);
+            homeTeam.setLosses(homeTeam.getLosses() + 1);
+        } else {
+            homeTeam.setPoints(homeTeam.getPoints() + 1);
+            awayTeam.setPoints(awayTeam.getPoints() + 1);
+            homeTeam.setDraws(homeTeam.getDraws() + 1);
+            awayTeam.setDraws(awayTeam.getDraws() + 1);
+        }
+
+        teamRegisteredTournamentRepository.save(homeTeam);
+        teamRegisteredTournamentRepository.save(awayTeam);
+    }
+
 }
