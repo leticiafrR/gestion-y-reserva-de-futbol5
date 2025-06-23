@@ -684,7 +684,7 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
                   onClick={handleSubmit}
                   style={{
                     padding: "10px 16px",
-                    color: "white",
+                    // color: "white",
                     border: "none",
                     borderRadius: "8px",
                     fontSize: "14px",

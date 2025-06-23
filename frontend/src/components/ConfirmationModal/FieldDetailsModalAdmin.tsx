@@ -1,46 +1,54 @@
 import React from "react";
 import { X } from "lucide-react";
 import type { Field } from "@/models/Field";
+import { useFieldAvailability } from "@/services/fieldAvailabilityService";
 
-const daysMap = {
-  MONDAY: "Lunes",
-  TUESDAY: "Martes",
-  WEDNESDAY: "Miércoles",
-  THURSDAY: "Jueves",
-  FRIDAY: "Viernes",
-  SATURDAY: "Sábado",
-  SUNDAY: "Domingo"
-};
+const FieldScheduleView = ({ fieldId }: { fieldId: string | number }) => {
+  const { data: slots, isLoading, error } = useFieldAvailability(Number(fieldId));
 
-const allDays = [
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY"
-];
+  const daysMap = {
+    MONDAY: "Lunes",
+    TUESDAY: "Martes",
+    WEDNESDAY: "Miércoles",
+    THURSDAY: "Jueves",
+    FRIDAY: "Viernes",
+    SATURDAY: "Sábado",
+    SUNDAY: "Domingo"
+  };
+  const allDays = [
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+    "SUNDAY"
+  ];
 
-const FieldScheduleView = ({ schedule }: { schedule: { dayOfWeek: string; openTime: string; closeTime: string }[] }) => {
   return (
     <div style={{ marginTop: 24 }}>
       <h4 style={{ color: "#1f2937", fontSize: 16, marginBottom: 8 }}>Horarios Disponibles</h4>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-        <tbody>
-          {allDays.map(day => {
-            const found = schedule.find(s => s.dayOfWeek === day);
-            return (
-              <tr key={day}>
-                <td style={{ padding: "4px 8px", color: "#374151", fontWeight: 500 }}>{daysMap[day as keyof typeof daysMap]}</td>
-                <td style={{ padding: "4px 8px", color: found ? "#10b981" : "#ef4444" }}>
-                  {found ? `${found.openTime} - ${found.closeTime}` : "Cerrado"}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      {isLoading ? (
+        <div style={{ color: "#6c757d" }}>Cargando horarios...</div>
+      ) : error ? (
+        <div style={{ color: "#ef4444" }}>Error al cargar horarios</div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <tbody>
+            {allDays.map(day => {
+              const found = (slots || []).find((s: any) => s.dayOfWeek === day);
+              return (
+                <tr key={day}>
+                  <td style={{ padding: "4px 8px", color: "#374151", fontWeight: 500 }}>{daysMap[day as keyof typeof daysMap]}</td>
+                  <td style={{ padding: "4px 8px", color: found ? "#10b981" : "#ef4444" }}>
+                    {found ? `${found.openTime}:00 - ${found.closeTime}:00` : "Cerrado"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };
@@ -205,7 +213,7 @@ export const FieldDetailsModalAdmin = ({ field, onClose }: { field: Field; onClo
                   <span style={{ fontSize: "18px", color: "#3b82f6" }}>${field.price}/hora</span>
                 </li>
               </ul>
-              <FieldScheduleView schedule={field.schedule || []} />
+              <FieldScheduleView fieldId={field.id} />
             </div>
 
             <div>
