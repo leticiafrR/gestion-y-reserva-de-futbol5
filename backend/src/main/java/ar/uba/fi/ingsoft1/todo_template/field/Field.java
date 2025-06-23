@@ -26,6 +26,9 @@ public class Field {
     private Boolean lighting;
 
     @Column(nullable = false)
+    private Boolean roofing = false;
+
+    @Column(nullable = false)
     private String zone;
 
     @Column(nullable = false)

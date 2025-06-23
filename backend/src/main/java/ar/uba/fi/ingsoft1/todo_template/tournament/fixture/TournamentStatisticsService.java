@@ -64,6 +64,12 @@ public class TournamentStatisticsService {
                 .cantCompletedMatches((int) completedMatches)
                 .topScoringTeams(teams_goals_SortedByGoals);
 
+        if (!teams_goals_SortedByGoals.isEmpty()) {
+            TeamName_Goals topScorer = teams_goals_SortedByGoals.get(0);
+            builder.topScoringTeam(topScorer.getName());
+            builder.topScoringTeamGoals(topScorer.getGoals());
+        }
+
         if (bestDefense.isPresent()) {
             builder.bestDefensiveTeam(bestDefense.get().getTeam().getName());
             builder.bestDefensiveTeamGoalsAgainst(bestDefense.get().getGoalsAgainst());

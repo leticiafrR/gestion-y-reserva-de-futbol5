@@ -4,6 +4,8 @@ import ar.uba.fi.ingsoft1.todo_template.booking.Booking;
 import ar.uba.fi.ingsoft1.todo_template.booking.BookingRepository;
 import ar.uba.fi.ingsoft1.todo_template.field.Field;
 import ar.uba.fi.ingsoft1.todo_template.field.FieldRepository;
+import ar.uba.fi.ingsoft1.todo_template.match.CloseMatch;
+import ar.uba.fi.ingsoft1.todo_template.match.CloseMatchRepository;
 import ar.uba.fi.ingsoft1.todo_template.match.OpenMatch;
 import ar.uba.fi.ingsoft1.todo_template.match.OpenMatchRepository;
 import ar.uba.fi.ingsoft1.todo_template.match.OpenMatchTeam;
@@ -15,6 +17,12 @@ import ar.uba.fi.ingsoft1.todo_template.timeslot.TimeSlotRepository;
 import ar.uba.fi.ingsoft1.todo_template.tournament.Tournament;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentFormat;
 import ar.uba.fi.ingsoft1.todo_template.tournament.TournamentRepository;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.MatchStatus;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatch;
+import ar.uba.fi.ingsoft1.todo_template.tournament.fixture.TournamentMatchRepository;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournament;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamRegisteredTournamentRepository;
+import ar.uba.fi.ingsoft1.todo_template.tournament.teamRegistration.TeamTournamentId;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import ar.uba.fi.ingsoft1.todo_template.user.UserRepository;
 import jakarta.annotation.PostConstruct;
@@ -25,8 +33,11 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 @Component
 @RequiredArgsConstructor
@@ -34,396 +45,603 @@ public class GlobalSeeder {
 
     private final UserRepository userRepository;
     private final OpenMatchRepository openMatchRepository;
+    private final CloseMatchRepository closeMatchRepository;
     private final FieldRepository fieldRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final BookingRepository bookingRepository;
     private final TeamRepository teamRepository;
     private final TournamentRepository tournamentRepository;
     private final OpenMatchTeamRepository openMatchTeamRepository;
+    private final TeamRegisteredTournamentRepository teamRegisteredTournamentRepository;
+    private final TournamentMatchRepository tournamentMatchRepository;
     private final PasswordEncoder passwordEncoder;
 
     @PostConstruct
     public void seedAll() {
         if (!userRepository.findAll().isEmpty())
             return;
-        // seedForTournament();
-        //seedForLeaveMatchTest();
-
+        
+        // Generar los 25 usuarios primero
+        List<User> players = seedPlayers();
+        
+        // Generar usuarios owner con canchas
+        seedFieldOwners();
+        
+        seedForLeavingTeam(players);
+        
+        // Generar 8 equipos adicionales
+        List<Team> additionalTeams = seedAdditionalTeams(players);
+        
+        // Generar torneo con organizador
+        seedTournamentWithOrganizer(additionalTeams);
+        
+        // Generar partidos abiertos y cerrados
+        seedOpenAndClosedMatches(players);
+        
+        // Generar partidos pasados para el historial
+        seedPastMatches(players);
     }
 
-    private void seedForAssignTeamsTest() {
-        // Si ya existe el seed para jwienberg, no hacemos nada
-        if (userRepository.findByUsername("jwienberg@fi.uba.ar").isPresent()) {
-            return;
-        }
-
-        int currentYear = LocalDate.now().getYear();
-
-        // 1) Creo 9 jugadores «genéricos» con distintas edades
+    private List<User> seedPlayers() {
         List<User> players = new ArrayList<>();
-        for (int i = 1; i <= 9; i++) {
-            int age = 18 + i; // edades 19..27
-            int birthYear = currentYear - age;
+        
+        for (int i = 1; i <= 25; i++) {
             User player = new User(
-                    "player" + i + "@mail.com",
-                    passwordEncoder.encode("password"),
-                    "PLAYER",
+                    "PLAYER." + i + "@example.com",
+                    "$2a$10$csUxD/U6Q6NeJOtDA9BpoeAIsAUdIBaWA5pNauZ3LE4xL75B/AW1C", // "abcd" encriptada
+                    "user",
                     "male",
-                    String.valueOf(birthYear),
+                    String.valueOf(20 + i),
                     "CABA",
-                    "Jugador" + i,
-                    "Apellido" + i,
-                    "https://picsum.photos/200?random=" + (i + 100)
+                    "Player",
+                    "Number" + i,
+                    "https://picsum.photos/200?random=player" + i
             );
             player.setEmailVerified(true);
             player.setActive(true);
             players.add(userRepository.save(player));
         }
-
-        // 2) Creo a jwienberg como jugador/owner
-        User jw = new User(
-                "jwienberg@fi.uba.ar",
-                passwordEncoder.encode("password"),
-                "PLAYER",
-                "other",
-                String.valueOf(currentYear - 30),
-                "CABA",
-                "Jorge",
-                "Wienberg",
-                "https://picsum.photos/200?random=999"
-        );
-        jw.setEmailVerified(true);
-        jw.setActive(true);
-        jw = userRepository.save(jw);
-
-        // 3) Creo dueño de cancha (puede ser jw también, pero usamos uno aparte)
-        User owner = new User(
-                "owner@test.com",
-                passwordEncoder.encode("password"),
-                "OWNER",
-                "other",
-                "40",
-                "Zona Norte",
-                "Dueño",
-                "Cancha",
-                "https://picsum.photos/200?random=1000"
-        );
-        owner.setEmailVerified(true);
-        owner.setActive(true);
-        owner = userRepository.save(owner);
-
-        // 4) Cancha
-        Field field = Field.builder()
-                .name("Cancha JW-Test")
-                .grassType("Sintético")
-                .lighting(true)
-                .zone("Zona Norte")
-                .address("Av. Siempre Viva 742")
-                .photoUrl("https://cancha.test/jw.jpg")
-                .price(12000.0)
-                .active(true)
-                .owner(owner)
-                .build();
-        fieldRepository.save(field);
-
-        // 5) Franja horaria
-        TimeSlot timeSlot = TimeSlot.builder()
-                .dayOfWeek(LocalDate.now().getDayOfWeek())
-                .openTime(16)
-                .closeTime(22)
-                .field(field)
-                .build();
-        timeSlotRepository.save(timeSlot);
-
-        // 6) Reserva para pasado mañana
-        Booking booking = new Booking(
-                jw,
-                timeSlot,
-                LocalDate.now().plusDays(2),
-                20
-        );
-        bookingRepository.save(booking);
-
-        // 7) Preparo el partido abierto: agrego a jw al listado de players
-        players.add(jw); // ahora hay 10 jugadores
-
-        OpenMatch match = new OpenMatch();
-        match.setBooking(booking);
-        match.setPlayers(players);
-        match.setMinPlayers(10);
-        match.setMaxPlayers(10);
-
-        // equipos vacíos
-        OpenMatchTeam emptyA = new OpenMatchTeam();
-        OpenMatchTeam emptyB = new OpenMatchTeam();
-        openMatchTeamRepository.save(emptyA);
-        openMatchTeamRepository.save(emptyB);
-        match.setTeamOne(emptyA);
-        match.setTeamTwo(emptyB);
-
-        openMatchRepository.save(match);
-
-        System.out.println("✅ Seed de test para assignTeams creada.");
-        System.out.println("👉 matchId: " + match.getId());
-        System.out.println("👉 playerCount: " + match.getPlayers().size());
-        System.out.println("👉 jwienberg userId: " + jw.getId());
-        System.out.println("🟢 Podés loguearte en Swagger con:");
-        System.out.println("    username: jwienberg@fi.uba.ar");
-        System.out.println("    password: password");
-    }
-    private void seedForTournament() {
-
-        User tournamentCreator = new User(
-                "organizador@tournaments.com",
-                "password",
-                "OWNER",
-                "other",
-                "30",
-                "Zona Sur",
-                "Organizador",
-                "DeTorneos",
-                "https://picsum.photos/200?random=777");
-        tournamentCreator.setEmailVerified(true);
-        tournamentCreator.setActive(true);
-        userRepository.save(tournamentCreator);
-
-        // Crear 6 torneos con distintos estados
-        List<Tournament> tournaments = new ArrayList<>();
-
-        // 📅 Hoy
-        LocalDate today = LocalDate.now();
-
-        // 🏁 2 torneos finalizados
-        for (int i = 1; i <= 2; i++) {
-            Tournament finished = Tournament.builder()
-                    .name("Finalizado " + i)
-                    .startDate(today.minusMonths(3).minusDays(i))
-                    .endDate(today.minusMonths(2).minusDays(i)) // ya terminó
-                    .format(TournamentFormat.SINGLE_ELIMINATION)
-                    .maxTeams(8)
-                    .description("Torneo finalizado")
-                    .prizes("Premio simbólico")
-                    .registrationFee(BigDecimal.valueOf(1000))
-                    .openInscription(false)
-                    .organizer(tournamentCreator)
-                    .build();
-            tournaments.add(finished);
-        }
-
-        // 🕒 2 torneos en progreso (ya empezaron pero no terminaron)
-        for (int i = 1; i <= 2; i++) {
-            Tournament inProgress = Tournament.builder()
-                    .name("En Progreso " + i)
-                    .startDate(today.minusDays(10 + i))
-                    .endDate(today.plusDays(10 + i))
-                    .format(TournamentFormat.ROUND_ROBIN)
-                    .maxTeams(16)
-                    .description("Torneo actualmente en curso")
-                    .prizes("Medallas")
-                    .registrationFee(BigDecimal.valueOf(3000))
-                    .openInscription(false)
-                    .organizer(tournamentCreator)
-                    .build();
-            tournaments.add(inProgress);
-        }
-
-        // 📬 2 torneos abiertos a inscripción (empiezan en el futuro)
-        for (int i = 1; i <= 2; i++) {
-            Tournament openToRegister = Tournament.builder()
-                    .name("Abierto " + i)
-                    .startDate(today.plusDays(10 + i))
-                    .endDate(today.plusDays(40 + i))
-                    .format(TournamentFormat.GROUP_STAGE_AND_ELIMINATION)
-                    .maxTeams(32)
-                    .description("¡Inscripciones abiertas!")
-                    .prizes("Trofeo y camiseta")
-                    .registrationFee(BigDecimal.valueOf(2000))
-                    .openInscription(true)
-                    .organizer(tournamentCreator)
-                    .build();
-            tournaments.add(openToRegister);
-        }
-
-        tournamentRepository.saveAll(tournaments);
-
-        System.out.println("✅ 6 torneos creados: 2 finalizados, 2 en progreso, 2 abiertos a inscripción.");
+        
+        return players;
     }
 
-    private void seedForBooking() {
-        if (!userRepository.findAll().isEmpty())
+    private void seedFieldOwners() {
+        // Verificar si ya existen los owners para evitar duplicados
+        if (userRepository.findByUsername("FIELD.OWNER@example.com").isPresent()) {
             return;
-
-        int currentYear = LocalDate.now().getYear();
-        List<User> players = new ArrayList<>();
-        for (int i = 1; i <= 10; i++) {
-
-            int age = 35 - (i - 1);
-            int birthYear = currentYear - age;
-
-            // Tira error porque nos faltaban atributos de User en nuestra branch.
-            User player = new User(
-                    "jugador" + i + "@mail.com", // username
-                    "password", // password
-                    "PLAYER", // role
-                    "male", // gender
-                    String.valueOf(birthYear), // age como string -> birthYear se calcula internamente
-                    "CABA", // zone
-                    "Jugador", // name
-                    "Número" + i, // last_name
-                    "https://picsum.photos/200?random=" + i // profilePicture
-            );
-            player.setEmailVerified(true); // opcional si querés que arranque verificado
-            player.setActive(true); // ya está true por defecto, pero explícito es mejor
-            players.add(userRepository.save(player));
         }
 
-        User owner = new User(
-                "dueno@mail.com",
-                "password",
-                "OWNER",
-                "female",
-                "40",
-                "Zona Norte",
-                "Dueña",
-                "DeLaCancha",
-                "https://picsum.photos/200?random=99");
-        owner.setEmailVerified(true);
-        owner.setActive(true);
-        userRepository.save(owner);
-
-        userRepository.save(owner);
-
-        // 🏟️ Crear cancha
-        Field field = Field.builder()
-                .name("Cancha Monumental")
-                .grassType("Sintético")
-                .lighting(true)
-                .zone("Zona Norte")
-                .address("Av. Libertador 1234")
-                .photoUrl("https://cancha.example.com/foto.jpg")
-                .price(15000.0)
-                .active(true)
-                .owner(owner)
-                .build();
-        fieldRepository.save(field);
-
-        // ⏰ Crear franja horaria
-        TimeSlot timeSlot = TimeSlot.builder()
-                .dayOfWeek(DayOfWeek.THURSDAY)
-                .openTime(18)
-                .closeTime(23)
-                .field(field)
-                .build();
-        timeSlotRepository.save(timeSlot);
-
-        Booking booking = new Booking(
-                players.get(0),
-                timeSlot,
-                LocalDate.now().plusDays(1),
-                20 // 20hs
-        );
-        bookingRepository.save(booking);
-
-        OpenMatchTeam teamOne = new OpenMatchTeam();
-        for (int i = 0; i < 5; i++) {
-            teamOne.addMember(players.get(i));
-        }
-
-        OpenMatchTeam teamTwo = new OpenMatchTeam();
-        for (int i = 5; i < 10; i++) {
-            teamTwo.addMember(players.get(i));
-        }
-
-        openMatchTeamRepository.save(teamOne);
-        openMatchTeamRepository.save(teamTwo);
-
-        OpenMatch match = new OpenMatch();
-        match.setBooking(booking);
-        match.setPlayers(players);
-        match.setMaxPlayers(10);
-
-        match.setTeamOne(teamOne);
-        match.setTeamTwo(teamTwo);
-
-        openMatchRepository.save(match);
-
-        System.out.println("✅ Seed completada con jugadores, cancha, franja horaria, reserva y OpenMatch.");
-    }
-
-    private void seedForLeaveMatchTest() {
-        // 👤 Crear un jugador
-        User player = new User(
-                "jugadorabandonador@mail.com",
-                "password",
-                "PLAYER",
+        // 👤 Crear un solo FIELD.OWNER con 3 canchas
+        User fieldOwner = new User(
+                "FIELD.OWNER@example.com",
+                "$2a$10$csUxD/U6Q6NeJOtDA9BpoeAIsAUdIBaWA5pNauZ3LE4xL75B/AW1C", // "abcd" encriptada
+                "owner",
                 "male",
-                "25",
+                "35",
                 "CABA",
-                "Jugador",
-                "Uno",
-                "https://picsum.photos/200?random=123"
+                "Field",
+                "Owner",
+                "https://picsum.photos/200?random=owner"
         );
-        player.setEmailVerified(true);
-        player.setActive(true);
-        userRepository.save(player);
+        fieldOwner.setEmailVerified(true);
+        fieldOwner.setActive(true);
+        fieldOwner = userRepository.save(fieldOwner);
 
-        // 👤 Crear un dueño
-        User owner = new User(
-                "duenoabandonado@mail.com",
-                "password",
-                "OWNER",
-                "female",
-                "45",
-                "Zona Oeste",
-                "Dueña",
-                "DeCancha",
-                "https://picsum.photos/200?random=124"
-        );
-        owner.setEmailVerified(true);
-        owner.setActive(true);
-        userRepository.save(owner);
-
-        // 🏟️ Crear cancha
-        Field field = Field.builder()
-                .name("Cancha Test")
-                .grassType("Natural")
-                .lighting(false)
-                .zone("Zona Oeste")
-                .address("Calle Falsa 123")
-                .photoUrl("https://cancha.example.com/test.jpg")
-                .price(10000.0)
-                .active(true)
-                .owner(owner)
-                .build();
-        fieldRepository.save(field);
-
-        // ⏰ Crear franja horaria
-        TimeSlot timeSlot = TimeSlot.builder()
-                .dayOfWeek(LocalDate.now().getDayOfWeek())
-                .openTime(17)
-                .closeTime(21)
-                .field(field)
-                .build();
-        timeSlotRepository.save(timeSlot);
-
-        // 🗓️ Crear booking para mañana
-        Booking booking = new Booking(
-                player,
-                timeSlot,
-                LocalDate.now().plusDays(1),
-                18 // 18hs
-        );
-        bookingRepository.save(booking);
-
-        // 👥 Crear OpenMatch con el jugador incluido
-        OpenMatch match = new OpenMatch();
-        match.setBooking(booking);
-        match.setPlayers(List.of(player));
-        match.setMaxPlayers(5);
-        openMatchRepository.save(match);
-
-        System.out.println("✅ Seed para leaveOpenMatch cargada correctamente.");
-        System.out.println("👉 matchId: " + match.getId() + ", userId: " + player.getId());
+        // Crear 3 canchas con horarios distintos
+        List<Field> fields = createFieldsForOwner(fieldOwner, 3, "Complejo Deportivo Central");
+        
+        // Cancha 1: 15-23 lun-vie
+        createTimeSlotsForField(fields.get(0), 
+            List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY), 
+            15, 23);
+        
+        // Cancha 2: 7-18 mar-vie
+        createTimeSlotsForField(fields.get(1), 
+            List.of(DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY), 
+            7, 18);
+        
+        // Cancha 3: 17-23 jue-dom
+        createTimeSlotsForField(fields.get(2), 
+            List.of(DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), 
+            17, 23);
     }
 
+    private List<Field> createFieldsForOwner(User owner, int fieldCount, String complexName) {
+        List<Field> fields = new ArrayList<>();
+        
+        for (int i = 1; i <= fieldCount; i++) {
+            Field field = Field.builder()
+                    .name(complexName + " - Cancha " + i)
+                    .grassType(i % 2 == 0 ? "Sintético" : "Natural")
+                    .lighting(true)
+                    .roofing(i == 2) // La cancha 2 será techada
+                    .zone(owner.getZone())
+                    .address("Av. Deportiva " + i + ", " + owner.getZone())
+                    .photoUrl("https://picsum.photos/400/300?random=field" + owner.getId() + "_" + i)
+                    .price(1500.0 + (i * 100.0)) // Precios variados: 1600, 1700, 1800
+                    .active(true)
+                    .owner(owner)
+                    .build();
+            
+            fields.add(fieldRepository.save(field));
+        }
+        
+        return fields;
+    }
+
+    private void createTimeSlotsForField(Field field, List<DayOfWeek> days, int openTime, int closeTime) {
+        for (DayOfWeek day : days) {
+            TimeSlot timeSlot = TimeSlot.builder()
+                    .dayOfWeek(day)
+                    .openTime(openTime)
+                    .closeTime(closeTime)
+                    .field(field)
+                    .build();
+            
+            timeSlotRepository.save(timeSlot);
+        }
+    }
+
+    private void seedForLeavingTeam(List<User> players) {
+        // Verificar si ya existe el seed para evitar duplicados
+        if (userRepository.findByUsername("PLAYER.1@example.com").isPresent() && 
+            !teamRepository.findAll().isEmpty()) {
+            return;
+        }
+
+        // 👤 Usar el primer usuario como dueño del equipo (PLAYER.1@example.com)
+        User teamOwner = players.get(0);
+
+        // 👥 Usar los usuarios 2, 3 y 4 como miembros del equipo
+        List<User> teamMembers = new ArrayList<>();
+        teamMembers.add(players.get(1)); // PLAYER.2@example.com
+        teamMembers.add(players.get(2)); // PLAYER.3@example.com
+        teamMembers.add(players.get(3)); // PLAYER.4@example.com
+
+        // 🏆 Crear el equipo
+        Team team = Team.builder()
+                .name("Equipo de Prueba")
+                .captain("PLAYER.1@example.com")
+                .primaryColor("#FF0000")
+                .secondaryColor("#0000FF")
+                .logo("https://picsum.photos/200?random=team")
+                .build();
+        
+        // Agregar el dueño como miembro
+        try {
+            team.addMember(teamOwner);
+        } catch (Exception e) {
+            // Ignorar si ya es miembro
+        }
+        
+        // Agregar los otros miembros
+        for (User member : teamMembers) {
+            try {
+                team.addMember(member);
+            } catch (Exception e) {
+                // Ignorar si ya es miembro
+            }
+        }
+        
+        team = teamRepository.save(team);
+    }
+
+    private List<Team> seedAdditionalTeams(List<User> players) {
+        // Verificar si ya existen equipos adicionales para evitar duplicados
+        if (teamRepository.findByName("Equipo Los Tigres").isPresent()) {
+            return teamRepository.findAll();
+        }
+
+        String[] teamNames = {
+            "Equipo Los Tigres",
+            "Equipo Los Leones", 
+            "Equipo Los Halcones",
+            "Equipo Los Águilas",
+            "Equipo Los Lobos",
+            "Equipo Los Toros",
+            "Equipo Los Dragones",
+            "Equipo Los Fénix"
+        };
+
+        String[] primaryColors = {
+            "#FF6B35", "#4ECDC4", "#45B7D1", "#96CEB4", 
+            "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F"
+        };
+
+        String[] secondaryColors = {
+            "#2C3E50", "#34495E", "#8E44AD", "#2980B9",
+            "#E67E22", "#E74C3C", "#27AE60", "#F39C12"
+        };
+
+        Random random = new Random(42); // Seed fijo para reproducibilidad
+        List<Team> teams = new ArrayList<>();
+
+        for (int i = 0; i < 8; i++) {
+            // Usar PLAYER.5 a PLAYER.12 como owners de los equipos
+            User teamOwner = players.get(4 + i); // PLAYER.5 a PLAYER.12
+            
+            // Crear lista de jugadores disponibles
+            List<User> availablePlayers = new ArrayList<>();
+            
+            // Agregar PLAYER.14 a PLAYER.25
+            availablePlayers.addAll(players.subList(13, players.size()));
+            
+            List<User> selectedMembers = new ArrayList<>();
+            
+            // Para el primer equipo, incluir PLAYER.1 garantizado
+            if (i == 0) {
+                selectedMembers.add(players.get(0)); // PLAYER.1 garantizado
+                // Seleccionar 3 jugadores más aleatorios
+                Collections.shuffle(availablePlayers, random);
+                selectedMembers.addAll(availablePlayers.subList(0, 3));
+            } else {
+                // Para los otros equipos, seleccionar 4 jugadores aleatorios
+                Collections.shuffle(availablePlayers, random);
+                selectedMembers = availablePlayers.subList(0, 4);
+            }
+            
+            // Crear el equipo
+            Team team = Team.builder()
+                    .name(teamNames[i])
+                    .captain(teamOwner.getUsername())
+                    .primaryColor(primaryColors[i])
+                    .secondaryColor(secondaryColors[i])
+                    .logo("https://picsum.photos/200?random=team" + (i + 2))
+                    .build();
+            
+            // Agregar el owner como miembro
+            try {
+                team.addMember(teamOwner);
+            } catch (Exception e) {
+                // Ignorar si ya es miembro
+            }
+            
+            // Agregar los miembros seleccionados
+            for (User member : selectedMembers) {
+                try {
+                    team.addMember(member);
+                } catch (Exception e) {
+                    // Ignorar si ya es miembro
+                }
+            }
+            
+            teams.add(teamRepository.save(team));
+        }
+        
+        return teams;
+    }
+
+    private void seedTournamentWithOrganizer(List<Team> teams) {
+        // Verificar si ya existe el torneo para evitar duplicados
+        if (userRepository.findByUsername("ORGANIZER@example.com").isPresent()) {
+            return;
+        }
+
+        // 👤 Crear el organizador
+        User organizer = new User(
+                "ORGANIZER@example.com",
+                "$2a$10$csUxD/U6Q6NeJOtDA9BpoeAIsAUdIBaWA5pNauZ3LE4xL75B/AW1C", // "abcd" encriptada
+                "organizer",
+                "male",
+                "30",
+                "CABA",
+                "Tournament",
+                "Organizer",
+                "https://picsum.photos/200?random=organizer"
+        );
+        organizer.setEmailVerified(true);
+        organizer.setActive(true);
+        organizer = userRepository.save(organizer);
+
+        // 🏆 Crear el torneo
+        Tournament tournament = Tournament.builder()
+                .name("Torneo de Verano 2024")
+                .startDate(LocalDate.now().minusDays(7)) // Comenzó hace 7 días
+                .format(TournamentFormat.ROUND_ROBIN)
+                .maxTeams(8)
+                .endDate(LocalDate.now().plusDays(14)) // Termina en 14 días
+                .description("Torneo de fútbol 5 con formato todos contra todos")
+                .prizes("1er lugar: $5000, 2do lugar: $3000, 3er lugar: $1000")
+                .registrationFee(new BigDecimal("500"))
+                .openInscription(false) // Ya no está abierto para inscripción
+                .registeredTeams(8) // Todos los equipos inscriptos
+                .organizer(organizer)
+                .build();
+        
+        tournament = tournamentRepository.save(tournament);
+
+        // 📝 Registrar todos los equipos en el torneo
+        List<TeamRegisteredTournament> registeredTeams = new ArrayList<>();
+        for (Team team : teams) {
+            TeamTournamentId id = new TeamTournamentId(tournament.getId(), team.getId());
+            TeamRegisteredTournament registeredTeam = TeamRegisteredTournament.builder()
+                    .id(id)
+                    .tournament(tournament)
+                    .team(team)
+                    .points(0)
+                    .goalsFor(0)
+                    .goalsAgainst(0)
+                    .wins(0)
+                    .draws(0)
+                    .losses(0)
+                    .build();
+            registeredTeams.add(teamRegisteredTournamentRepository.save(registeredTeam));
+        }
+
+        // 🏟️ Obtener una cancha para los partidos
+        Field field = fieldRepository.findAll().get(0);
+
+        // ⚽ Crear 6 partidos con resultados (primeras 6 fechas del round robin)
+        createTournamentMatches(tournament, registeredTeams, field);
+    }
+
+    private void createTournamentMatches(Tournament tournament, List<TeamRegisteredTournament> registeredTeams, Field field) {
+        // Para 8 equipos en ROUND_ROBIN, necesitamos 28 partidos (8 * 7 / 2)
+        // Los primeros 6 partidos ya se jugaron, 1 en progreso, el resto están programados
+        
+        // Resultados predefinidos para los primeros 6 partidos (ya jugados)
+        int[][] completedResults = {
+            {3, 1}, {4, 2}, {2, 2}, {5, 1}, {1, 4}, {3, 3}
+        };
+
+        LocalDateTime baseDateTime = LocalDateTime.now().minusDays(6).withHour(20).withMinute(0);
+        int matchNumber = 1;
+        int roundNumber = 1;
+
+        // Generar todos los partidos del ROUND_ROBIN
+        for (int i = 0; i < registeredTeams.size(); i++) {
+            for (int j = i + 1; j < registeredTeams.size(); j++) {
+                TeamRegisteredTournament homeTeam = registeredTeams.get(i);
+                TeamRegisteredTournament awayTeam = registeredTeams.get(j);
+
+                TournamentMatch match = new TournamentMatch();
+                match.setTournament(tournament);
+                match.setHomeTeam(homeTeam);
+                match.setAwayTeam(awayTeam);
+                match.setField(field);
+                match.setRoundNumber(roundNumber);
+                match.setMatchNumber(matchNumber);
+                match.setHomeTeamNextMatch(false);
+
+                // Los primeros 6 partidos ya se jugaron
+                if (matchNumber <= 6) {
+                    match.setScheduledDateTime(baseDateTime.plusDays(matchNumber - 1));
+                    match.setStatus(MatchStatus.COMPLETED);
+                    match.setHomeTeamScore(completedResults[matchNumber - 1][0]);
+                    match.setAwayTeamScore(completedResults[matchNumber - 1][1]);
+                    
+                    // Actualizar estadísticas de los equipos
+                    updateTeamStatistics(homeTeam, awayTeam, completedResults[matchNumber - 1][0], completedResults[matchNumber - 1][1]);
+                } 
+                // El partido 7 está en progreso
+                else if (matchNumber == 7) {
+                    match.setScheduledDateTime(LocalDateTime.now().minusMinutes(30)); // Comenzó hace 30 minutos
+                    match.setStatus(MatchStatus.IN_PROGRESS);
+                    match.setHomeTeamScore(null); // Sin resultado registrado
+                    match.setAwayTeamScore(null); // Sin resultado registrado
+                }
+                // Los partidos restantes están programados para el futuro
+                else {
+                    match.setScheduledDateTime(baseDateTime.plusDays(matchNumber + 5)); // Comenzar después de los partidos jugados
+                    match.setStatus(MatchStatus.SCHEDULED);
+                    match.setHomeTeamScore(null);
+                    match.setAwayTeamScore(null);
+                }
+
+                match = tournamentMatchRepository.save(match);
+                matchNumber++;
+            }
+            
+            // Incrementar round number cada 4 partidos (aproximadamente)
+            if (matchNumber % 4 == 1 && matchNumber > 1) {
+                roundNumber++;
+            }
+        }
+    }
+
+    private void updateTeamStatistics(TeamRegisteredTournament homeTeam, TeamRegisteredTournament awayTeam, int homeScore, int awayScore) {
+        // Actualizar estadísticas del equipo local
+        homeTeam.setGoalsFor(homeTeam.getGoalsFor() + homeScore);
+        homeTeam.setGoalsAgainst(homeTeam.getGoalsAgainst() + awayScore);
+        
+        // Actualizar estadísticas del equipo visitante
+        awayTeam.setGoalsFor(awayTeam.getGoalsFor() + awayScore);
+        awayTeam.setGoalsAgainst(awayTeam.getGoalsAgainst() + homeScore);
+
+        // Determinar resultado y actualizar puntos
+        if (homeScore > awayScore) {
+            // Victoria local
+            homeTeam.setWins(homeTeam.getWins() + 1);
+            homeTeam.setPoints(homeTeam.getPoints() + 3);
+            awayTeam.setLosses(awayTeam.getLosses() + 1);
+        } else if (awayScore > homeScore) {
+            // Victoria visitante
+            awayTeam.setWins(awayTeam.getWins() + 1);
+            awayTeam.setPoints(awayTeam.getPoints() + 3);
+            homeTeam.setLosses(homeTeam.getLosses() + 1);
+        } else {
+            // Empate
+            homeTeam.setDraws(homeTeam.getDraws() + 1);
+            homeTeam.setPoints(homeTeam.getPoints() + 1);
+            awayTeam.setDraws(awayTeam.getDraws() + 1);
+            awayTeam.setPoints(awayTeam.getPoints() + 1);
+        }
+
+        teamRegisteredTournamentRepository.save(homeTeam);
+        teamRegisteredTournamentRepository.save(awayTeam);
+    }
+
+    private void seedOpenAndClosedMatches(List<User> players) {
+        // Verificar si ya existen partidos para evitar duplicados
+        if (!openMatchRepository.findAll().isEmpty()) {
+            return;
+        }
+
+        // Obtener una cancha para los partidos
+        Field field = fieldRepository.findAll().get(0);
+        
+        // Crear 6 partidos abiertos
+        for (int i = 1; i <= 6; i++) {
+            // Seleccionar un creador aleatorio (PLAYER.1 a PLAYER.25)
+            User creator = players.get((i - 1) % players.size());
+            
+            // Obtener un TimeSlot válido para la cancha
+            List<TimeSlot> timeSlots = timeSlotRepository.findAll();
+            TimeSlot timeSlot = timeSlots.get(0); // Usar el primer time slot disponible
+            
+            // Crear booking para el partido
+            Booking booking = new Booking(
+                creator,
+                timeSlot,
+                LocalDate.now().plusDays(i),
+                20 + (i % 3) // 20, 21, 22 horas
+            );
+            booking = bookingRepository.save(booking);
+            
+            // Crear equipos para el partido abierto
+            OpenMatchTeam teamOne = OpenMatchTeam.builder()
+                    .members(new ArrayList<>())
+                    .build();
+            teamOne = openMatchTeamRepository.save(teamOne);
+            
+            OpenMatchTeam teamTwo = OpenMatchTeam.builder()
+                    .members(new ArrayList<>())
+                    .build();
+            teamTwo = openMatchTeamRepository.save(teamTwo);
+            
+            // Crear partido abierto
+            OpenMatch openMatch = new OpenMatch();
+            openMatch.setBooking(booking);
+            openMatch.setIsActive(true);
+            openMatch.setMinPlayers(8);
+            openMatch.setMaxPlayers(12);
+            openMatch.setTeamOne(teamOne);
+            openMatch.setTeamTwo(teamTwo);
+            openMatch.setPlayers(new ArrayList<>());
+            
+            // Agregar algunos jugadores al partido
+            List<User> matchPlayers = new ArrayList<>();
+            for (int j = 0; j < 6; j++) {
+                User player = players.get((i + j) % players.size());
+                matchPlayers.add(player);
+            }
+            openMatch.setPlayers(matchPlayers);
+            
+            openMatchRepository.save(openMatch);
+        }
+        
+        // Crear 6 partidos cerrados (CloseMatch)
+        for (int i = 1; i <= 6; i++) {
+            // Seleccionar un creador aleatorio (PLAYER.1 a PLAYER.25)
+            User creator = players.get((i + 5) % players.size());
+            
+            // Obtener un TimeSlot válido para la cancha
+            List<TimeSlot> timeSlots = timeSlotRepository.findAll();
+            TimeSlot timeSlot = timeSlots.get(0); // Usar el primer time slot disponible
+            
+            // Crear booking para el partido
+            Booking booking = new Booking(
+                creator,
+                timeSlot,
+                LocalDate.now().plusDays(i + 7),
+                19 + (i % 2) // 19, 20 horas
+            );
+            booking = bookingRepository.save(booking);
+            
+            // Obtener equipos para asignar al partido cerrado
+            List<Team> availableTeams = teamRepository.findAll();
+            Team teamOne = availableTeams.get(i % availableTeams.size());
+            Team teamTwo = availableTeams.get((i + 1) % availableTeams.size());
+            
+            // Crear partido cerrado
+            CloseMatch closeMatch = new CloseMatch();
+            closeMatch.setBooking(booking);
+            closeMatch.setIsActive(true);
+            closeMatch.setTeamOne(teamOne);
+            closeMatch.setTeamTwo(teamTwo);
+            
+            closeMatchRepository.save(closeMatch);
+        }
+    }
+
+    private void seedPastMatches(List<User> players) {
+        // Verificar si ya existen partidos pasados para evitar duplicados
+        if (!openMatchRepository.findAll().isEmpty() && openMatchRepository.findAll().size() > 6) {
+            return;
+        }
+
+        // Obtener las 3 canchas para los partidos
+        List<Field> fields = fieldRepository.findAll();
+        User player1 = players.get(0); // PLAYER.1
+        int[] diasPasados = {3, 5, 8};
+        int[] horas = {18, 20, 22};
+        
+        // Crear 3 partidos abiertos pasados variados
+        for (int i = 0; i < 3; i++) {
+            final int idx = i;
+            User creator = players.get((idx + 2) % players.size());
+            Field field = fields.get(idx % fields.size());
+            // Buscar un timeslot compatible con la cancha y la hora
+            List<TimeSlot> timeSlots = timeSlotRepository.findAll();
+            TimeSlot timeSlot = timeSlots.stream().filter(ts -> ts.getField().getId().equals(field.getId()) && ts.getOpenTime() <= horas[idx] && ts.getCloseTime() > horas[idx]).findFirst().orElse(timeSlots.get(0));
+            Booking booking = new Booking(
+                creator,
+                timeSlot,
+                LocalDate.now().minusDays(diasPasados[idx]),
+                horas[idx]
+            );
+            booking = bookingRepository.save(booking);
+            OpenMatchTeam teamOne = OpenMatchTeam.builder().members(new ArrayList<>()).build();
+            teamOne = openMatchTeamRepository.save(teamOne);
+            OpenMatchTeam teamTwo = OpenMatchTeam.builder().members(new ArrayList<>()).build();
+            teamTwo = openMatchTeamRepository.save(teamTwo);
+            OpenMatch openMatch = new OpenMatch();
+            openMatch.setBooking(booking);
+            openMatch.setIsActive(true);
+            openMatch.setMinPlayers(8);
+            openMatch.setMaxPlayers(12);
+            openMatch.setTeamOne(teamOne);
+            openMatch.setTeamTwo(teamTwo);
+            openMatch.setPlayers(new ArrayList<>());
+            List<User> matchPlayers = new ArrayList<>();
+            matchPlayers.add(player1);
+            for (int j = 1; j < 8; j++) {
+                User player = players.get((idx + j + 3) % players.size());
+                if (!player.getUsername().equals(player1.getUsername())) {
+                    matchPlayers.add(player);
+                }
+            }
+            openMatch.setPlayers(matchPlayers);
+            openMatchRepository.save(openMatch);
+        }
+        
+        // Crear 2 partidos cerrados pasados (igual que antes)
+        List<Team> availableTeams = teamRepository.findAll();
+        for (int i = 1; i <= 2; i++) {
+            User creator = players.get((i + 10) % players.size());
+            List<TimeSlot> timeSlots = timeSlotRepository.findAll();
+            TimeSlot timeSlot = timeSlots.get(0);
+            Booking booking = new Booking(
+                creator,
+                timeSlot,
+                LocalDate.now().minusDays(i + 5),
+                19 + (i % 2)
+            );
+            booking = bookingRepository.save(booking);
+            Team teamOne = availableTeams.get(i % availableTeams.size());
+            Team teamTwo = availableTeams.get((i + 1) % availableTeams.size());
+            if (i == 1 && !teamOne.getMembers().contains(player1)) {
+                teamOne.getMembers().add(player1);
+                teamRepository.save(teamOne);
+            }
+            CloseMatch closeMatch = new CloseMatch();
+            closeMatch.setBooking(booking);
+            closeMatch.setIsActive(true);
+            closeMatch.setTeamOne(teamOne);
+            closeMatch.setTeamTwo(teamTwo);
+            closeMatchRepository.save(closeMatch);
+        }
+    }
 }
+
+
