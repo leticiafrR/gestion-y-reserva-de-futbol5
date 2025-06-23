@@ -55,10 +55,39 @@ export const GroupStageAndEliminationFixtureScreen = ({ tournament }: GroupStage
     } catch (error: any) {
       console.error("Error generating fixture:", error)
       
-      if (error.message && error.message.includes("409")) {
-        setErrorMessage("El fixture ya existe para este torneo.")
+      // Extraer el mensaje de error del backend
+      let errorMessage = error.message || "Error desconocido al generar el fixture"
+      
+      // Si el error viene del backend, extraer el mensaje específico
+      if (errorMessage.includes("Error al generar el fixture:")) {
+        const backendMessage = errorMessage.replace("Error al generar el fixture: ", "")
+        
+        // Manejar diferentes tipos de errores del backend
+        if (backendMessage.includes("409") || backendMessage.includes("CONFLICT")) {
+          if (backendMessage.includes("Could not find an available time slot")) {
+            setErrorMessage("No se encontraron horarios disponibles para programar los partidos. Verifique que las canchas tengan franjas horarias configuradas entre las 18:00 y 23:00 horas.")
+          } else if (backendMessage.includes("Fixture already exists")) {
+            setErrorMessage("El fixture ya existe para este torneo.")
+          } else if (backendMessage.includes("No hay suficientes horarios disponibles")) {
+            setErrorMessage(backendMessage)
+          } else if (backendMessage.includes("no tienen franjas horarias configuradas")) {
+            setErrorMessage(backendMessage)
+          } else if (backendMessage.includes("no tienen franjas horarias que coincidan")) {
+            setErrorMessage(backendMessage)
+          } else {
+            setErrorMessage("Error de conflicto: " + backendMessage)
+          }
+        } else if (backendMessage.includes("403") || backendMessage.includes("FORBIDDEN")) {
+          setErrorMessage("No tiene permisos para generar el fixture de este torneo.")
+        } else if (backendMessage.includes("404") || backendMessage.includes("NOT_FOUND")) {
+          setErrorMessage("Torneo no encontrado.")
+        } else if (backendMessage.includes("400") || backendMessage.includes("BAD_REQUEST")) {
+          setErrorMessage(backendMessage)
+        } else {
+          setErrorMessage(backendMessage)
+        }
       } else {
-        setErrorMessage(`Error al generar el fixture: ${error.message}`)
+        setErrorMessage(errorMessage)
       }
     } finally {
       setIsSubmitting(false)
@@ -174,7 +203,7 @@ export const GroupStageAndEliminationFixtureScreen = ({ tournament }: GroupStage
     
     // Handle large numbers from backend (1000+ offset per group)
     if (matchNumber >= 1000) {
-      const groupIndex = Math.floor(matchNumber / 1000)
+      const groupIndex = Math.floor(matchNumber / 1000) - 1 // Restar 1 para corregir el offset
       const actualMatchNumber = matchNumber % 1000
       const groupLetter = String.fromCharCode(65 + groupIndex) // A, B, C, etc.
       return `${groupLetter}${actualMatchNumber}`
@@ -186,7 +215,7 @@ export const GroupStageAndEliminationFixtureScreen = ({ tournament }: GroupStage
   const getMatchPhase = (matchNumber: number) => {
     // Handle large numbers from backend (1000+ offset per group)
     if (matchNumber >= 1000) {
-      const groupIndex = Math.floor(matchNumber / 1000)
+      const groupIndex = Math.floor(matchNumber / 1000) - 1 // Restar 1 para corregir el offset
       const groupLetter = String.fromCharCode(65 + groupIndex) // A, B, C, etc.
       return `Fase de Grupos - Grupo ${groupLetter}`
     }

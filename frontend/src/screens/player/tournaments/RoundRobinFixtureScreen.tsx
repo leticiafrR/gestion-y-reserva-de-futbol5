@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import { useLocation } from "wouter"
 import { Calendar, Users, Target, BarChart3, Gamepad2, Trophy } from "lucide-react"
 import { useUserTournaments, Tournament } from "@/services/TournamentService"
-import { useFixtureService, TournamentMatch, useStandings, useTournamentStatistics, TeamStanding, TournamentStatistics } from "@/services/FixtureService"
+import { useFixtureService, TournamentMatch, useStandings, useTournamentStatistics, TeamStanding, TournamentStatistics, parseFixtureError } from "@/services/FixtureService"
 import { useQuery } from "@tanstack/react-query"
 import { ConfirmFinishMatchModal } from "./ConfirmFinishMatchModal"
 
@@ -54,12 +54,7 @@ export const RoundRobinFixtureScreen = ({ tournament }: RoundRobinFixtureScreenP
       refetch()
     } catch (error: any) {
       console.error("Error generating fixture:", error)
-      
-      if (error.message && error.message.includes("409")) {
-        setErrorMessage("El fixture ya existe para este torneo.")
-      } else {
-        setErrorMessage(`Error al generar el fixture: ${error.message}`)
-      }
+      setErrorMessage(parseFixtureError(error))
     } finally {
       setIsSubmitting(false)
     }

@@ -70,7 +70,7 @@ export const PlayerGroupStageAndEliminationFixtureScreen = ({ tournament }: Play
     
     // Handle large numbers from backend (1000+ offset per group)
     if (matchNumber >= 1000) {
-      const groupIndex = Math.floor(matchNumber / 1000)
+      const groupIndex = Math.floor(matchNumber / 1000) - 1 // Restar 1 para corregir el offset
       const actualMatchNumber = matchNumber % 1000
       const groupLetter = String.fromCharCode(65 + groupIndex) // A, B, C, etc.
       return `${groupLetter}${actualMatchNumber}`
@@ -157,7 +157,7 @@ export const PlayerGroupStageAndEliminationFixtureScreen = ({ tournament }: Play
                             Partido #{formatMatchNumber(match.matchNumber, match.groupName)}
                           </span>
                           <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--foreground)", backgroundColor: "var(--background)", padding: "4px 8px", borderRadius: "4px" }}>
-                            {match.matchNumber >= 1000 || match.groupName ? `Fase de Grupos - Grupo ${match.groupName || String.fromCharCode(65 + Math.floor(match.matchNumber / 1000))}` : "Fase de Eliminación"}
+                            {match.matchNumber >= 1000 || match.groupName ? `Fase de Grupos - Grupo ${match.groupName || String.fromCharCode(65 + Math.floor(match.matchNumber / 1000) - 1)}` : "Fase de Eliminación"}
                           </span>
                           {match.scheduledDateTime && <span style={{ fontSize: "14px", color: "var(--muted-foreground)" }}>📅 {formatDateTime(match.scheduledDateTime)}</span>}
                           {match.field && <span style={{ fontSize: "14px", color: "var(--muted-foreground)" }}>🏟️ {match.field.name}</span>}

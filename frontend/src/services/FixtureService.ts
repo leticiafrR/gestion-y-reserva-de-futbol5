@@ -257,3 +257,40 @@ async function getTournamentStatistics(tournamentId: number): Promise<Tournament
 
   return await response.json()
 }
+
+export function parseFixtureError(error: any): string {
+  // Extraer el mensaje de error del backend
+  let errorMessage = error.message || "Error desconocido al generar el fixture"
+  
+  // Si el error viene del backend, extraer el mensaje específico
+  if (errorMessage.includes("Error al generar el fixture:")) {
+    const backendMessage = errorMessage.replace("Error al generar el fixture: ", "")
+    
+    // Manejar diferentes tipos de errores del backend
+    if (backendMessage.includes("409") || backendMessage.includes("CONFLICT")) {
+      if (backendMessage.includes("Could not find an available time slot")) {
+        return "No se encontraron horarios disponibles para programar los partidos. Verifique que las canchas tengan franjas horarias configuradas entre las 18:00 y 23:00 horas."
+      } else if (backendMessage.includes("Fixture already exists")) {
+        return "El fixture ya existe para este torneo."
+      } else if (backendMessage.includes("No hay suficientes horarios disponibles")) {
+        return backendMessage
+      } else if (backendMessage.includes("no tienen franjas horarias configuradas")) {
+        return backendMessage
+      } else if (backendMessage.includes("no tienen franjas horarias que coincidan")) {
+        return backendMessage
+      } else {
+        return "Error de conflicto: " + backendMessage
+      }
+    } else if (backendMessage.includes("403") || backendMessage.includes("FORBIDDEN")) {
+      return "No tiene permisos para generar el fixture de este torneo."
+    } else if (backendMessage.includes("404") || backendMessage.includes("NOT_FOUND")) {
+      return "Torneo no encontrado."
+    } else if (backendMessage.includes("400") || backendMessage.includes("BAD_REQUEST")) {
+      return backendMessage
+    } else {
+      return backendMessage
+    }
+  } else {
+    return errorMessage
+  }
+}
