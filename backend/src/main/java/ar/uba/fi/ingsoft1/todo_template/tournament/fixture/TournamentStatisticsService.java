@@ -103,18 +103,18 @@ public class TournamentStatisticsService {
                 .totalMatches(matchesTournament.size())
                 .cantCompletedMatches((int) completedMatches)
                 .topScoringTeams(teams_goals_SortedByGoals);
+        
+        // Asignar el mejor ataque (primer equipo de la lista ordenada por goles)
+        if (!teams_goals_SortedByGoals.isEmpty()) {
+            TeamName_Goals topScorer = teams_goals_SortedByGoals.get(0);
+            builder.topScoringTeam(topScorer.getName());
+            builder.topScoringTeamGoals(topScorer.getGoals());
+        }
+        
         if (bestDefense.isPresent()) {
             builder.bestDefensiveTeam(bestDefense.get().getTeam().getName());
             builder.bestDefensiveTeamGoalsAgainst(bestDefense.get().getGoalsAgainst());
         }
-        // Map<String, Object> statistics = new java.util.HashMap<>();
-        // statistics.put("tournamentName", tournament.getName());
-        // statistics.put("format", tournament.getFormat());
-        // statistics.put("state", tournament.getState());
-        // statistics.put("totalTeams", sortedTeamsRegistered.size());
-        // statistics.put("totalMatches", matchesTournament.size());
-
-        // builder.cantCompletedMatches(completedMatches);
 
         if (!sortedByStandingsTeamsRegistered.isEmpty()) {
 

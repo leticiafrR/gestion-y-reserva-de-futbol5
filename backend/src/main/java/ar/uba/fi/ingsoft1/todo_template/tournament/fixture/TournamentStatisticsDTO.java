@@ -24,6 +24,8 @@ public class TournamentStatisticsDTO {
         private String champion;
         private String runnerUp;
         private List<TeamName_Goals> topScoringTeams;
+        private String topScoringTeam;
+        private Integer topScoringTeamGoals;
         private String bestDefensiveTeam;
         private Integer bestDefensiveTeamGoalsAgainst;
         private int totalGoals;
@@ -32,6 +34,8 @@ public class TournamentStatisticsDTO {
         public TournamentStatisticsDTO() {
                 this.completedMatchesNames = new ArrayList<>();
                 this.topScoringTeams = new ArrayList<>();
+                this.topScoringTeam = "";
+                this.topScoringTeamGoals = 0;
                 this.bestDefensiveTeam = "";
                 this.bestDefensiveTeamGoalsAgainst = 0;
                 this.totalGoals = 0;
@@ -46,6 +50,7 @@ public class TournamentStatisticsDTO {
         public TournamentStatisticsDTO(String tournamentName, TournamentFormat format, TournamentState state,
                         int totalTeams, int totalMatches, int cantCompletedMatches, List<String> completedMatchesNames,
                         String champion, String runnerUp, List<TeamName_Goals> topScoringTeams,
+                        String topScoringTeam, Integer topScoringTeamGoals,
                         String bestDefensiveTeam,
                         Integer bestDefensiveTeamGoalsAgainst, int totalGoals, Double averageGoalsPerMatch) {
                 this.tournamentName = tournamentName;
@@ -58,6 +63,8 @@ public class TournamentStatisticsDTO {
                 this.champion = champion;
                 this.runnerUp = runnerUp;
                 this.topScoringTeams = topScoringTeams != null ? topScoringTeams : new ArrayList<>();
+                this.topScoringTeam = topScoringTeam;
+                this.topScoringTeamGoals = topScoringTeamGoals;
                 this.bestDefensiveTeam = bestDefensiveTeam;
                 this.bestDefensiveTeamGoalsAgainst = bestDefensiveTeamGoalsAgainst;
                 this.totalGoals = totalGoals;
