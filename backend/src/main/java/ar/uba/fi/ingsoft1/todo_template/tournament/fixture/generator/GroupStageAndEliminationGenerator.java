@@ -54,7 +54,7 @@ public class GroupStageAndEliminationGenerator implements FixtureGenerator {
             List<TournamentMatch> groupMatches = roundRobinGenerator.generateFixture(tournament, group);
 
             for (TournamentMatch match : groupMatches) {
-                int groupOffset = i * 1000;
+                int groupOffset = (i + 1) * 1000;
                 match.setMatchNumber(groupOffset + match.getMatchNumber());
             }
 
