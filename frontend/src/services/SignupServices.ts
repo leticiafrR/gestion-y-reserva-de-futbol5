@@ -1,10 +1,6 @@
-// @ts-nocheck - Mocked for development
 import { useMutation } from "@tanstack/react-query";
 import { SignupRequest } from "@/models/Signup";
 import { BASE_API_URL } from "@/config/app-query-client";
-
-// @ts-expect-error - Mocked for development
-// import { LoginResponseSchema } from "@/models/Login";
 
 export function useSignup() {
   return useMutation({
@@ -18,7 +14,8 @@ export function useSignup() {
         role: req.userType,
         gender: req.gender,
         age: req.age.toString(), // El backend calculará el birthYear a partir de la edad
-        zone: req.zone
+        zone: req.zone,
+        urlProfilePicture: req.photo || req.urlProfilePicture // Usar la URL de la foto subida o la URL por defecto
       };
 
       const response = await signup(backendRequest);
@@ -36,6 +33,7 @@ interface BackendSignupRequest {
   gender: string;
   age: string;
   zone: string;
+  urlProfilePicture: string;
 }
 
 async function signup(data: BackendSignupRequest) {

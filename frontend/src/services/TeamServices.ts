@@ -1,4 +1,3 @@
-// @ts-nocheck - Mocked for development
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Team } from "@/models/Team";
 import { BASE_API_URL } from "@/config/app-query-client";
@@ -22,6 +21,15 @@ export function useUserTeams() {
   const [token] = useToken();
   return useQuery({
     queryKey: ["userTeams"],
+    queryFn: () => getMyTeams(token),
+    enabled: token.state === "LOGGED_IN",
+  });
+}
+
+export function useAllTeams() {
+  const [token] = useToken();
+  return useQuery({
+    queryKey: ["allTeams"],
     queryFn: () => getAllTeams(token),
     enabled: token.state === "LOGGED_IN",
   });
@@ -61,11 +69,80 @@ export function useDeleteTeam() {
   });
 }
 
+export function useInviteToTeam() {
+  const queryClient = useQueryClient();
+  const [token] = useToken();
+  return useMutation({
+    mutationFn: ({ teamId, inviteeEmail }: { teamId: string; inviteeEmail: string }) =>
+      inviteToTeam(teamId, inviteeEmail, token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userTeams"] });
+    },
+  });
+}
+
+export function usePendingInvitations(teamId: string) {
+  const [token] = useToken();
+  return useQuery({
+    queryKey: ["pendingInvitations", teamId],
+    queryFn: () => getPendingInvitations(teamId, token),
+    enabled: !!teamId && token.state === "LOGGED_IN",
+  });
+}
+
+export function useRemoveTeamMember() {
+  const queryClient = useQueryClient();
+  const [token] = useToken();
+  return useMutation({
+    mutationFn: ({ teamId, deletingUsername }: { teamId: string; deletingUsername: string }) =>
+      removeTeamMember({ teamId, deletingUsername }, token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userTeams"] });
+    },
+  });
+}
+
+async function getMyTeams(token: any): Promise<Team[]> {
+  try {
+    const response = await fetch(`${BASE_API_URL}/teams/my-teams`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+      },
+    });
+
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener equipos: ${response.status}`);
+    }
+
+    const teams = await response.json();
+    
+    if (!Array.isArray(teams)) {
+      throw new Error('La respuesta del servidor no tiene el formato esperado');
+    }
+
+    const mappedTeams = teams.map((team: any) => {
+      return {
+        id: team.id.toString(),
+        name: team.name,
+        logo: team.logo || "",
+        colors: [team.primaryColor, team.secondaryColor],
+        ownerId: team.captain,
+        members: team.membersUsernames || [],
+      };
+    });
+
+    return mappedTeams;
+  } catch (error) {
+    throw error;
+  }
+}
 
 async function getAllTeams(token: any): Promise<Team[]> {
   try {
-    const userEmail = localStorage.getItem('userEmail');
-    
     const response = await fetch(`${BASE_API_URL}/teams`, {
       method: "GET",
       headers: {
@@ -85,13 +162,18 @@ async function getAllTeams(token: any): Promise<Team[]> {
       throw new Error('La respuesta del servidor no tiene el formato esperado');
     }
 
-    return teams.map((team: any) => ({
-      id: team.id.toString(),
-      name: team.name,
-      logo: team.logo || "",
-      colors: [team.primaryColor, team.secondaryColor],
-      ownerId: team.captain,
-    }));
+    const mappedTeams = teams.map((team: any) => {
+      return {
+        id: team.id.toString(),
+        name: team.name,
+        logo: team.logo || "",
+        colors: [team.primaryColor, team.secondaryColor],
+        ownerId: team.captain,
+        members: team.membersUsernames || [],
+      };
+    });
+
+    return mappedTeams;
   } catch (error) {
     throw error;
   }
@@ -158,6 +240,66 @@ async function deleteTeam(teamId: string, token: any): Promise<{ success: boolea
   if (!response.ok) {
     const errorData = await response.text();
     throw new Error(errorData || `Error al eliminar equipo: ${response.status}`);
+  }
+
+  return { success: true };
+}
+
+async function inviteToTeam(teamId: string, inviteeEmail: string, token: any): Promise<{ success: boolean }> {
+  const response = await fetch(`${BASE_API_URL}/invitations/teams/${teamId}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+    body: JSON.stringify({ inviteeEmail }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al invitar usuario: ${response.status}`);
+  }
+
+  return { success: true };
+}
+
+export async function getPendingInvitations(teamId: string, token: any): Promise<string[]> {
+  const response = await fetch(`${BASE_API_URL}/invitations/teams/${teamId}/pending`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al obtener invitaciones pendientes: ${response.status}`);
+  }
+
+  const invitations = await response.json();
+  return invitations.map((inv: { inviteeEmail: string }) => inv.inviteeEmail);
+}
+
+async function removeTeamMember(
+  { teamId, deletingUsername }: { teamId: string; deletingUsername: string },
+  token: any
+): Promise<{ success: boolean }> {
+  const response = await fetch(`${BASE_API_URL}/teams/${teamId}/member`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(token.state === "LOGGED_IN" ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+    },
+    body: JSON.stringify({ deletingUsername }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || `Error al eliminar miembro: ${response.status}`);
   }
 
   return { success: true };

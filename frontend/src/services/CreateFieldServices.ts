@@ -1,4 +1,3 @@
-// @ts-nocheck - Mocked for development
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BASE_API_URL, getAuthToken } from "@/config/app-query-client";
 import type { Field } from "@/models/Field";
@@ -22,61 +21,9 @@ export function useGetOwnerFields() {
   });
 }
 
-let mockFields: Field[] = [
-  {
-    id: "1",
-    name: "Cancha CENTRAL",
-    grass: "sintetico",
-    lighting: true,
-    roofing: false,
-    location: {
-      lat: -34.6037,
-      lng: -58.3816,
-      address: "Av. Principal 123"
-    },
-    area: "Centro",
-    photos: [],
-    description: "Cancha con césped sintético y buena iluminación.",
-    price: 80,
-    active: true,
-    schedule: [
-      { dayOfWeek: "MONDAY", openTime: "10:00", closeTime: "18:00" },
-      { dayOfWeek: "TUESDAY", openTime: "10:00", closeTime: "18:00" },
-      { dayOfWeek: "WEDNESDAY", openTime: "10:00", closeTime: "18:00" },
-      { dayOfWeek: "THURSDAY", openTime: "10:00", closeTime: "18:00" },
-      { dayOfWeek: "FRIDAY", openTime: "10:00", closeTime: "18:00" }
-    ],
-    photoUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: "2",
-    name: "Cancha NORTE",
-    grass: "natural",
-    lighting: false,
-    roofing: false,
-    location: {
-      lat: -34.5837,
-      lng: -58.4016,
-      address: "Calle Norte 456"
-    },
-    area: "Norte",
-    photos: [],
-    description: "Cancha de césped natural, ideal para torneos.",
-    price: 50,
-    active: false,
-    schedule: [
-      { dayOfWeek: "SATURDAY", openTime: "09:00", closeTime: "14:00" },
-      { dayOfWeek: "SUNDAY", openTime: "09:00", closeTime: "14:00" }
-    ],
-    photoUrl: "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80"
-  }
-];
-
 async function getOwnerFields(): Promise<Field[]> {
-  // return mockFields;
   const accessToken = getAuthToken();
-  console.log("accessToken", accessToken);
-  const response = await fetch(`${BASE_API_URL}/fields/mine`, {
+  const response = await fetch(`${BASE_API_URL}/fields/own`, {
     method: "GET",
     headers: {
       Accept: "application/json",
@@ -84,7 +31,6 @@ async function getOwnerFields(): Promise<Field[]> {
       Authorization: `Bearer ${accessToken}`, 
     },
   });
-  console.log("response", response);
   if (response.ok) {
     return response.json();
   } else {
@@ -93,7 +39,6 @@ async function getOwnerFields(): Promise<Field[]> {
 }
 
 async function createField(data: Omit<Field, "id">) {
-  console.log("data", data);
   const accessToken = getAuthToken();
   const response = await fetch(`${BASE_API_URL}/fields`, {
     method: "POST",
@@ -104,8 +49,7 @@ async function createField(data: Omit<Field, "id">) {
     },
     body: JSON.stringify(data),
   });
-  console.log("response", response);
-
+    
   if (response.ok) {
     return response.json();
   } else {
@@ -133,7 +77,6 @@ async function deleteField(fieldId: string) {
       Authorization: `Bearer ${accessToken}`,
     },
   });
-  console.log("response", response);
 
 
   if (response.ok) {
@@ -175,16 +118,16 @@ async function updateField(fieldId: string, updates: Omit<Field, "id">) {
 export function useUpdateFieldActiveStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { id: string; active: boolean }) => updateFieldActiveStatus(data.id, data.active),
+    mutationFn: async (data: { id: number; active: boolean }) => updateFieldActiveStatus(data.id, data.active),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-fields"] });
     },
   });
 }
 
-async function updateFieldActiveStatus(fieldId: string, active: boolean) {
+async function updateFieldActiveStatus(fieldId: number, active: boolean) {
   const accessToken = getAuthToken();
-  const endpoint = active ? `${BASE_API_URL}/fields/${fieldId}/activate` : `${BASE_API_URL}/fields/${fieldId}/deactivate`;
+  const endpoint = `${BASE_API_URL}/fields/${fieldId}/${active}`;
   const response = await fetch(endpoint, {
     method: "PATCH",
     headers: {
@@ -193,7 +136,6 @@ async function updateFieldActiveStatus(fieldId: string, active: boolean) {
       Authorization: `Bearer ${accessToken}`,
     },
   });
-  console.log("response", response);
 
   if (response.ok) {
     return response.json();

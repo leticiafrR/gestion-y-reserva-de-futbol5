@@ -1,11 +1,13 @@
 package ar.uba.fi.ingsoft1.todo_template.config;
 
 import ar.uba.fi.ingsoft1.todo_template.common.exception.ItemNotFoundException;
+import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserAlreadyMemberException;
+import ar.uba.fi.ingsoft1.todo_template.team.teamServiceException.UserNotPartOfTeam;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnverifiedAccountException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InavlidCredentialsException;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InvalidTokenException;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.UnableToSendMessageException;
+import ar.uba.fi.ingsoft1.todo_template.email.UnableToSendMessageException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -16,6 +18,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -24,7 +27,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalControllerExceptionHandler {
 
-    @ExceptionHandler({ UnableToSendMessageException.class, DuplicateUsernameException.class })
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(UsernameNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.of(
+                "UserNotFound",
+                "Invalid session. Please log in again.",
+                HttpStatus.UNAUTHORIZED.value());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler({ UnableToSendMessageException.class, DuplicateUsernameException.class, UserAlreadyMemberException.class })
     public ResponseEntity<IncorrectValueResponse> handleRegistUsernameExceptions(RuntimeException ex) {
         return new ResponseEntity<>(new IncorrectValueResponse("username", ex.getMessage()), HttpStatus.CONFLICT);
     }
@@ -67,7 +79,21 @@ public class GlobalControllerExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @ExceptionHandler(UserNotPartOfTeam.class)
+    public ResponseEntity<String> handleUserNotPartOfTeam(UserNotPartOfTeam ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
     public record IncorrectValueResponse(String field, String error_description) {
+    }
+
+    public record ErrorResponse(
+            String error,
+            String message,
+            int status) {
+        public static ErrorResponse of(String error, String message, int status) {
+            return new ErrorResponse(error, message, status);
+        }
     }
 
 }

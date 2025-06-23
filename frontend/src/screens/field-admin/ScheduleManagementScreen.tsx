@@ -5,11 +5,11 @@ import { ArrowLeft } from "lucide-react"
 import { ScheduleConfiguration } from "@/components/ScheduleConfiguration/ScheduleConfiguration"
 import { useGetOwnerFields } from "@/services/CreateFieldServices"
 import type { Field as ApiField } from "@/models/Field"
+import { navigate } from "wouter/use-browser-location"
 
 interface Field {
   id: string
   name: string
-  type: string
 }
 
 export const ScheduleManagementScreen = () => {
@@ -20,7 +20,6 @@ export const ScheduleManagementScreen = () => {
   const fields: Field[] = apiFields.map((field: ApiField) => ({
     id: field.id,
     name: field.name,
-    type: field.grassType === "sintetico" ? "FUTBOL 5" : "FUTBOL 11"
   }))
 
   if (isLoading) {
@@ -89,7 +88,7 @@ export const ScheduleManagementScreen = () => {
           </div>
 
           <button
-            onClick={() => (window.location.href = "/")}
+            onClick={() => navigate("/main")}
             style={{
               display: "flex",
               alignItems: "center",

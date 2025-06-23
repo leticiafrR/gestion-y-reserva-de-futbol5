@@ -1,8 +1,11 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
+import ar.uba.fi.ingsoft1.todo_template.config.GlobalControllerExceptionHandler.ErrorResponse;
 import ar.uba.fi.ingsoft1.todo_template.config.GlobalControllerExceptionHandler.IncorrectValueResponse;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InactiveOrUnverifiedAccountException;
-import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InvalidTokenException;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.TokenDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.UserCreateDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.UserLoginDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.UserProfileDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,9 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-
-import java.util.Optional;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +42,7 @@ public class UserRestController {
         @PostMapping("/register")
         @Operation(summary = "Register user", description = "Create a new user account")
         @ApiResponse(responseCode = "201", description = "User created successfully", content = @Content(schema = @Schema(implementation = TokenDTO.class), mediaType = "application/json"))
-        @ApiResponse(responseCode = "409", description = "Some field has a useless information ", content = @Content(schema = @Schema(implementation = IncorrectValueResponse.class), mediaType = "application/json"))
+        @ApiResponse(responseCode = "409", description = "Some field has a useless information. Maybe information nota provided, an invalid email, an invalid URL.", content = @Content(schema = @Schema(implementation = IncorrectValueResponse.class), mediaType = "application/json"))
         @ApiResponse(responseCode = "400", description = "Validation errors. The body is a JSON with dynamic keys corresponding to the form fields, for example: { \"username\": \"The username cannot be empty to register a user.\" }", content = @Content(mediaType = "application/json"))
         public ResponseEntity<TokenDTO> register(
                         @Parameter(description = "User registration data") @Valid @RequestBody UserCreateDTO userData) {
@@ -56,6 +56,17 @@ public class UserRestController {
         @ApiResponse(responseCode = "403", description = "Unverified email, inactive account, or invalid credentials", content = @Content(schema = @Schema(implementation = String.class), mediaType = "text/plain"))
         public ResponseEntity<TokenDTO> login(@RequestBody UserLoginDTO credentials) {
                 return ResponseEntity.status(HttpStatus.OK).body(userService.loginUser(credentials));
+        }
+
+        @GetMapping("/me")
+        @Operation(summary = "Load user profile", description = "Fetches the profile information of the currently authenticated user.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "User profile successfully loaded", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserProfileDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "User is not authenticated or session has expired", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+        })
+        public ResponseEntity<UserProfileDTO> getCurrentUserProfile() {
+                User user = (User) userService.getAuthenticatedUser();
+                return ResponseEntity.ok(user.toUserProfileDTO());
         }
 
 }

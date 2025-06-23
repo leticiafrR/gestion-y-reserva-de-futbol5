@@ -18,23 +18,36 @@ export const PlayerMainScreen = () => {
       emoji: "⚽"
     },
     {
-      title: "Torneos",
+      title: "Partidos",
+      description: "Encuentra y gestiona partidos",
+      path: "/matches",
+      emoji: "🎯"
+    },
+    {
+      title: "Torneos disponibles",
       description: "Participa en torneos y competencias",
-      path: "/tournaments",
+      path: "/available-tournaments",
       emoji: "🏆"
     },
     {
-      title: "Mis reservas",
-      description: "Gestiona tus reservas activas",
-      path: "/reservations",
+      title: "Historial de partidos",
+      description: "Consulta tus partidos y reservas pasadas",
+      path: "/bookings",
       emoji: "📅"
     },
     {
-      title: "Equipos",
+      title: "Mis equipos",
       description: "Administra tus equipos",
       path: "/teams",
       emoji: "👥"
+    },
+    {
+      title: "Mis torneos",
+      description: "Gestiona tus torneos",
+      path: "/my-tournaments",
+      emoji: "🏆"
     }
+
   ];
 
   return (
@@ -130,58 +143,126 @@ export const PlayerMainScreen = () => {
       <main style={{
         maxWidth: "1200px",
         margin: "0 auto",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-        gap: "24px",
         padding: "0 16px"
       }}>
-        {menuItems.map(item => (
-          <button
-            key={item.path}
-            onClick={() => setLocation(item.path)}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              padding: "24px",
-              backgroundColor: "var(--card)",
-              border: "1px solid var(--border)",
-              borderRadius: "12px",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              textAlign: "left"
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 4px 6px -1px var(--border), 0 2px 4px -1px var(--border)";
-              e.currentTarget.style.borderColor = "var(--primary)";
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = "none";
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.borderColor = "var(--border)";
-            }}
-          >
-            <span style={{ fontSize: "32px", marginBottom: "16px" }}>
-              {item.emoji}
-            </span>
-            <h2 style={{
-              margin: "0 0 8px 0",
-              fontSize: "18px",
-              fontWeight: "600",
-              color: "var(--foreground)"
-            }}>
-              {item.title}
-            </h2>
-            <p style={{
-              margin: 0,
-              fontSize: "14px",
-              color: "var(--muted-foreground)"
-            }}>
-              {item.description}
-            </p>
-          </button>
-        ))}
+        {/* General Features Section */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "24px",
+          marginBottom: "32px"
+        }}>
+          {menuItems.slice(0, 3).map(item => (
+            <button
+              key={item.path}
+              onClick={() => setLocation(item.path)}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                padding: "24px",
+                backgroundColor: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                textAlign: "left"
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 6px -1px var(--border), 0 2px 4px -1px var(--border)";
+                e.currentTarget.style.borderColor = "var(--primary)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = "none";
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
+            >
+              <span style={{ fontSize: "32px", marginBottom: "16px" }}>
+                {item.emoji}
+              </span>
+              <h2 style={{
+                margin: "0 0 8px 0",
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "var(--foreground)"
+              }}>
+                {item.title}
+              </h2>
+              <p style={{
+                margin: 0,
+                fontSize: "14px",
+                color: "var(--muted-foreground)"
+              }}>
+                {item.description}
+              </p>
+            </button>
+          ))}
+        </div>
+
+        {/* Separator */}
+        <div style={{
+          width: "100%",
+          height: "1px",
+          backgroundColor: "var(--border)",
+          margin: "32px 0"
+        }} />
+
+        {/* Personal Features Section */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "24px"
+        }}>
+          {menuItems.slice(3).map(item => (
+            <button
+              key={item.path}
+              onClick={() => setLocation(item.path)}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                padding: "24px",
+                backgroundColor: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                textAlign: "left"
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 6px -1px var(--border), 0 2px 4px -1px var(--border)";
+                e.currentTarget.style.borderColor = "var(--primary)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = "none";
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
+            >
+              <span style={{ fontSize: "32px", marginBottom: "16px" }}>
+                {item.emoji}
+              </span>
+              <h2 style={{
+                margin: "0 0 8px 0",
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "var(--foreground)"
+              }}>
+                {item.title}
+              </h2>
+              <p style={{
+                margin: 0,
+                fontSize: "14px",
+                color: "var(--muted-foreground)"
+              }}>
+                {item.description}
+              </p>
+            </button>
+          ))}
+        </div>
       </main>
     </div>
   );

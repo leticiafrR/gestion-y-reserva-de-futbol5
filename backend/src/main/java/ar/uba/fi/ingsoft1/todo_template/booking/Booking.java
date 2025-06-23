@@ -1,38 +1,53 @@
 package ar.uba.fi.ingsoft1.todo_template.booking;
 
-import ar.uba.fi.ingsoft1.todo_template.field.Field;
+import ar.uba.fi.ingsoft1.todo_template.timeslot.TimeSlot;
 import ar.uba.fi.ingsoft1.todo_template.user.User;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
-@Entity
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Entity
 public class Booking {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "field_id", nullable = false)
-    private Field field;
-
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
-    private LocalDate date;
+    @ManyToOne(optional = false)
+    private TimeSlot timeSlot;
 
     @Column(nullable = false)
-    private LocalTime startTime;
+    private LocalDate bookingDate;
 
-    @Column(nullable = false)
-    private LocalTime endTime;
+    private int bookingHour;
+
+    private boolean active = true;
+
+    private LocalDateTime createdAt;
+
+
+    protected Booking() {}
+
+    public Booking(User user, TimeSlot timeSlot, LocalDate bookingDate, int bookingHour) {
+        this.user = user;
+        this.timeSlot = timeSlot;
+        this.bookingDate = bookingDate;
+        this.bookingHour = bookingHour;
+    }
+
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    public void cancel() {
+        this.active = false;
+    }
 }

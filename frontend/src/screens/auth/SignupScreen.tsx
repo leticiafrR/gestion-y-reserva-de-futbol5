@@ -4,10 +4,12 @@ import { SignupRequestSchema } from "@/models/Signup";
 import { useSignup } from "@/services/SignupServices";
 import styles from "./SignupScreen.module.css";
   // @ts-expect-error 
-import { useId, useRef, useEffect } from "react";
+import { useId, useRef, useEffect, useState } from "react";
 import inputStyles from "@/components/form-components/InputFields/InputFields.module.css";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 import { Upload, X } from "lucide-react";
+import { uploadImageProfile } from "@/services/supabaseClient";
+import { useToken } from "@/services/TokenContext";
 
 type FieldComponentProps = {
   field: any;
@@ -98,13 +100,27 @@ const UserTypeField = ({ field }: FieldComponentProps) => {
 const PhotoField = ({ field }: FieldComponentProps) => {
   const id = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Here you would typically upload the file to your server/storage
-      // and get back a URL. For now, we'll just use a placeholder
-      field.handleChange(URL.createObjectURL(file));
+      // Validar el tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        field.handleChange("");
+        return;
+      }
+
+      // Validar el tamaño (2MB máximo)
+      if (file.size > 2 * 1024 * 1024) {
+        field.handleChange("");
+        return;
+      }
+
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      field.handleChange(file); // Guardamos el archivo en el campo del formulario
     }
   };
 
@@ -114,6 +130,8 @@ const PhotoField = ({ field }: FieldComponentProps) => {
 
   const handleRemovePhoto = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setSelectedFile(null);
+    setPreviewUrl("");
     field.handleChange("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -142,7 +160,7 @@ const PhotoField = ({ field }: FieldComponentProps) => {
             padding: "20px",
             textAlign: "center",
             cursor: "pointer",
-            backgroundColor: field.state.value ? "transparent" : "#f8fafc",
+            backgroundColor: previewUrl ? "transparent" : "#f8fafc",
             transition: "all 0.2s ease",
             position: "relative",
             minHeight: "150px",
@@ -153,10 +171,10 @@ const PhotoField = ({ field }: FieldComponentProps) => {
             gap: "12px",
           }}
         >
-          {field.state.value ? (
+          {previewUrl ? (
             <>
               <img
-                src={field.state.value}
+                src={previewUrl}
                 alt="Preview"
                 style={{
                   maxWidth: "100%",
@@ -270,16 +288,41 @@ const ZoneField = ({ field }: FieldComponentProps) => {
   );
 };
 
+interface FormValues {
+  firstName: string;
+  lastName: string;
+  email: string;
+  photo: File | string | undefined;
+  age: number;
+  gender: "male" | "female" | "other";
+  zone: string;
+  password: string;
+  userType: "owner" | "user";
+}
+
+interface SignupRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  photo?: string;
+  age: number;
+  gender: "male" | "female" | "other";
+  zone: string;
+  password: string;
+  userType: "owner" | "user";
+}
+
 export const SignupScreen = () => {
-  console.log("SignupScreen mounted");
   const { mutate, error, isSuccess, data } = useSignup();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<Error | null>(null);
 
   const formData = useAppForm({
     defaultValues: {
       firstName: "",
       lastName: "",
       email: "",
-      photo: undefined,
+      photo: "",
       age: 18,
       gender: "male" as "male" | "female" | "other",
       zone: "",
@@ -289,7 +332,33 @@ export const SignupScreen = () => {
     validators: {
       onSubmit: SignupRequestSchema as any,
     },
-    onSubmit: async ({ value }) => mutate(value),
+    onSubmit: async ({ value }: { value: FormValues }) => {
+      try {
+        setIsUploading(true);
+        setUploadError(null);
+
+        // Si hay una foto seleccionada, la subimos primero
+        let photoUrl: string | undefined;
+        if (value.photo instanceof File) {
+          photoUrl = await uploadImageProfile(value.photo, value.email);
+        }
+
+        // Creamos el objeto de request con la URL de la foto
+        const signupRequest: SignupRequest = {
+          ...value,
+          photo: photoUrl || (typeof value.photo === 'string' ? value.photo : undefined),
+        };
+
+        // Llamamos a la mutación con los datos actualizados
+        await mutate(signupRequest);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to upload image";
+        setUploadError(new Error(errorMessage));
+        throw new Error(errorMessage);
+      } finally {
+        setIsUploading(false);
+      }
+    },
   });
 
   return (
@@ -326,7 +395,7 @@ export const SignupScreen = () => {
           </div>
         ) : (
           <formData.AppForm>
-            <formData.FormContainer extraError={error}>
+            <formData.FormContainer extraError={error || uploadError}>
               <div className={styles.formGrid}>
                 <formData.AppField
                   name="firstName"
@@ -373,6 +442,8 @@ export const SignupScreen = () => {
                     name="password"
                     children={(field) => <field.PasswordField label="Password" />}
                   />
+                </div>
+                <div className={styles.fullWidth}>
                 </div>
               </div>
             </formData.FormContainer>

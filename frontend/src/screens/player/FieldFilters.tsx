@@ -1,6 +1,7 @@
 // @ts-expect-error 
 import { Search, Filter, Sliders } from "lucide-react"
 import type { Field } from "@/models/Field"
+import { useUserProfile } from "@/services/UserServices"
 
 interface FieldFiltersProps {
   search: string
@@ -40,10 +41,15 @@ export const FieldFilters = ({
   fields,
   filteredFields,
 }: FieldFiltersProps) => {
+  const { data: userProfile } = useUserProfile()
+  const userZone = userProfile?.zone
+
   // Obtener tipos de césped únicos para el filtro
   const grassTypes = Array.from(new Set(fields?.map((f) => f.grassType) ?? []))
-  // Obtener zonas únicas para el filtro
-  const zones = Array.from(new Set(fields?.map((f) => f.zone) ?? []))
+  
+  // Obtener zonas únicas de las canchas y añadir la del usuario
+  const fieldZones = fields?.map((f) => f.zone) ?? [];
+  const zones = Array.from(new Set(userZone ? [userZone, ...fieldZones] : fieldZones));
 
   // Obtener rango de precios para los límites del slider
   const prices = fields?.map((f) => f.price ?? 0) ?? []

@@ -26,6 +26,9 @@ public class Field {
     private Boolean lighting;
 
     @Column(nullable = false)
+    private Boolean roofing = false;
+
+    @Column(nullable = false)
     private String zone;
 
     @Column(nullable = false)
@@ -43,4 +46,5 @@ public class Field {
     @ManyToOne(optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
+
 }

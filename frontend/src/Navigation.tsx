@@ -1,4 +1,5 @@
-import { Redirect, Route, Switch } from "wouter";
+import { Redirect, Route, Switch, useLocation } from "wouter";
+import React, { useEffect, useState } from "react";
 
 import { MainScreen as AdminMainScreen } from "@/screens/field-admin/MainScreen";
 import { PlayerMainScreen } from "@/screens/player/MainScreen";
@@ -8,68 +9,123 @@ import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
 import { VerifyEmailScreen } from "./screens/auth/VerifyEmailScreen";
 import { AvailableFieldsScreen } from "@/screens/player/AvailableFieldsScreen";
-import { TeamsScreen } from "@/screens/player/TeamsScreen";
+import { TeamsScreen } from "@/screens/player/team/TeamsScreen";
 import { ProfileScreen } from "@/screens/player/ProfileScreen";
 import { ScheduleManagementScreen } from "./screens/field-admin/ScheduleManagementScreen";
-
-function AdminRoutes() {
-  return (
-    <Switch>
-      <Route path="/main">
-        <AdminMainScreen />
-      </Route>
-      <Route path="/canchas">
-        <FieldManagementScreen />
-      </Route>
-      <Route path="/horarios">
-        <ScheduleManagementScreen />
-      </Route>
-      <Route path="/">
-        <Redirect href="/main" />
-      </Route>
-      <Route>
-        <Redirect href="/main" />
-      </Route>
-    </Switch>
-  );
-}
-
-function PlayerRoutes() {
-  return (
-    <Switch>
-      <Route path="/main">
-        <PlayerMainScreen />
-      </Route>
-      <Route path="/available-fields">
-        <AvailableFieldsScreen />
-      </Route>
-      <Route path="/teams">
-        <TeamsScreen />
-      </Route>
-      <Route path="/profile">
-        <ProfileScreen />
-      </Route>
-      <Route path="/">
-        <Redirect href="/main" />
-      </Route>
-      <Route>
-        <Redirect href="/main" />
-      </Route>
-    </Switch>
-  );
-}
+import { MatchesScreen } from "@/screens/player/match/MatchesScreen";
+import { MyTournamentsScreen } from "@/screens/player/tournaments/MyTournamentsScreen";
+import { AcceptInvitationScreen } from "./screens/auth/AcceptInvitationScreen";
+import { BookingsScreen as PlayerBookingsScreen } from "@/screens/player/bookings/BookingsScreen";
+import { BookingsScreen as AdminBookingsScreen } from "@/screens/field-admin/BookingsScreen";
+import { AvailableTournamentsScreen } from "@/screens/player/tournaments/AvailableTournamentsScreen";
+import { TournamentFixtureWrapper } from "@/screens/player/tournaments/TournamentFixtureWrapper";
+import { PlayerTournamentFixtureWrapper } from "@/screens/player/tournaments/PlayerTournamentFixtureWrapper";
 
 export const Navigation = () => {
   const [tokenState] = useToken();
-  // Leer el tipo de usuario desde localStorage
-  const userType = typeof window !== "undefined" ? localStorage.getItem("loginUserType") || "user" : "user";
+  const [location] = useLocation();
+  // Estado local para el userType
+  const [userType, setUserType] = useState(
+    typeof window !== "undefined" ? localStorage.getItem("loginUserType") || "user" : "user"
+  );
+
+  useEffect(() => {
+    // Handler para cambios en localStorage o evento custom
+    const handleStorage = () => {
+      setUserType(localStorage.getItem("loginUserType") || "user");
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("userTypeChanged", handleStorage);
+    handleStorage();
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("userTypeChanged", handleStorage);
+    };
+  }, []);
+
+  // Rutas de invitación SIEMPRE disponibles
+  if (location.startsWith("/invitation-email") || location.startsWith("/invitation-team")) {
+    return <AcceptInvitationScreen />;
+  }
+
+  function AdminRoutesWithLog() {
+    return (
+      <Switch>
+        <Route path="/main">
+          {() => {
+            return <AdminMainScreen />;
+          }}
+        </Route>
+        <Route path="/canchas">
+          <FieldManagementScreen />
+        </Route>
+        <Route path="/horarios">
+          <ScheduleManagementScreen />
+        </Route>
+        <Route path="/bookings">
+          <AdminBookingsScreen />
+        </Route>
+        <Route path="/">
+          <Redirect href="/main" />
+        </Route>
+        <Route>
+          <Redirect href="/main" />
+        </Route>
+      </Switch>
+    );
+  }
+
+  function PlayerRoutesWithLog() {
+    return (
+      <Switch>
+        <Route path="/main">
+          {() => {
+            return <PlayerMainScreen />;
+          }}
+        </Route>
+        <Route path="/available-fields">
+          <AvailableFieldsScreen />
+        </Route>
+        <Route path="/matches">
+          <MatchesScreen />
+        </Route>
+        <Route path="/teams">
+          <TeamsScreen />
+        </Route>
+        <Route path="/profile">
+          <ProfileScreen />
+        </Route>
+        <Route path="/my-tournaments">
+          <MyTournamentsScreen />
+        </Route>
+        <Route path="/available-tournaments">
+          <AvailableTournamentsScreen />
+        </Route>
+        <Route path="/my-tournaments/fixture/:tournamentName">
+          {({ tournamentName }) => <TournamentFixtureWrapper />}
+        </Route>
+        <Route path="/tournaments/fixture/:tournamentName">
+          {({ tournamentName }) => <PlayerTournamentFixtureWrapper />}
+        </Route>
+        <Route path="/bookings">
+          <PlayerBookingsScreen />
+        </Route>
+        <Route path="/">
+          <Redirect href="/main" />
+        </Route>
+        <Route>
+          <Redirect href="/main" />
+        </Route>
+      </Switch>
+    );
+  }
 
   switch (tokenState.state) {
     case "LOGGED_IN":
-      if (userType === "admin") {
-        return <AdminRoutes />;
+      if (userType === "owner") {
+        return <AdminRoutesWithLog />;
       } else {
-        return <PlayerRoutes />;
+        return <PlayerRoutesWithLog />;
       }
     case "LOGGED_OUT":
       return (

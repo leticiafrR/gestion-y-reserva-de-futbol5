@@ -1,7 +1,11 @@
 package ar.uba.fi.ingsoft1.todo_template.user;
 
+import ar.uba.fi.ingsoft1.todo_template.common.HelperAuthenticatedUser;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtService;
 import ar.uba.fi.ingsoft1.todo_template.config.security.JwtUserDetails;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.RefreshDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.TokenDTO;
+import ar.uba.fi.ingsoft1.todo_template.user.dto.UserCreateDTO;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshToken;
 import ar.uba.fi.ingsoft1.todo_template.user.refresh_token.RefreshTokenService;
 import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.DuplicateUsernameException;
@@ -10,6 +14,8 @@ import ar.uba.fi.ingsoft1.todo_template.user.userServiceException.InavlidCredent
 import ar.uba.fi.ingsoft1.todo_template.user.verification.EmailVerificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -44,14 +50,6 @@ public class UserService implements UserDetailsService {
         this.emailVerificationService = emailVerificationService;
     }
 
-    public void verifyUserByEmail(String token) {
-        Optional<User> maybeUser = emailVerificationService.verifyUserByEmail(token);
-        if (!maybeUser.isEmpty()) {
-            maybeUser.get().setEmailVerified(true);
-            userRepository.save(maybeUser.get());
-        }
-    }
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository
@@ -62,7 +60,21 @@ public class UserService implements UserDetailsService {
                 });
     }
 
-    TokenDTO createUser(UserCreateDTO data) {
+    User getAuthenticatedUser() {
+        String username = HelperAuthenticatedUser.getAuthenticatedUsername();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+
+    public void verifyUserByEmail(String token) {
+        Optional<User> maybeUser = emailVerificationService.verifyUserByEmail(token);
+        if (!maybeUser.isEmpty()) {
+            maybeUser.get().setEmailVerified(true);
+            userRepository.save(maybeUser.get());
+        }
+    }
+
+    public TokenDTO createUser(UserCreateDTO data) {
         checkUnicValuesToCreateUser(data);
         var user = data.asUser(passwordEncoder::encode);
         userRepository.save(user);
@@ -70,14 +82,14 @@ public class UserService implements UserDetailsService {
         return generateTokens(user);
     }
 
-    // Optional<User> matchCredential(UserCredentials data) {
-    // Optional<User> maybeUser = userRepository.findByUsername(data.username());
-    // return maybeUser
-    // .filter(user -> passwordEncoder.matches(data.password(), user.getPassword()))
-    // .filter(User::isEmailVerified)
-    // .filter(User::isActive)
-    // .map(this::generateTokens);
-    // }
+    private TokenDTO generateTokens(User user) {
+        String accessToken = jwtService.createToken(new JwtUserDetails(
+                user.getUsername(),
+                user.getRole()));
+
+        RefreshToken refreshToken = refreshTokenService.createFor(user);
+        return new TokenDTO(accessToken, refreshToken.value());
+    }
 
     public User matchCredentials(UserCredentials data) {
         return userRepository.findByUsername(data.username())
@@ -99,19 +111,21 @@ public class UserService implements UserDetailsService {
                 .map(this::generateTokens);
     }
 
-    private TokenDTO generateTokens(User user) {
-        String accessToken = jwtService.createToken(new JwtUserDetails(
-                user.getUsername(),
-                user.getRole()));
-
-        RefreshToken refreshToken = refreshTokenService.createFor(user);
-        return new TokenDTO(accessToken, refreshToken.value());
-    }
-
     private void checkUnicValuesToCreateUser(UserCreateDTO data) {
         if (userRepository.existsByUsername(data.username())) {
             throw new DuplicateUsernameException(data.username());
         }
 
     }
+
+    public User findByUsernameOrThrow(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+    }
+
+    public User getByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+    }
+
 }

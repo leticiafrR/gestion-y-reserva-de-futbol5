@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Plus, ChevronLeft, ChevronRight, Calendar, Clock, Save, Copy, Trash2 } from "lucide-react"
-import { fieldAvailabilityService, FieldAvailabilityDTO, FieldAvailabilityService } from "@/services/fieldAvailabilityService"
+import { fieldAvailabilityService, TimeSlotDTO, FieldAvailabilityService, BlockedSlotDTO } from "@/services/fieldAvailabilityService"
+import { bookingService } from "@/services/bookingService"
 
 interface TimeSlot {
   start: string
@@ -18,13 +19,12 @@ interface WeeklySchedule {
 
 interface SpecificDateSchedule {
   date: string
-  timeSlots: TimeSlot[]
+  hour: string
 }
 
 interface Field {
   id: string
   name: string
-  type: string
 }
 
 interface ScheduleConfigurationProps {
@@ -33,14 +33,11 @@ interface ScheduleConfigurationProps {
   onFieldChange: (fieldId: string) => void
 }
 
-// Generate time options in 15-minute intervals
 const generateTimeOptions = () => {
   const options = []
   for (let hour = 0; hour < 24; hour++) {
-    for (let minute = 0; minute < 60; minute += 15) {
-      const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`
-      options.push(timeString)
-    }
+    const timeString = `${hour.toString().padStart(2, "0")}:00`
+    options.push(timeString)
   }
   return options
 }
@@ -49,13 +46,28 @@ const TimeSelect = ({
   value,
   onChange,
   placeholder = "Seleccionar hora",
+  isStart = false,
+  otherTime = "",
 }: {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  isStart?: boolean
+  otherTime?: string
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const timeOptions = generateTimeOptions()
+
+  const handleTimeChange = (newTime: string) => {
+    if (isStart && otherTime && newTime >= otherTime) {
+      return // Don't allow start time to be greater than or equal to end time
+    }
+    if (!isStart && otherTime && newTime <= otherTime) {
+      return // Don't allow end time to be less than or equal to start time
+    }
+    onChange(newTime)
+    setIsOpen(false)
+  }
 
   return (
     <div style={{ position: "relative" }}>
@@ -73,8 +85,8 @@ const TimeSelect = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          color: "#1f2937", // Add explicit text color
-          fontWeight: "500", // Add font weight for better visibility
+          color: "#1f2937",
+          fontWeight: "500",
         }}
       >
         <span style={{ color: "#1f2937" }}>{value || placeholder}</span>
@@ -112,10 +124,7 @@ const TimeSelect = ({
             {timeOptions.map((time) => (
               <button
                 key={time}
-                onClick={() => {
-                  onChange(time)
-                  setIsOpen(false)
-                }}
+                onClick={() => handleTimeChange(time)}
                 style={{
                   width: "100%",
                   padding: "8px 12px",
@@ -125,7 +134,7 @@ const TimeSelect = ({
                   textAlign: "left",
                   cursor: "pointer",
                   borderBottom: "1px solid #f3f4f6",
-                  color: "#1f2937", // Add explicit text color for options
+                  color: "#1f2937",
                   fontWeight: value === time ? "600" : "400",
                 }}
                 onMouseEnter={(e) => {
@@ -160,10 +169,10 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
     saturday: { available: false, timeSlots: [] },
   })
 
-  const [specificDates, setSpecificDates] = useState<SpecificDateSchedule[]>([])
+  const [blockedSlots, setBlockedSlots] = useState<BlockedSlotDTO[]>([])
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string>("")
-  const [tempTimeSlots, setTempTimeSlots] = useState<TimeSlot[]>([{ start: "09:00", end: "18:00" }])
+  const [tempHour, setTempHour] = useState<string>("09:00")
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
   const dayNames = {
@@ -187,43 +196,12 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
     }))
   }
 
-  const updateTimeSlot = (day: string, index: number, field: "start" | "end", value: string) => {
+  const updateTimeSlot = (day: string, field: "start" | "end", value: string) => {
     setWeeklySchedule((prev) => ({
       ...prev,
       [day]: {
         ...prev[day],
-        timeSlots: prev[day].timeSlots.map((slot, i) => (i === index ? { ...slot, [field]: value } : slot)),
-      },
-    }))
-  }
-
-  const addTimeSlot = (day: string) => {
-    setWeeklySchedule((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        timeSlots: [...prev[day].timeSlots, { start: "09:00", end: "18:00" }],
-      },
-    }))
-  }
-
-  const removeTimeSlot = (day: string, index: number) => {
-    setWeeklySchedule((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        timeSlots: prev[day].timeSlots.filter((_, i) => i !== index),
-      },
-    }))
-  }
-
-  const duplicateTimeSlot = (day: string, index: number) => {
-    const slotToDuplicate = weeklySchedule[day].timeSlots[index]
-    setWeeklySchedule((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        timeSlots: [...prev[day].timeSlots, { ...slotToDuplicate }],
+        timeSlots: prev[day].timeSlots.map((slot) => ({ ...slot, [field]: value })),
       },
     }))
   }
@@ -250,7 +228,13 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
   }
 
   const formatDate = (year: number, month: number, day: number) => {
-    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    // Crear la fecha directamente en formato YYYY-MM-DD sin usar Date constructor
+    // para evitar problemas de zona horaria
+    const monthStr = String(month + 1).padStart(2, "0") // month es 0-11, necesitamos 1-12
+    const dayStr = String(day).padStart(2, "0")
+    const yearStr = String(year)
+    
+    return `${yearStr}-${monthStr}-${dayStr}`
   }
 
   const handleDateSelect = (day: number) => {
@@ -260,86 +244,162 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
     setSelectedDate(dateString)
   }
 
-  const applySpecificDate = () => {
-    if (selectedDate && tempTimeSlots.length > 0) {
-      setSpecificDates((prev) => {
-        const existing = prev.find((d) => d.date === selectedDate)
-        if (existing) {
-          return prev.map((d) => (d.date === selectedDate ? { ...d, timeSlots: [...tempTimeSlots] } : d))
-        } else {
-          return [...prev, { date: selectedDate, timeSlots: [...tempTimeSlots] }]
+  const applySpecificDate = async () => {
+    if (selectedDate && tempHour) {
+      try {
+        const hour = FieldAvailabilityService.timeStringToHour(tempHour)
+        const result = await fieldAvailabilityService.addBlockedSlot(Number(selectedFieldId), selectedDate, hour)
+        
+        // Agregar el nuevo bloqueo al estado local inmediatamente
+        setBlockedSlots((prev) => {
+          const updated = [...prev, { fieldId: Number(selectedFieldId), date: selectedDate, hour }]
+          return updated
+        })
+        
+        // Refrescar la lista real del backend inmediatamente
+        try {
+          const slots = await fieldAvailabilityService.getAllBlockedSlots(Number(selectedFieldId))
+          setBlockedSlots(slots)
+        } catch (refreshError) {
+          console.error("Error refreshing blocked slots:", refreshError)
         }
-      })
+      } catch (e: any) {
+        console.error("Error en applySpecificDate:", e)
+        alert("Error al agregar el horario bloqueado: " + (e?.message || e))
+      }
       setShowDatePicker(false)
       setSelectedDate("")
-      setTempTimeSlots([{ start: "09:00", end: "18:00" }])
+      setTempHour("09:00")
     }
   }
 
-  const removeSpecificDate = (date: string) => {
-    setSpecificDates((prev) => prev.filter((d) => d.date !== date))
+  const removeSpecificDate = async (date: string, hour: number) => {
+    try {
+      await fieldAvailabilityService.deleteBlockedSlot(Number(selectedFieldId), date, hour)
+      setBlockedSlots((prev) => prev.filter((d) => !(d.date === date && d.hour === hour)))
+    } catch (e) {
+      // Manejar error
+    }
   }
 
   const selectedField = fields.find((f) => f.id === selectedFieldId)
 
-  // Load availability when field changes
-  useEffect(() => {
-    const loadFieldAvailability = async () => {
-      if (!selectedFieldId) return;
-      
-      try {
-        const availability = await fieldAvailabilityService.getFieldAvailability(Number(selectedFieldId));
-        
-        // Convert API format to weekly schedule format
-        const newWeeklySchedule = { ...weeklySchedule };
-        
-        // Reset all days to not available
-        Object.keys(newWeeklySchedule).forEach(day => {
-          newWeeklySchedule[day] = { available: false, timeSlots: [] };
-        });
-        
-        // Map API data to weekly schedule
-        availability.forEach(avail => {
-          const dayKey = avail.dayOfWeek.toLowerCase();
-          if (newWeeklySchedule[dayKey]) {
-            newWeeklySchedule[dayKey] = {
-              available: true,
-              timeSlots: [{
-                start: FieldAvailabilityService.localTimeToTimeString(avail.startTime),
-                end: FieldAvailabilityService.localTimeToTimeString(avail.endTime)
-              }]
-            };
-          }
-        });
-        
-        setWeeklySchedule(newWeeklySchedule);
-      } catch (error) {
-        console.error('Error loading field availability:', error);
-        // Show error toast
-        const toast = document.createElement('div');
-        toast.style.position = 'fixed';
-        toast.style.bottom = '24px';
-        toast.style.left = '24px';
-        toast.style.backgroundColor = '#ef4444';
-        toast.style.color = 'white';
-        toast.style.padding = '12px 24px';
-        toast.style.borderRadius = '8px';
-        toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-        toast.style.zIndex = '1000';
-        toast.style.fontSize = '14px';
-        toast.style.fontWeight = '500';
-        toast.textContent = 'Error al cargar la disponibilidad';
-        document.body.appendChild(toast);
+  const handleSave = async () => {
+    try {
+      const availability: TimeSlotDTO[] = []
+      Object.entries(weeklySchedule).forEach(([day, schedule]) => {
+        if (schedule.available && schedule.timeSlots.length > 0) {
+          const slot = schedule.timeSlots[0]
+          availability.push({
+            dayOfWeek: day.toUpperCase() as TimeSlotDTO['dayOfWeek'],
+            openTime: FieldAvailabilityService.timeStringToHour(slot.start),
+            closeTime: FieldAvailabilityService.timeStringToHour(slot.end)
+          })
+        }
+      })
+      await fieldAvailabilityService.setFieldAvailability(Number(selectedFieldId), availability)
+      // Toast de éxito
+      const toast = document.createElement('div')
+      toast.style.position = 'fixed'
+      toast.style.bottom = '24px'
+      toast.style.left = '24px'
+      toast.style.backgroundColor = '#10b981'
+      toast.style.color = 'white'
+      toast.style.padding = '12px 24px'
+      toast.style.borderRadius = '8px'
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+      toast.style.zIndex = '1000'
+      toast.style.fontSize = '14px'
+      toast.style.fontWeight = '500'
+      toast.textContent = 'Configuración guardada exitosamente'
+      document.body.appendChild(toast)
+      setTimeout(() => {
+        toast.style.opacity = '0'
+        toast.style.transition = 'opacity 0.3s ease-out'
         setTimeout(() => {
-          toast.style.opacity = '0';
-          toast.style.transition = 'opacity 0.3s ease-out';
-          setTimeout(() => document.body.removeChild(toast), 300);
-        }, 3000);
-      }
-    };
+          document.body.removeChild(toast)
+          window.location.href = '/'
+        }, 300)
+      }, 3000)
+    } catch (error) {
+      // Toast de error
+      const toast = document.createElement('div')
+      toast.style.position = 'fixed'
+      toast.style.bottom = '24px'
+      toast.style.left = '24px'
+      toast.style.backgroundColor = '#ef4444'
+      toast.style.color = 'white'
+      toast.style.padding = '12px 24px'
+      toast.style.borderRadius = '8px'
+      toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+      toast.style.zIndex = '1000'
+      toast.style.fontSize = '14px'
+      toast.style.fontWeight = '500'
+      toast.textContent = 'Error al guardar la configuración'
+      document.body.appendChild(toast)
+      setTimeout(() => {
+        toast.style.opacity = '0'
+        toast.style.transition = 'opacity 0.3s ease-out'
+        setTimeout(() => document.body.removeChild(toast), 300)
+      }, 3000)
+    }
+  }
 
-    loadFieldAvailability();
-  }, [selectedFieldId]);
+  const loadFieldAvailability = async () => {
+    try {
+      const availability = await fieldAvailabilityService.getFieldAvailability(Number(selectedFieldId))
+      
+      // Reset weekly schedule
+      const newWeeklySchedule: WeeklySchedule = {
+        sunday: { available: false, timeSlots: [] },
+        monday: { available: false, timeSlots: [] },
+        tuesday: { available: false, timeSlots: [] },
+        wednesday: { available: false, timeSlots: [] },
+        thursday: { available: false, timeSlots: [] },
+        friday: { available: false, timeSlots: [] },
+        saturday: { available: false, timeSlots: [] },
+      }
+
+      // Group time slots by day
+      availability.forEach((slot) => {
+        const day = slot.dayOfWeek.toLowerCase()
+        if (day in newWeeklySchedule) {
+          if (!newWeeklySchedule[day].available) {
+            newWeeklySchedule[day].available = true
+            newWeeklySchedule[day].timeSlots = []
+          }
+          // Only add the first time slot for each day
+          if (newWeeklySchedule[day].timeSlots.length === 0) {
+            newWeeklySchedule[day].timeSlots.push({
+              start: FieldAvailabilityService.hourToTimeString(slot.openTime),
+              end: FieldAvailabilityService.hourToTimeString(slot.closeTime)
+            })
+          }
+        }
+      })
+
+      setWeeklySchedule(newWeeklySchedule)
+    } catch (error) {
+      console.error('Error loading field availability:', error)
+      alert('Error al cargar los horarios')
+    }
+  }
+
+  // Cargar horarios bloqueados al cambiar cancha
+  useEffect(() => {
+    const loadBlockedSlots = async () => {
+      try {
+        if (selectedFieldId) {
+          const slots = await fieldAvailabilityService.getAllBlockedSlots(Number(selectedFieldId))
+          setBlockedSlots(slots)
+        }
+      } catch (e) {
+        setBlockedSlots([])
+      }
+    }
+    loadFieldAvailability()
+    loadBlockedSlots()
+  }, [selectedFieldId])
 
   return (
     <div style={{ padding: "24px", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
@@ -390,7 +450,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
         >
           {fields.map((field) => (
             <option key={field.id} value={field.id}>
-              {field.name} ({field.type})
+              {field.name}
             </option>
           ))}
         </select>
@@ -445,28 +505,6 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                     {dayInfo.short}
                   </div>
                   <span style={{ fontSize: "16px", fontWeight: "500", color: "#1f2937" }}>{dayInfo.full}</span>
-                  {weeklySchedule[dayKey].available && (
-                    <button
-                      onClick={() => addTimeSlot(dayKey)}
-                      style={{
-                        marginLeft: "auto",
-                        padding: "6px 12px",
-                        backgroundColor: "#3b82f6",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: "500",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      <Plus size={14} />
-                      Nuevo intervalo
-                    </button>
-                  )}
                 </div>
 
                 {/* Time Slots */}
@@ -500,59 +538,23 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                         }}
                       >
                         <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
-                          {weeklySchedule[dayKey].timeSlots.length > 1
-                            ? `Intervalo ${index + 1}`
-                            : `Intervalo para ${dayInfo.full.toLowerCase()}`}
+                          Horario disponible
                         </div>
 
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                           <TimeSelect
                             value={slot.start}
-                            onChange={(value) => updateTimeSlot(dayKey, index, "start", value)}
+                            onChange={(value) => updateTimeSlot(dayKey, "start", value)}
+                            isStart={true}
+                            otherTime={slot.end}
                           />
                           <span style={{ color: "#94a3b8" }}>-</span>
                           <TimeSelect
                             value={slot.end}
-                            onChange={(value) => updateTimeSlot(dayKey, index, "end", value)}
+                            onChange={(value) => updateTimeSlot(dayKey, "end", value)}
+                            isStart={false}
+                            otherTime={slot.start}
                           />
-                        </div>
-
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <button
-                            onClick={() => duplicateTimeSlot(dayKey, index)}
-                            style={{
-                              padding: "6px",
-                              backgroundColor: "transparent",
-                              border: "none",
-                              color: "white",
-                              cursor: "pointer",
-                              borderRadius: "4px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                            title="Duplicar intervalo"
-                          >
-                            <Copy size={16} />
-                          </button>
-
-                          <button
-                            onClick={() => removeTimeSlot(dayKey, index)}
-                            style={{
-                              padding: "6px",
-                              backgroundColor: "transparent",
-                              border: "none",
-                              color: "white",
-                              cursor: "pointer",
-                              borderRadius: "4px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                            title="Eliminar intervalo"
-                          >
-                            <Trash2 size={16} />
-                          </button>
                         </div>
                       </div>
                     ))
@@ -575,10 +577,15 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Calendar size={20} color="#3b82f6" />
-              <h2 style={{ fontSize: "18px", fontWeight: "600", color: "#1f2937", margin: 0 }}>Horarios específicos</h2>
+              <h2 style={{ fontSize: "18px", fontWeight: "600", color: "#1f2937", margin: 0 }}>Bloqueos específicos</h2>
             </div>
             <button
-              onClick={() => setShowDatePicker(true)}
+              onClick={() => {
+                const today = new Date();
+                setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                setSelectedDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`);
+                setShowDatePicker(true);
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -598,12 +605,12 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
             </button>
           </div>
           <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "24px" }}>
-            Configura horarios especiales para fechas específicas que sobrescriben los horarios semanales
+            Configura eventos especiales que sobrescriben los horarios semanales para asegurarte de que no se pueda reservar en ese momento
           </p>
 
           {/* Lista de fechas específicas */}
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {specificDates.length === 0 ? (
+            {blockedSlots.length === 0 ? (
               <div
                 style={{
                   textAlign: "center",
@@ -612,75 +619,72 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                   padding: "40px 20px",
                 }}
               >
-                No hay horarios específicos configurados
-              </div>
+                No hay eventos específicos configurados
+                </div>
             ) : (
-              specificDates.map((dateSchedule) => (
-                <div key={dateSchedule.date}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <span style={{ fontWeight: "600", color: "#1f2937", fontSize: "16px" }}>
-                      {new Date(dateSchedule.date).toLocaleDateString("es-ES", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </span>
-                    <button
-                      onClick={() => removeSpecificDate(dateSchedule.date)}
-                      style={{
-                        padding: "6px 12px",
-                        backgroundColor: "#ef4444",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: "500",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      <Trash2 size={14} />
-                      Eliminar fecha
-                    </button>
-                  </div>
+              <>
+                {/* Mostrar fechas específicas configuradas */}
+                {blockedSlots.map((slot) => {
+                  const formattedDate = new Date(slot.date).toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "16px" }}>
-                    {dateSchedule.timeSlots.map((slot, index) => (
+                  return (
+                    <div key={`${slot.date}-${slot.hour}`}>
                       <div
-                        key={index}
                         style={{
                           display: "flex",
+                          justifyContent: "space-between",
                           alignItems: "center",
-                          gap: "12px",
-                          padding: "12px 16px",
-                          backgroundColor: "#1e293b",
-                          borderRadius: "8px",
-                          color: "white",
+                          marginBottom: "8px",
                         }}
                       >
-                        <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
-                          Intervalo especial {index + 1}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "14px" }}>{slot.start}</span>
-                          <span style={{ color: "#94a3b8" }}>-</span>
-                          <span style={{ fontSize: "14px" }}>{slot.end}</span>
+                        <span style={{ fontWeight: "600", color: "#1f2937", fontSize: "16px" }}>
+                          {formattedDate}
+                        </span>
+                        <button
+                          onClick={() => removeSpecificDate(slot.date, slot.hour)}
+                          style={{
+                            padding: "6px 12px",
+                            backgroundColor: "#ef4444",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          <Trash2 size={14} />
+                          Eliminar fecha
+                        </button>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "16px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            padding: "12px 16px",
+                            backgroundColor: "#1e293b",
+                            borderRadius: "8px",
+                            color: "white",
+                          }}
+                        >
+                          <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
+                            Evento especial para fecha específica
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "14px" }}>{slot.hour.toString().padStart(2, "0")}:00</span>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))
+                    </div>
+                  )
+                })}
+              </>
             )}
           </div>
         </div>
@@ -713,7 +717,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
             }}
           >
             <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#1f2937", marginBottom: "16px" }}>
-              Configurar horarios para fecha específica
+              Configurar horario para fecha específica
             </h3>
 
             {/* Calendar Header */}
@@ -801,7 +805,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
               </div>
             </div>
 
-            {/* Time Slots Configuration */}
+            {/* Time Slot Configuration */}
             {selectedDate && (
               <div style={{ marginBottom: "20px", padding: "16px", backgroundColor: "#f9fafb", borderRadius: "8px" }}>
                 <div
@@ -813,83 +817,34 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                   }}
                 >
                   <h4 style={{ fontSize: "16px", fontWeight: "600", color: "#1f2937", margin: 0 }}>
-                    Franjas horarias disponibles
+                    Hora disponible
                   </h4>
-                  <button
-                    onClick={() => setTempTimeSlots((prev) => prev.map((s, i) => (i === 0 ? { ...s, start: "09:00", end: "18:00" } : s)))}
-                    style={{
-                      padding: "6px 12px",
-                      backgroundColor: "#3b82f6",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
-                  >
-                    <Plus size={14} />
-                    Agregar
-                  </button>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {tempTimeSlots.map((slot, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "12px 16px",
-                        backgroundColor: "#1e293b",
-                        borderRadius: "8px",
-                        color: "white",
-                      }}
-                    >
-                      <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
-                        Nuevo intervalo para fecha específica
-                      </div>
-
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <TimeSelect
-                          value={slot.start}
-                          onChange={(value) =>
-                            setTempTimeSlots((prev) => prev.map((s, i) => (i === index ? { ...s, start: value } : s)))
-                          }
-                        />
-                        <span style={{ color: "#94a3b8" }}>-</span>
-                        <TimeSelect
-                          value={slot.end}
-                          onChange={(value) =>
-                            setTempTimeSlots((prev) => prev.map((s, i) => (i === index ? { ...s, end: value } : s)))
-                          }
-                        />
-                      </div>
-
-                      {tempTimeSlots.length > 1 && (
-                        <button
-                          onClick={() => setTempTimeSlots((prev) => prev.filter((_, i) => i !== index))}
-                          style={{
-                            padding: "6px",
-                            backgroundColor: "transparent",
-                            border: "none",
-                            color: "white",
-                            cursor: "pointer",
-                            borderRadius: "4px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "12px 16px",
+                      backgroundColor: "#1e293b",
+                      borderRadius: "8px",
+                      color: "white",
+                    }}
+                  >
+                    <div style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
+                      Hora disponible para fecha específica
                     </div>
-                  ))}
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <TimeSelect
+                        value={tempHour}
+                        onChange={(value) => setTempHour(value)}
+                        placeholder="Seleccionar hora"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -900,7 +855,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                 onClick={() => {
                   setShowDatePicker(false)
                   setSelectedDate("")
-                  setTempTimeSlots([{ start: "09:00", end: "18:00" }])
+                  setTempHour("09:00")
                 }}
                 style={{
                   padding: "10px 20px",
@@ -928,7 +883,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
                   fontWeight: "500",
                 }}
               >
-                Aplicar horarios
+                Aplicar horario
               </button>
             </div>
           </div>
@@ -945,88 +900,7 @@ export const ScheduleConfiguration = ({ fields, selectedFieldId, onFieldChange }
         }}
       >
         <button
-          onClick={async () => {
-            try {
-              // Convert weekly schedule to API format
-              const availability: FieldAvailabilityDTO[] = [];
-              
-              Object.entries(weeklySchedule).forEach(([day, schedule]) => {
-                if (schedule.available) {
-                  schedule.timeSlots.forEach(slot => {
-                    availability.push({
-                      dayOfWeek: day.toUpperCase() as FieldAvailabilityDTO['dayOfWeek'],
-                      startTime: FieldAvailabilityService.timeStringToLocalTime(slot.start),
-                      endTime: FieldAvailabilityService.timeStringToLocalTime(slot.end)
-                    });
-                  });
-                }
-              });
-
-              // Add specific dates
-              specificDates.forEach(dateSchedule => {
-                const date = new Date(dateSchedule.date);
-                const dayOfWeek = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'][date.getDay()] as FieldAvailabilityDTO['dayOfWeek'];
-                
-                dateSchedule.timeSlots.forEach(slot => {
-                  availability.push({
-                    dayOfWeek,
-                    startTime: FieldAvailabilityService.timeStringToLocalTime(slot.start),
-                    endTime: FieldAvailabilityService.timeStringToLocalTime(slot.end)
-                  });
-                });
-              });
-
-              await fieldAvailabilityService.setFieldAvailability(Number(selectedFieldId), availability);
-
-              // Show success toast
-              const toast = document.createElement('div');
-              toast.style.position = 'fixed';
-              toast.style.bottom = '24px';
-              toast.style.left = '24px';
-              toast.style.backgroundColor = '#10b981';
-              toast.style.color = 'white';
-              toast.style.padding = '12px 24px';
-              toast.style.borderRadius = '8px';
-              toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-              toast.style.zIndex = '1000';
-              toast.style.fontSize = '14px';
-              toast.style.fontWeight = '500';
-              toast.textContent = 'Configuración guardada exitosamente';
-              document.body.appendChild(toast);
-
-              setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s ease-out';
-                setTimeout(() => {
-                  document.body.removeChild(toast);
-                  // Redirigir a la página principal
-                  window.location.href = '/';
-                }, 300);
-              }, 3000);
-            } catch (error) {
-              console.error('Error saving availability:', error);
-              // Show error toast
-              const toast = document.createElement('div');
-              toast.style.position = 'fixed';
-              toast.style.bottom = '24px';
-              toast.style.left = '24px';
-              toast.style.backgroundColor = '#ef4444';
-              toast.style.color = 'white';
-              toast.style.padding = '12px 24px';
-              toast.style.borderRadius = '8px';
-              toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-              toast.style.zIndex = '1000';
-              toast.style.fontSize = '14px';
-              toast.style.fontWeight = '500';
-              toast.textContent = 'Error al guardar la configuración';
-              document.body.appendChild(toast);
-              setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s ease-out';
-                setTimeout(() => document.body.removeChild(toast), 300);
-              }, 3000);
-            }
-          }}
+          onClick={handleSave}
           style={{
             display: "flex",
             alignItems: "center",

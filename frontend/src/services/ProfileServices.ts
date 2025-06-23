@@ -1,6 +1,6 @@
-// @ts-nocheck - Mocked for development
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { User } from "@/models/User";
+import { BASE_API_URL, getAuthToken } from "@/config/app-query-client";
 
 export function useProfile() {
   return useQuery({
@@ -9,68 +9,33 @@ export function useProfile() {
   });
 }
 
-export function useUpdateProfile() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: updateProfile,
-    onSuccess: () => {
-      // Invalidate the profile query to refetch the updated data
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-    },
-  });
-}
-
-// Mock database
-let mockProfile: User = {
-  id: "1",
-  name: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  photo: "https://tr.rbxcdn.com/180DAY-640e7ce81edf999db2182d4847548dc5/420/420/Image/Png/noFilter",
-  age: 25,
-  gender: "male",
-  userType: "player"
-};
-
 async function getProfile(): Promise<User> {
-  // Return the current mock profile
-  return mockProfile;
-
-  /* Actual API call
-  const response = await fetch(BASE_API_URL + "/profile", {
+  const accessToken = getAuthToken();
+  const response = await fetch(`${BASE_API_URL}/users/me`, {
     method: "GET",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`, // from TokenContext?
-    },
-  });
-  return response.json();
-  */
-}
-
-type UpdateProfileData = Omit<User, 'id' | 'userType'>;
-
-async function updateProfile(data: UpdateProfileData): Promise<User> {
-  // Update the mock profile
-  mockProfile = {
-    ...mockProfile,
-    ...data
-  };
-  
-  return mockProfile;
-
-  /* Actual API call
-  const response = await fetch(BASE_API_URL + "/profile", {
-    method: "PUT",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify(data),
   });
-  return response.json();
-  */
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch profile with status ${response.status}: ${await response.text()}`);
+  }
+
+  const data = await response.json();  
+  // Map the backend DTO to our frontend User type
+  const user = {
+    id: data.id || "1", // Backend doesn't return id, but we need it for frontend
+    name: data.name,
+    lastName: data.last_name,
+    email: data.email,
+    photo: data.profile_picture, // Default photo if none provided
+    age: parseInt(data.age),
+    gender: data.gender,
+    userType: data.role
+  };
+  
+  return user;
 }
