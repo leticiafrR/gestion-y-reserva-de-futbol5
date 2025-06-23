@@ -43,8 +43,8 @@ export const MatchDetailsModal = ({ match, onClose }: MatchDetailsModalProps) =>
 
   const normalize = (str: string | undefined) => (str || "").trim().toLowerCase();
 
-  const userIsParticipant = userProfile ? basePlayers.some((p) => p.id === userProfile.id) : false
-  const isOrganizer = userProfile ? localMatch.booking.user.id === userProfile.id : false
+  const userIsParticipant = userProfile ? basePlayers.some((p) => p.username === userProfile.email) : false;
+  const isOrganizer = userProfile ? localMatch.booking.user.username === userProfile.email : false;
   // Un partido abierto con equipos asignados se considera confirmado
   const hasAssignedTeams = (localMatch.teamOne?.members && localMatch.teamOne.members.length > 0) || 
                           (localMatch.teamTwo?.members && localMatch.teamTwo.members.length > 0);

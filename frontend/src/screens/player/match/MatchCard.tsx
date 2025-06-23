@@ -183,8 +183,8 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
         ? localMatch.players
         : [];
 
-  const isParticipant = userProfile ? allPlayers.some((p: any) => p.id === userProfile.id) : false;
-  const isOrganizer = userProfile ? localMatch.booking.user.id === userProfile.id : false;
+  const isParticipant = userProfile ? allPlayers.some((p: any) => p.username === userProfile.email) : false;
+  const isOrganizer = userProfile ? localMatch.booking.user.username === userProfile.email : false;
   const canAssignTeams = isOrganizer && allPlayers.length >= localMatch.minPlayers && isOpenMatch;
   const canJoin = localMatch.isActive && allPlayers.length < localMatch.maxPlayers && !isOrganizer && isOpenMatch;
   const canLeave = !isOrganizer && isParticipant && localMatch.isActive && isOpenMatch;
@@ -379,6 +379,9 @@ export const MatchCard = ({ match, onClick, showJoinButton, isHistory = false }:
 
       {/* Actions */}
       <div style={{ display: "flex", gap: "8px" }}>
+        {(() => {
+          return null;
+        })()}
         {canAssignTeams && (
           <button
             onClick={(e) => {
