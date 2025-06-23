@@ -77,20 +77,10 @@ class TournamentStatisticsServiceTest {
         assertEquals(3, stats.getTotalTeams());
     }
 
-    // @Test
-    // void testDrawUpdatesRepositoryCalls() {
-    // setupDrawMatch();
-    // verify(teamRegisteredTournamentRepository, times(2)).save(any());
-    // }
-
     @Test
     void testDrawUpdatesHomeTeamGoalsFor() {
         TournamentMatch match = setupDrawMatch();
         TeamRegisteredTournament homeTeam = match.getHomeTeam();
-
-        // when(teamRegisteredTournamentRepository.findById(new TeamTournamentId(1L,
-        // 1L)))
-        // .thenReturn(Optional.of(homeTeam));
 
         tournamentStatisticsService.updateTeamStatistics(match);
         assertEquals(2, homeTeam.getGoalsFor());
@@ -119,10 +109,6 @@ class TournamentStatisticsServiceTest {
         TournamentMatch match = setupDrawMatch();
         TeamRegisteredTournament homeTeam = match.getHomeTeam();
 
-        // when(teamRegisteredTournamentRepository.findById(new TeamTournamentId(1L,
-        // 1L)))
-        // .thenReturn(Optional.of(homeTeam));
-
         tournamentStatisticsService.updateTeamStatistics(match);
         assertEquals(1, homeTeam.getDraws());
     }
@@ -131,10 +117,6 @@ class TournamentStatisticsServiceTest {
     void testDrawUpdatesAwayTeamGoalsFor() {
         TournamentMatch match = setupDrawMatch();
         TeamRegisteredTournament awayTeam = match.getAwayTeam();
-
-        // when(teamRegisteredTournamentRepository.findById(new TeamTournamentId(2L,
-        // 1L)))
-        // .thenReturn(Optional.of(awayTeam));
 
         tournamentStatisticsService.updateTeamStatistics(match);
         assertEquals(2, awayTeam.getGoalsFor());
@@ -145,10 +127,6 @@ class TournamentStatisticsServiceTest {
         TournamentMatch match = setupDrawMatch();
         TeamRegisteredTournament awayTeam = match.getAwayTeam();
 
-        // when(teamRegisteredTournamentRepository.findById(new TeamTournamentId(2L,
-        // 1L)))
-        // .thenReturn(Optional.of(awayTeam));
-
         tournamentStatisticsService.updateTeamStatistics(match);
         assertEquals(2, awayTeam.getGoalsAgainst());
     }
@@ -158,10 +136,6 @@ class TournamentStatisticsServiceTest {
         TournamentMatch match = setupDrawMatch();
         TeamRegisteredTournament awayTeam = match.getAwayTeam();
 
-        // when(teamRegisteredTournamentRepository.findById(new TeamTournamentId(2L,
-        // 1L)))
-        // .thenReturn(Optional.of(awayTeam));
-
         tournamentStatisticsService.updateTeamStatistics(match);
         assertEquals(1, awayTeam.getPoints());
     }
@@ -170,10 +144,6 @@ class TournamentStatisticsServiceTest {
     void testDrawUpdatesAwayTeamDraws() {
         TournamentMatch match = setupDrawMatch();
         TeamRegisteredTournament awayTeam = match.getAwayTeam();
-
-        // when(teamRegisteredTournamentRepository.findById(new TeamTournamentId(2L,
-        // 1L)))
-        // .thenReturn(Optional.of(awayTeam));
 
         tournamentStatisticsService.updateTeamStatistics(match);
         assertEquals(1, awayTeam.getDraws());
@@ -193,8 +163,69 @@ class TournamentStatisticsServiceTest {
     }
 
     @Test
-    void testUpdateTeamStatistics_HomeTeamWins() {
+    void testUpdateTeamStatistics_HomeTeamWins_VerifyRepositoryCalls() {
+        TournamentMatch match = setupHomeTeamWinsMatch();
+        tournamentStatisticsService.updateTeamStatistics(match);
+        verify(teamRegisteredTournamentRepository, times(2)).save(any(TeamRegisteredTournament.class));
+    }
 
+    @Test
+    void testUpdateTeamStatistics_HomeTeamWins_HomeTeamGoalsFor() {
+        TournamentMatch match = setupHomeTeamWinsMatch();
+        tournamentStatisticsService.updateTeamStatistics(match);
+        assertEquals(3, match.getHomeTeam().getGoalsFor());
+    }
+
+    @Test
+    void testUpdateTeamStatistics_HomeTeamWins_HomeTeamGoalsAgainst() {
+        TournamentMatch match = setupHomeTeamWinsMatch();
+        tournamentStatisticsService.updateTeamStatistics(match);
+        assertEquals(1, match.getHomeTeam().getGoalsAgainst());
+    }
+
+    @Test
+    void testUpdateTeamStatistics_HomeTeamWins_HomeTeamPoints() {
+        TournamentMatch match = setupHomeTeamWinsMatch();
+        tournamentStatisticsService.updateTeamStatistics(match);
+        assertEquals(3, match.getHomeTeam().getPoints());
+    }
+
+    @Test
+    void testUpdateTeamStatistics_HomeTeamWins_HomeTeamWins() {
+        TournamentMatch match = setupHomeTeamWinsMatch();
+        tournamentStatisticsService.updateTeamStatistics(match);
+        assertEquals(1, match.getHomeTeam().getWins());
+    }
+
+    @Test
+    void testUpdateTeamStatistics_HomeTeamWins_AwayTeamGoalsFor() {
+        TournamentMatch match = setupHomeTeamWinsMatch();
+        tournamentStatisticsService.updateTeamStatistics(match);
+        assertEquals(1, match.getAwayTeam().getGoalsFor());
+    }
+
+    @Test
+    void testUpdateTeamStatistics_HomeTeamWins_AwayTeamGoalsAgainst() {
+        TournamentMatch match = setupHomeTeamWinsMatch();
+        tournamentStatisticsService.updateTeamStatistics(match);
+        assertEquals(3, match.getAwayTeam().getGoalsAgainst());
+    }
+
+    @Test
+    void testUpdateTeamStatistics_HomeTeamWins_AwayTeamPoints() {
+        TournamentMatch match = setupHomeTeamWinsMatch();
+        tournamentStatisticsService.updateTeamStatistics(match);
+        assertEquals(0, match.getAwayTeam().getPoints());
+    }
+
+    @Test
+    void testUpdateTeamStatistics_HomeTeamWins_AwayTeamLosses() {
+        TournamentMatch match = setupHomeTeamWinsMatch();
+        tournamentStatisticsService.updateTeamStatistics(match);
+        assertEquals(1, match.getAwayTeam().getLosses());
+    }
+
+    private TournamentMatch setupHomeTeamWinsMatch() {
         Tournament tournament = new Tournament();
         Team team1 = new Team();
         Team team2 = new Team();
@@ -212,18 +243,7 @@ class TournamentStatisticsServiceTest {
         match.setAwayTeam(awayTeam);
         match.setHomeTeamScore(3);
         match.setAwayTeamScore(1);
-
-        tournamentStatisticsService.updateTeamStatistics(match);
-
-        verify(teamRegisteredTournamentRepository, times(2)).save(any(TeamRegisteredTournament.class));
-        assertEquals(3, homeTeam.getGoalsFor());
-        assertEquals(1, homeTeam.getGoalsAgainst());
-        assertEquals(3, homeTeam.getPoints());
-        assertEquals(1, homeTeam.getWins());
-        assertEquals(1, awayTeam.getGoalsFor());
-        assertEquals(3, awayTeam.getGoalsAgainst());
-        assertEquals(0, awayTeam.getPoints());
-        assertEquals(1, awayTeam.getLosses());
+        return match;
     }
 
     TournamentMatch setupDrawMatch() {
@@ -241,7 +261,6 @@ class TournamentStatisticsServiceTest {
         TeamRegisteredTournament awayTeam = new TeamRegisteredTournament();
         awayTeam.setId(new TeamTournamentId(2L, 1L));
 
-        // Agregar equipos al torneo
         tournament.addNewTeamRegisted();
         tournament.addNewTeamRegisted();
 
@@ -266,8 +285,6 @@ class TournamentStatisticsServiceTest {
         tournament.setOpenInscription(true);
 
         when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
-
-        // Create teams
         Team team1 = new Team();
         team1.setId(1L);
         team1.setName("Equipo A");
@@ -278,7 +295,6 @@ class TournamentStatisticsServiceTest {
         team3.setId(3L);
         team3.setName("Equipo C");
 
-        // Create team registrations
         TeamRegisteredTournament reg1 = new TeamRegisteredTournament();
         reg1.setId(new TeamTournamentId(1L, 1L));
         reg1.setTeam(team1);
@@ -292,7 +308,6 @@ class TournamentStatisticsServiceTest {
         reg3.setTeam(team3);
         reg3.setTournament(tournament);
 
-        // Create completed matches
         TournamentMatch match1 = new TournamentMatch();
         match1.setId(1L);
         match1.setHomeTeam(reg1);
@@ -360,9 +375,9 @@ class TournamentStatisticsServiceTest {
         tournament.setId(1L);
         tournament.setName("Test Tournament");
         tournament.setFormat(TournamentFormat.ROUND_ROBIN);
-        tournament.setStartDate(LocalDate.now().minusDays(1));// empezó hace poco
-        tournament.setEndDate(LocalDate.now().plusDays(10));// termina en 10 dias
-        tournament.setOpenInscription(true);// nunca se cambió manualmente
+        tournament.setStartDate(LocalDate.now().minusDays(1));
+        tournament.setEndDate(LocalDate.now().plusDays(10));
+        tournament.setOpenInscription(true);
 
         when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
         when(teamRegisteredTournamentRepository.findByTournament(tournament)).thenReturn(new ArrayList<>());
