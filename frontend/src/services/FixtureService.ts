@@ -170,7 +170,6 @@ export function useFixture(tournamentId: number) {
 
 async function getFixture(tournamentId: number): Promise<TournamentMatch[]> {
   const accessToken = getAuthToken()
-  console.log("Getting fixture for tournamentId:", tournamentId)
   const response = await fetch(`${BASE_API_URL}/tournaments/${tournamentId}/fixture`, {
     headers: {
       Accept: "application/json",
@@ -186,21 +185,7 @@ async function getFixture(tournamentId: number): Promise<TournamentMatch[]> {
   }
 
   const fixtureData = await response.json()
-  
-  // Log the fixture data for debugging
-  console.log("=== FIXTURE DATA RECEIVED ===")
-  console.log("Tournament ID:", tournamentId)
-  console.log("Response status:", response.status)
-  console.log("Fixture data:", fixtureData)
-  console.log("Fixture data type:", typeof fixtureData)
-  console.log("Is array:", Array.isArray(fixtureData))
-  console.log("Number of matches:", Array.isArray(fixtureData) ? fixtureData.length : "Not an array")
-  
-  if (Array.isArray(fixtureData) && fixtureData.length > 0) {
-    console.log("First match structure:", fixtureData[0])
-  }
-  console.log("=== END FIXTURE DATA ===")
-  
+
   return fixtureData
 }
 

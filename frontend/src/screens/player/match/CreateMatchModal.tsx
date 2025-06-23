@@ -31,7 +31,6 @@ export const CreateMatchModal = ({ onClose, preselectedField }: CreateMatchModal
   const { data: allTeams } = useAllTeams()
   const { data: availableFields, isLoading: loadingFields, error: errorFields } = useAvailableFields()
 
-  console.log(availableFields)
   // Form data
   const [formData, setFormData] = useState({
     type: "open" as "open" | "closed",
