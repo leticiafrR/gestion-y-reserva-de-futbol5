@@ -25,25 +25,45 @@ const fetchAvailableMatches = async (userProfile: any) => {
   });
   const matches = await response.json();
   if (!userProfile) return [];
-  // Filtrar partidos donde el usuario NO participa
+  
+  // Filtrar partidos donde el usuario NO participa y NO es organizador
   const filtered = matches.filter((match: any) => {
-    // Abierto
+    // Verificar si el usuario es el organizador del partido
+    const isOrganizer = match.booking?.user?.id === userProfile.id || 
+                       match.booking?.user?.username === userProfile.email;
+    
+    if (isOrganizer) {
+      return false;
+    }
+    
+    // Verificar si el usuario participa como jugador (partido abierto)
     if (Array.isArray(match.players)) {
-      return !match.players.some((player: any) =>
+      const isPlayer = match.players.some((player: any) =>
         player.id === userProfile.id || player.username === userProfile.email
       );
+      if (isPlayer) {
+        return false;
+      }
     }
-    // Cerrado
+    
+    // Verificar si el usuario participa en equipos (partido cerrado)
     if (match.teamOne && Array.isArray(match.teamOne.members)) {
-      if (match.teamOne.members.some((player: any) =>
+      const isInTeamOne = match.teamOne.members.some((player: any) =>
         player.id === userProfile.id || player.username === userProfile.email
-      )) return false;
+      );
+      if (isInTeamOne) {
+        return false;
+      }
     }
     if (match.teamTwo && Array.isArray(match.teamTwo.members)) {
-      if (match.teamTwo.members.some((player: any) =>
+      const isInTeamTwo = match.teamTwo.members.some((player: any) =>
         player.id === userProfile.id || player.username === userProfile.email
-      )) return false;
+      );
+      if (isInTeamTwo) {
+        return false;
+      }
     }
+    
     return true;
   });
   
