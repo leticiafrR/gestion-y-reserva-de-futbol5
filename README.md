@@ -5,7 +5,7 @@ Sistema completo para la gestión y reserva de canchas de fútbol 5.
 **Segundo Trabajo Práctico - Ingeniería de Software I**  
 Facultad de Ingeniería - Universidad de Buenos Aires
 
-## Equipo 3
+## Miembros del equipo
 
 - Andrea Figueroa - 110450
 - Joaquin Chamo - 110748
