@@ -1,20 +1,20 @@
 # Gestión y Reserva de Fútbol 5
+Proyecto _gestión y reserva de Fútbol 5_: sistema que proporciona a diferentes usuarios la herramienta para solucionar la problemática de la complejidad en la coordinación de partidos de fútbol. Incluyendo el puto de vista de los juugadores que buscan otros jugadores para cierta fecha y alguna cancha de futbul que cumpla con ciertos requisitos, como también  el punto de vista de un dueño de canchas, quien necesita poder estructurar los horarios de disponibilidad y darle visibilidad a sus canchas.
 
-Sistema completo para la gestión y reserva de canchas de fútbol 5.
+En el presente repositorio se encuentra el código fuente y la documentación del sistema completo para la gestión y reserva de canchas de fútbol 5. Incluyendo así lo relativo al backend, frontend, siguiendo la arquitectura de software REST, además de tambén lo relativo a la persistencia mediante el uso de una base de datos y adicionalmente lo relativo a la automatización del despliegue abarcando el uso de herrmaientas como docker y docker compose como orquestador.
 
 **Segundo Trabajo Práctico - Ingeniería de Software I**  
 Facultad de Ingeniería - Universidad de Buenos Aires
 
 ## Miembros del equipo
-
-- Andrea Figueroa - 110450
-- Joaquin Chamo - 110748
-- Leticia Figueroa - 110510
-- Federico Honda - 110766
-- Candela Piccin - 109760
-- Santiago Varga - 110561
-- Siyu Zheng - 111273
-- Juan Wienberg - 110753
+- Andrea Figueroa 
+- Joaquin Chamo
+- Leticia Figueroa
+- Federico Honda
+- Candela Piccin
+- Santiago Varga
+- Siyu Zheng
+- Juan Wienberg
 
 ## Inicio Rápido
 
