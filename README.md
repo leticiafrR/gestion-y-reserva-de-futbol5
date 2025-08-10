@@ -7,14 +7,14 @@ En el presente repositorio se encuentra el código fuente y la documentación de
 Facultad de Ingeniería - Universidad de Buenos Aires
 
 ## Miembros del equipo
-- Andrea Figueroa 
-- Joaquin Chamo
-- Leticia Figueroa
-- Federico Honda
-- Candela Piccin
-- Santiago Varga
-- Siyu Zheng
-- Juan Wienberg
+- [Andrea Figueroa](https://github.com/AndreaFigueroaR) 
+- [Joaquin Chamo](https://github.com/JoacoChamo)
+- [Leticia Figueroa](https://github.com/leticiafrR)
+- [Federico Honda](https://github.com/federicohonda)
+- [Candela Piccin](https://github.com/cpiccin)
+- [Santiago Varga](https://github.com/SantiagoVarga)
+- [Siyu Zheng](https://github.com/ElisaZheng)
+- [Juan Wienberg](https://github.com/JuanchiWienberg)
 
 ## Inicio Rápido
 
